@@ -3,11 +3,10 @@ frontend:
   phases:
     build:
       commands:
-        - mkdir -p deploy-output
-        - cp -r * deploy-output/ || true
-        - rm -rf deploy-output/deploy-output
+        - mkdir build_output
+        - find . -maxdepth 1 -not -name 'build_output' -not -name '.git' -not -name 'amplify.yml' -exec cp -r {} build_output/ \;
   artifacts:
-    baseDirectory: deploy-output
+    baseDirectory: build_output
     files:
       - '**/*'
   cache:
