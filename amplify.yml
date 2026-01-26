@@ -3,10 +3,11 @@ frontend:
   phases:
     build:
       commands:
-        - mkdir www
-        - mv * www/ || true
+        - mkdir -p deploy-output
+        - cp -r * deploy-output/ || true
+        - rm -rf deploy-output/deploy-output
   artifacts:
-    baseDirectory: www
+    baseDirectory: deploy-output
     files:
       - '**/*'
   cache:
