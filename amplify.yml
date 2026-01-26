@@ -3,8 +3,9 @@ frontend:
   phases:
     build:
       commands:
-        - mkdir build_output
-        - find . -maxdepth 1 -not -name 'build_output' -not -name '.git' -not -name 'amplify.yml' -exec cp -r {} build_output/ \;
+        - mkdir -p build_output
+        - find . -mindepth 1 -maxdepth 1 -not -name 'build_output' -not -name '.git' -not -name 'amplify.yml' -exec cp -r {} build_output/ \;
+        - ls -F build_output/
   artifacts:
     baseDirectory: build_output
     files:
