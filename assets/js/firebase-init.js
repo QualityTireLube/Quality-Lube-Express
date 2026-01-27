@@ -44,8 +44,12 @@ document.addEventListener('DOMContentLoaded', function() {
        auth.onAuthStateChanged((user) => {
         const loginButtons = document.querySelectorAll('.admin-login-btn');
         loginButtons.forEach(btn => {
+            const icon = btn.querySelector('i');
             if (user) {
-                btn.querySelector('.w-btn-label').textContent = "Admin (Logout)";
+                if (icon) {
+                    icon.className = "fas fa-sign-out-alt"; // Logout icon
+                }
+                btn.title = "Logout";
                 btn.href = "#";
                 btn.classList.add('admin-logged-in');
                 
@@ -60,17 +64,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 });
             } else {
-                 btn.querySelector('.w-btn-label').textContent = "Admin Login";
-                 // Do not overwrite href here; rely on the static HTML relative path
-            } 
-                 
-                 // If we are in subfolder, we might need ../login.html
-                 // Simple logic: key off the base tag or just try /login.html assuming web server
-                 // For local file opening, this might be tricky. Let's assume web server.
-                 // The python script will try to inject the correct relative path for the button href if possible, 
-                 // or we just use absolute '/login.html'
-                 
-                 btn.href = "/login.html";
+                 if (icon) {
+                     icon.className = "fas fa-user-lock"; // User Lock / Login icon
+                 }
+                 btn.title = "Admin Login";
+                 // Do not overwrite href; it is set correctly relative to root by the setup script
             }
         });
       });
