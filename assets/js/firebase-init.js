@@ -1,10 +1,12 @@
 // Firebase Configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCGgPLtGauVZqsdY80FANk5zrO5cTeGpyk",
-  authDomain: "hostingplatform-test.firebaseapp.com",
-  projectId: "hostingplatform-test",
-  storageBucket: "hostingplatform-test.appspot.com",
-  messagingSenderId: "359809620928"
+  apiKey: "AIzaSyA2DI7LRK4kR7DZtGRridtmCZYl8F32cLg",
+  authDomain: "qualityexpress-c19f2.firebaseapp.com",
+  projectId: "qualityexpress-c19f2",
+  storageBucket: "qualityexpress-c19f2.firebasestorage.app",
+  messagingSenderId: "201962327491",
+  appId: "1:201962327491:web:342d771b9013d901cc8176",
+  measurementId: "G-HJDBXM5CLX"
 };
 
 // Initialize Firebase
