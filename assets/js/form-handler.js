@@ -554,8 +554,9 @@
         
         // Neutralize WPForms settings
         if (window.wpforms_settings) {
-            window.wpforms_settings.ajaxurl = '';
-            window.wpforms_settings.submit = '';
+            // Setting to null prevents it from fetching index.html
+            window.wpforms_settings.ajaxurl = null; 
+            window.wpforms_settings.submit = null;
         }
         
         // Disable WPForms object but keep validation
@@ -641,8 +642,10 @@
     
     // Run initialization
     if (document.readyState === 'loading') {
+        disableThirdPartyFormHandlers(); // Run immediately to catch early scripts
         document.addEventListener('DOMContentLoaded', init);
     } else {
+        disableThirdPartyFormHandlers();
         init();
     }
     
