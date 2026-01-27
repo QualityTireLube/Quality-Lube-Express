@@ -16,35 +16,6 @@
  * <script src="/assets/js/form-handler.js"></script>
  */
 
-// ============================================
-// EARLY WPFORMS BLOCKER - Runs immediately before IIFE
-// This prevents WPForms from initializing at all
-// ============================================
-(function earlyWPFormsBlocker() {
-    // Create a proxy to trap any access to wpforms_settings
-    const nullProxy = new Proxy({}, {
-        get: function() { return null; },
-        set: function() { return true; }
-    });
-    
-    // Pre-define wpforms_settings to prevent the real one from being set
-    try {
-        Object.defineProperty(window, 'wpforms_settings', {
-            get: function() { return { ajaxurl: null, submit: null, token: null, nonce: null }; },
-            set: function() { console.log('[Hosting Platform] Blocked wpforms_settings assignment'); return true; },
-            configurable: true
-        });
-    } catch(e) {
-        // If property already exists, try to null it
-        if (window.wpforms_settings) {
-            window.wpforms_settings.ajaxurl = null;
-            window.wpforms_settings.submit = null;
-        }
-    }
-    
-    console.log('[Hosting Platform] Early WPForms blocker active');
-})();
-
 (function() {
     'use strict';
 
@@ -576,62 +547,38 @@
     // ============================================
     
     function disableThirdPartyFormHandlers() {
-        console.log('[Hosting Platform] Disabling third-party form handlers...');
-        
-        // Disable WPForms AJAX
+        // Disable WPForms AJAX form class
         document.querySelectorAll('form.wpforms-ajax-form').forEach(form => {
             form.classList.remove('wpforms-ajax-form');
         });
         
-        // COMPLETELY neutralize WPForms settings to prevent ALL background AJAX
+        // Neutralize WPForms settings
         if (window.wpforms_settings) {
-            console.log('[Hosting Platform] Neutralizing wpforms_settings');
-            // Setting to null prevents it from fetching index.html
             window.wpforms_settings.ajaxurl = null; 
             window.wpforms_settings.submit = null;
-            // Also disable token updates which cause the console errors
             window.wpforms_settings.token = null;
             window.wpforms_settings.nonce = null;
         }
         
-        // Disable WPForms object completely
+        // Disable WPForms objects
         if (window.WPForms) {
-            console.log('[Hosting Platform] Neutralizing WPForms object');
             window.WPForms = null;
         }
-        
-        // Also neutralize wpforms (lowercase) if it exists
         if (window.wpforms) {
-            console.log('[Hosting Platform] Neutralizing wpforms object');
             window.wpforms = null;
         }
         
-        // Prevent WPForms from binding submit handlers
-        if (window.jQuery && window.jQuery.fn) {
-            // Remove wpforms submit handlers
-            const $ = window.jQuery;
-            $('form.wpforms-form').off('submit.wpforms');
-            $('form.wpforms-form').off('wpformsBeforeFormSubmit');
-            $('form.wpforms-form').off('wpformsAjaxSubmitActionComplete');
-            
-            // Disable all WPForms-related AJAX calls
-            $(document).off('.wpforms');
-            
-            // Override jQuery.ajax to block WPForms requests
-            const originalAjax = $.ajax;
-            $.ajax = function(settings) {
-                if (settings && settings.url) {
-                    const url = settings.url.toLowerCase();
-                    // Block requests to WordPress admin-ajax that WPForms uses
-                    if (url.includes('admin-ajax.php') || url.includes('wpforms') || 
-                        url.includes('wp-admin') || url.includes('wp-json')) {
-                        console.log('[Hosting Platform] Blocked WPForms AJAX request to:', settings.url);
-                        // Return a fake promise that does nothing
-                        return $.Deferred().reject().promise();
-                    }
-                }
-                return originalAjax.apply(this, arguments);
-            };
+        // Remove WPForms jQuery event handlers
+        if (window.jQuery) {
+            try {
+                const $ = window.jQuery;
+                $('form.wpforms-form').off('submit.wpforms');
+                $('form.wpforms-form').off('wpformsBeforeFormSubmit');
+                $('form.wpforms-form').off('wpformsAjaxSubmitActionComplete');
+                $(document).off('.wpforms');
+            } catch(e) {
+                // Ignore jQuery errors
+            }
         }
         
         // Disable Contact Form 7
@@ -639,12 +586,10 @@
             window.wpcf7 = null;
         }
         
-        // Disable Gravity Forms AJAX
+        // Disable Gravity Forms
         if (window.gform) {
             window.gform = null;
         }
-        
-        console.log('[Hosting Platform] Third-party form handlers disabled');
     }
     
     // ============================================
