@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             } else {
                  if (icon) {
-                     icon.className = "fas fa-user-lock"; // User Lock / Login icon
+                     icon.className = "fas fa-lock"; // Lock icon for Admin
                  }
                  btn.title = "Admin Login";
                  // Do not overwrite href; it is set correctly relative to root by the setup script
