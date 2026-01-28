@@ -305,28 +305,28 @@ async function importServices(auto = false) {
 
     try {
         const defaultServices = [
-            // Oil Changes
-            { name: "Mobil 1 (Full Synthetic)", price: "$96.99 10k/Mi" },
-            { name: "Mobile Synthetic", price: "$74.99 7k/Mi" },
-            { name: "Delvac 1300 (Diesel)", price: "$109.99 7K/Mi" },
-            { name: "Delvac 15w40 (Diesel)", price: "$149.99 12K/Mi" },
-            { name: "Delvac 1 5w40 (Diesel)", price: "$149.99 12K/Mi" },
-            { name: "Wiper Blades", price: "$12.99/PC" },
+            // Left Column: Oil & Wipers
+            { name: "Full Synthetic (Mobil 1)", price: "$96.99 10k/Mi", category: "Oil" },
+            { name: "Mobile Synthetic", price: "$74.99 7k/Mi", category: "Oil" },
+            { name: "Diesel Oil Change (Delvac 1300)", price: "$109.99 7K/Mi", category: "Oil" },
+            { name: "Diesel - Delvac 15w40", price: "$149.99 12K/Mi", category: "Oil" },
+            { name: "Diesel - Delvac 1 5w40", price: "$149.99 12K/Mi", category: "Oil" },
+            { name: "Wiper Blades", price: "$12.99/PC", category: "Oil" },
 
-            // Brakes
-            { name: "Brake Pads - Cars/SUV (Per Axle)", price: "$178.48*" },
-            { name: "Brake Pads - Heavy Duty (Per Axle)", price: "$232.52*" },
+            // Center Column: Brakes (Dark Theme)
+            { name: "Brake Pads - Cars/SUV", price: "$178.48*", category: "Brakes" },
+            { name: "Brake Pads - Heavy Duty", price: "$232.52*", category: "Brakes" },
 
-            // Tires
-            { name: "Tire Repair", price: "$25.99" },
-            { name: "Tire Rotation", price: "$19.99" },
-            { name: "Rotate & Balance", price: "$43.99" },
-            { name: "33+ Tire Rotation", price: "$34.99" },
-            { name: "33+ Rotate & Balance", price: "$83.99" },
-            { name: "Mount/Balance", price: "$24.99/TIRE" },
-            { name: "Oversized Mount/Balance", price: "$34.99/Tire" },
-            { name: "Reversed Mount", price: "+15%" },
-            { name: "TPMS Sensor", price: "$42.99" }
+            // Right Column: Tires
+            { name: "Tire Repair", price: "$25.99", category: "Tires" },
+            { name: "Tire Rotation", price: "$19.99", category: "Tires" },
+            { name: "Rotate & Balance", price: "$43.99", category: "Tires" },
+            { name: "33+ Tire Rotation", price: "$34.99", category: "Tires" },
+            { name: "33+ Rotate & Balance", price: "$83.99", category: "Tires" },
+            { name: "Mount/Balance", price: "$24.99/TIRE", category: "Tires" },
+            { name: "Oversized Mount/Balance", price: "$34.99/Tire", category: "Tires" },
+            { name: "Reversed Mount", price: "+15%", category: "Tires" },
+            { name: "TPMS Sensor", price: "$42.99", category: "Tires" }
         ];
 
         let count = 0;
