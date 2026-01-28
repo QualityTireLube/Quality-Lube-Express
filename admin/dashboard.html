@@ -196,7 +196,15 @@ function loadServices() {
     })
     .catch((error) => {
         console.error("Error getting documents: ", error);
-        documenCategory then Name
+        document.getElementById('loading-spinner').innerHTML = '<span class="text-danger">Error loading data.</span>';
+    });
+}
+
+function renderTable(services) {
+    const tbody = document.getElementById('services-table-body');
+    tbody.innerHTML = '';
+
+    // Sort: Category then Name
     services.sort((a, b) => {
         const catA = a.category || 'General';
         const catB = b.category || 'General';
@@ -218,6 +226,7 @@ function loadServices() {
         `;
         tbody.innerHTML += row;
     });
+}
 }
 
 
