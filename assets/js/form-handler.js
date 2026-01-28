@@ -111,6 +111,9 @@
             
             if (!value) continue;
             
+            // Default: add raw key-value to data (ensures unmapped fields are sent)
+            data[key] = value;
+            
             const k = key.toLowerCase();
             
             // Heuristic Mapping
@@ -140,7 +143,7 @@
         let fullKeyValues = "";
         for (const [key, value] of formData.entries()) {
             if (!(value instanceof File)) {
-                fullKeyValues += ${key}: \n;
+                fullKeyValues += `${key}: ${value}\n`;
             }
         }
         data.raw_data = fullKeyValues;
@@ -164,7 +167,7 @@
         // Add extended address info to message if present
         if (data.address1) {
             const addressFunc = [data.address1, data.address2, data.city, data.state, data.zip].filter(Boolean).join(', ');
-            payload.message = Applicant Address: \n\nNotes:\n;
+            payload.message = `Applicant Address: ${addressFunc}\n\nNotes:\n${payload.message}`;
         }
         
         console.log('Sending Payload with ' + (payload.attachments ? payload.attachments.length : 0) + ' attachments.');
