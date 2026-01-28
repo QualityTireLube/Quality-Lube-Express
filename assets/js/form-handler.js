@@ -35,15 +35,23 @@
     }
     
     function disableWPForms() {
-        // Neutralize WPForms settings
+        // Neutralize WPForms settings only - do not delete the global object
+        // Deleting the global object causes errors when WPForms event listeners fire
         if (window.wpforms_settings) {
-            window.wpforms_settings.ajaxurl = null;
+            window.wpforms_settings.ajaxurl = '';
         }
+
+        // Monkey-patch the wpforms object to stop it from trying to do backend stuff or validation
         if (window.wpforms) {
-            window.wpforms = null;
-        }
-        if (window.WPForms) {
-            window.WPForms = null;
+             // Stop the annoying HTML dump in console (token update 404s)
+            if (typeof window.wpforms.updateToken === 'function') {
+                window.wpforms.updateToken = function() { };
+            }
+
+            // Prevent WPForms from trying to handle the submit or recaptcha
+            if (typeof window.wpforms.submitHandler === 'function') {
+                window.wpforms.submitHandler = function(e) { return false; };
+            }
         }
     }
     
