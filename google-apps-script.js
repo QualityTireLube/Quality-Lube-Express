@@ -30,9 +30,12 @@ function doPost(e) {
     // Using Red/Dark theme for Quality Lube
     let htmlBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 5px; overflow: hidden;">
-        <div style="background-color: #D32F2F; padding: 20px; color: #ffffff; text-align: center;">
-          <h2 style="margin: 0;">${site}</h2>
-          <p style="margin: 5px 0 0; opacity: 0.9;">New Form Submission: ${formName}</p>
+        <div style="background-color: #ffffff; padding: 20px; text-align: center; border-bottom: 3px solid #D32F2F;">
+          <img src="https://qualitytirelube.com/wp-content/uploads/2021/04/logo-01.png" alt="${site}" style="max-width: 250px; height: auto;">
+        </div>
+        <div style="background-color: #D32F2F; padding: 15px; color: #ffffff; text-align: center;">
+          <h2 style="margin: 0; font-size: 20px;">New Website Form Submission</h2>
+          <p style="margin: 5px 0 0; opacity: 0.9;">${formName}</p>
         </div>
         
         <div style="padding: 20px; background-color: #ffffff;">
