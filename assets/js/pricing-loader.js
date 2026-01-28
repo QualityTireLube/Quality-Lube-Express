@@ -10,49 +10,32 @@ document.addEventListener('DOMContentLoaded', function() {
   
       console.log("Dynamic pricing data found. Rendering...");
       
-      const categories = {};
+      const services = [];
       querySnapshot.forEach(doc => {
-        const data = doc.data();
-        const cat = data.category || 'General';
-        if(!categories[cat]) categories[cat] = [];
-        categories[cat].push(data);
+        services.push(doc.data());
       });
   
-      // Build new HTML structure matches the theme somewhat
+      // Sort By Name
+      services.sort((a,b) => a.name.localeCompare(b.name));
+
+      // Build new HTML structure - Flat List
       let newHtml = '<div class="dynamic-pricing-section" style="max-width: 1200px; margin: 0 auto;">';
       
-      // Order categories: Try to respect expected order (Synthetic, Diesel, Wipers, etc.)
-      const categoryOrder = ["FULL SYNTHETIC", "DIESEL OIL CHANGE", "WIPER BLADES", "STATE INSPECTION", "Services", "General"];
-      const sortedCats = Object.keys(categories).sort((a,b) => {
-          let ia = categoryOrder.indexOf(a);
-          let ib = categoryOrder.indexOf(b);
-          if(ia === -1) ia = 999;
-          if(ib === -1) ib = 999;
-          if(ia === ib) return a.localeCompare(b);
-          return ia - ib;
+      // Mimic the wpb_text_column tables
+      newHtml += `<div class="wpb_text_column wpb_content_element" style="margin-bottom: 25px;">
+         <div class="wpb_wrapper">
+         <table style="width: 100%;">
+         <tbody>`;
+      
+      services.forEach(s => {
+        newHtml += `
+         <tr>
+             <td>${s.name}</td>
+             <td>${s.price}</td>
+         </tr>`;
       });
-
-      for (const cat of sortedCats) {
-         const services = categories[cat];
-         
-         // Mimic the wpb_text_column tables
-         newHtml += `<div class="wpb_text_column wpb_content_element" style="margin-bottom: 25px;">
-            <div class="wpb_wrapper">
-            <h4 style="border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase; color: #333;">${cat}</h4>
-            <table style="width: 100%;">
-            <tbody>`;
-         
-         services.forEach(s => {
-           newHtml += `
-            <tr>
-                <td>${s.name}</td>
-                <td>${s.price}</td>
-            </tr>`;
-         });
-         
-         newHtml += `</tbody></table></div></div>`;
-      }
-      newHtml += '</div>';
+      
+      newHtml += `</tbody></table></div></div></div>`;
   
       // Injection Logic
       const main = document.getElementById('page-content');
