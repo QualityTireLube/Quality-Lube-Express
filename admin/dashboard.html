@@ -52,13 +52,21 @@
     
     <div class="alert alert-info" id="status-msg" style="display:none;"></div>
 
-    <div class="mb-4 d-flex gap-2">
+    <div class="mb-4 d-flex gap-2 flex-wrap">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
             <i class="fas fa-plus"></i> Add New Service
         </button>
          <button class="btn btn-secondary" onclick="loadServices()">
             <i class="fas fa-sync"></i> Refresh
         </button>
+        <div class="ms-auto d-flex gap-2">
+            <button class="btn btn-warning text-dark" onclick="reimportDefaults()">
+                <i class="fas fa-history"></i> Reset Data & Imports
+            </button>
+            <button class="btn btn-danger" onclick="resetToDefaults()">
+                <i class="fas fa-ban"></i> Disable Dynamic/Revert Styling
+            </button>
+        </div>
     </div>
 
     <!-- Filter Removed - No Categories -->
@@ -67,6 +75,7 @@
         <table class="table table-hover align-middle">
             <thead class="table-dark">
                 <tr>
+                    <th>Category</th>
                     <th>Service Name</th>
                     <th>Price</th>
                     <th class="text-end">Actions</th>
@@ -97,8 +106,18 @@
         <form id="service-form">
             <input type="hidden" id="service-id">
             <div class="mb-3">
+                <label class="form-label">Category</label>
+                <input type="text" class="form-control" id="service-category" list="category-list" required placeholder="e.g. FULL SYNTHETIC">
+                <datalist id="category-list">
+                    <option value="FULL SYNTHETIC">
+                    <option value="DIESEL OIL CHANGE">
+                    <option value="WIPER BLADES">
+                    <option value="STATE INSPECTION">
+                </datalist>
+            </div>
+            <div class="mb-3">
                 <label class="form-label">Service Name</label>
-                <input type="text" class="form-control" id="service-name" required placeholder="e.g. Full Synthetic">
+                <input type="text" class="form-control" id="service-name" required placeholder="e.g. Mobil 1">
             </div>
             <div class="mb-3">
                 <label class="form-label">Price / Description</label>
@@ -177,22 +196,18 @@ function loadServices() {
     })
     .catch((error) => {
         console.error("Error getting documents: ", error);
-        document.getElementById('status-msg').innerText = "Error loading data: " + error.message;
-        document.getElementById('status-msg').style.display = "block";
-        document.getElementById('loading-spinner').style.display = 'none';
+        documenCategory then Name
+    services.sort((a, b) => {
+        const catA = a.category || 'General';
+        const catB = b.category || 'General';
+        if (catA !== catB) return catA.localeCompare(catB);
+        return a.name.localeCompare(b.name);
     });
-}
-
-function renderTable(services) {
-    const tbody = document.getElementById('services-table-body');
-    tbody.innerHTML = '';
-    
-    // Sort by Name
-    services.sort((a, b) => a.name.localeCompare(b.name));
 
     services.forEach(data => {
         const row = `
             <tr>
+                <td><span class="badge bg-secondary">${data.category || 'General'}</span></td>
                 <td class="fw-bold">${data.name}</td>
                 <td>${data.price}</td>
                 <td class="text-end">
@@ -209,10 +224,11 @@ function renderTable(services) {
 // Save Service
 document.getElementById('save-service-btn').addEventListener('click', () => {
     const id = document.getElementById('service-id').value;
+    const category = document.getElementById('service-category').value || 'General';
     const name = document.getElementById('service-name').value;
     const price = document.getElementById('service-price').value;
 
-    const data = { name, price };
+    const data = { category, name, price };
 
     if(id) {
         db.collection("pricing_services").doc(id).update(data).then(() => {
@@ -234,11 +250,53 @@ window.deleteService = (id) => {
     }
 };
 
+// Reset to Defaults (Clear Database)
+window.resetToDefaults = () => {
+    if(!confirm('DANGER: This will delete ALL Services from the Database.\nThe website will revert to its original static HTML styling.\nAre you sure completely remove the dynamic pricing?')) return;
+    
+    document.getElementById('loading-spinner').style.display = 'block';
+    
+    db.collection("pricing_services").get().then(snapshot => {
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        return batch.commit();
+    }).then(() => {
+        alert('Database Cleared. Website will now use default static HTML.');
+        loadServices();
+    }).catch(err => {
+        alert('Error: ' + err.message);
+        document.getElementById('loading-spinner').style.display = 'none';
+    });
+};
+
+// Re-Import (Reset Data)
+window.reimportDefaults = () => {
+    if(!confirm('This will DELETE all current data and re-import from the website source.\nUseful for resetting after mistakes.\nContinue?')) return;
+    
+    document.getElementById('loading-spinner').style.display = 'block';
+    
+    // First clear
+    db.collection("pricing_services").get().then(snapshot => {
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        return batch.commit();
+    }).then(() => {
+        // Then Import
+        return importServices(true);
+    });
+};
+
+
 // Edit Service Helper
 window.editService = (id) => {
     const service = allServices.find(s => s.id === id);
     if(service) {
         document.getElementById('service-id').value = id;
+        document.getElementById('service-category').value = service.category || '';
         document.getElementById('service-name').value = service.name;
         document.getElementById('service-price').value = service.price;
         new bootstrap.Modal(document.getElementById('addServiceModal')).show();
@@ -251,7 +309,7 @@ async function importServices(auto = false) {
     
     // Show loading status if it's an auto-import
     if (auto) {
-         document.getElementById('status-msg').innerText = "First-time setup: Importing current pricing from website...";
+         document.getElementById('status-msg').innerText = "Importing current pricing from website...";
          document.getElementById('status-msg').style.display = "block";
     }
 
@@ -269,7 +327,36 @@ async function importServices(auto = false) {
 
         tables.forEach((table, index) => {
             const rows = table.querySelectorAll('tr');
-            rows.forEach(row => {
+            let currentCategory = "General";
+            
+            // Check First Row for Category
+            if(rows.length > 0) {
+                 const firstCells = rows[0].querySelectorAll('td');
+                 if(firstCells.length > 0) {
+                     // Check if it's a category header
+                     const text = firstCells[0].textContent.trim();
+                     if (text && text === text.toUpperCase() && text.length > 3) {
+                         currentCategory = text;
+                     }
+                 }
+            }
+            
+            rows.forEach((row, rIndex) => {
+                // If we used first row as category, skip it as a service? 
+                // Let's keep it if it has a price.
+                const cells = row.querySelectorAll('td');
+                if(cells.length >= 1) {
+                    let name = cells[0].textContent.trim();
+                    let price = cells.length > 1 ? cells[1].textContent.trim() : '';
+
+                    name = name.replace(/\s+/g, ' '); 
+
+                    // Skip the row if it IS the category header and has no price (or price is quantity like 5QTs)
+                    if (name === currentCategory && (price === '' || price.includes('QT'))) return;
+                    
+                    if(name && !name.includes('Service') && name.length < 50) { 
+                        const newRef = db.collection("pricing_services").doc();
+                        batch.set(newRef, { name, price, category: currentCategory
                 const cells = row.querySelectorAll('td');
                 if(cells.length >= 1) {
                     let name = cells[0].textContent.trim();
