@@ -173,15 +173,20 @@
         console.log('Sending Payload with ' + (payload.attachments ? payload.attachments.length : 0) + ' attachments.');
 
         // 1. Save to Firebase
-        if (typeof firebase !== 'undefined' && firebase.apps.length) {
-            const db = firebase.firestore();
-            // Saving full data including attachments as requested
-            // Note: Firestore has a 1MB limit per document. 
-            // Large files might fail or need Storage.
-            
-            db.collection("form_submissions").add(data)
-              .then(() => console.log("Saved to Firestore"))
-              .catch(err => console.error("Firestore Error:", err));
+        // Check if firebase is available AND firestore is loaded
+        if (typeof firebase !== 'undefined' && firebase.apps.length && typeof firebase.firestore === 'function') {
+            try {
+                const db = firebase.firestore();
+                // Saving full data including attachments as requested
+                // Note: Firestore has a 1MB limit per document. 
+                // Large files might fail or need Storage.
+                
+                db.collection("form_submissions").add(data)
+                  .then(() => console.log("Saved to Firestore"))
+                  .catch(err => console.error("Firestore Error:", err));
+            } catch (err) {
+                console.warn("Firestore initialization failed:", err);
+            }
         }
 
         // 2. Send to Google Apps Script
