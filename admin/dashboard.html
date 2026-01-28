@@ -296,65 +296,58 @@ window.editService = (id) => {
 
 // Import Services Logic
 async function importServices(auto = false) {
-    const targetUrl = 'https://qualitytirelube.com/pricing/';
-    if(!auto && !confirm(`This will fetch content from the LIVE website (${targetUrl}) and ADD it to the database. Duplicates might occur. Continue?`)) return;
+    if(!auto && !confirm('This will RESET the database to the Hardcoded Defaults (Oil, Brakes, Tires). Continue?')) return;
     
-    // Show loading status if it's an auto-import
     if (auto) {
-         document.getElementById('status-msg').innerText = "Importing current pricing from live website...";
+         document.getElementById('status-msg').innerText = "Setting up default services...";
          document.getElementById('status-msg').style.display = "block";
     }
 
     try {
-        // Use corsproxy.io to bypass CORS when fetching from external domain
-        const response = await fetch('https://corsproxy.io/?' + encodeURIComponent(targetUrl));
-        
-        if (!response.ok) throw new Error('Could not load pricing page.');
-        
-        const text = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, 'text/html');
-        
-        const tables = doc.querySelectorAll('table');
+        const defaultServices = [
+            // Oil Changes
+            { name: "Mobil 1 (Full Synthetic)", price: "$96.99 10k/Mi" },
+            { name: "Mobile Synthetic", price: "$74.99 7k/Mi" },
+            { name: "Delvac 1300 (Diesel)", price: "$109.99 7K/Mi" },
+            { name: "Delvac 15w40 (Diesel)", price: "$149.99 12K/Mi" },
+            { name: "Delvac 1 5w40 (Diesel)", price: "$149.99 12K/Mi" },
+            { name: "Wiper Blades", price: "$12.99/PC" },
+
+            // Brakes
+            { name: "Brake Pads - Cars/SUV (Per Axle)", price: "$178.48*" },
+            { name: "Brake Pads - Heavy Duty (Per Axle)", price: "$232.52*" },
+
+            // Tires
+            { name: "Tire Repair", price: "$25.99" },
+            { name: "Tire Rotation", price: "$19.99" },
+            { name: "Rotate & Balance", price: "$43.99" },
+            { name: "33+ Tire Rotation", price: "$34.99" },
+            { name: "33+ Rotate & Balance", price: "$83.99" },
+            { name: "Mount/Balance", price: "$24.99/TIRE" },
+            { name: "Oversized Mount/Balance", price: "$34.99/Tire" },
+            { name: "Reversed Mount", price: "+15%" },
+            { name: "TPMS Sensor", price: "$42.99" }
+        ];
+
         let count = 0;
         const batch = db.batch();
 
-        tables.forEach((table, index) => {
-            const rows = table.querySelectorAll('tr');
-            
-            rows.forEach((row, rIndex) => {
-                const cells = row.querySelectorAll('td');
-                if(cells.length >= 1) {
-                    let name = cells[0].textContent.trim();
-                    let price = cells.length > 1 ? cells[1].textContent.trim() : '';
-
-                    name = name.replace(/\s+/g, ' '); 
-
-                    // Skip likely headers (ALL CAPS names usually, or if price is '5QTs' or similar quantity indicator)
-                    if (name === name.toUpperCase() && name.length > 3 && (price === '' || price.includes('QT') || price.includes('/PC'))) return;
-                    
-                    if(name && !name.includes('Service') && name.length < 50) { 
-                        const newRef = db.collection("pricing_services").doc();
-                        batch.set(newRef, { name, price });
-                        count++;
-                    }
-                }
-            });
+        defaultServices.forEach(service => {
+            const newRef = db.collection("pricing_services").doc();
+            batch.set(newRef, service);
+            count++;
         });
 
-        if(count > 0) {
-            await batch.commit();
-            if(auto) {
-                document.getElementById('status-msg').className = "alert alert-success";
-                document.getElementById('status-msg').innerText = `Setup Complete! Imported ${count} services.`;
-                setTimeout(() => document.getElementById('status-msg').style.display='none', 5000);
-            } else {
-                alert(`Successfully imported ${count} services!`);
-            }
-            loadServices();
+        await batch.commit();
+        
+        if(auto) {
+            document.getElementById('status-msg').className = "alert alert-success";
+            document.getElementById('status-msg').innerText = `Setup Complete! Added ${count} default services.`;
+            setTimeout(() => document.getElementById('status-msg').style.display='none', 5000);
         } else {
-            console.warn('No services found to import.');
+            alert(`Successfully added ${count} default services!`);
         }
+        loadServices();
 
     } catch (e) {
         console.error('Error importing:', e);
