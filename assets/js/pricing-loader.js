@@ -111,40 +111,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
       </div>`;
 
-      // Injection Logic - Clean Sweep of Old Tables
+      // Injection Logic - Target the parent container to clear ALL old columns (Oil, Brakes, Tires)
       const main = document.getElementById("page-content");
       if (main) {
-        // Find ALL sections that might contain old pricing tables
-        // Targeting specific class seen in HTML: .us_custom_0490361b
-        // Also targeting generic wrappers if the specific class isn't unique enough
+        // Find the "Oil" column which gives us a handle to the row
+        const oilCol = main.querySelector(".us_custom_0490361b");
         
-        const targets = main.querySelectorAll(".us_custom_0490361b, .wpb_text_column table");
-        let injected = false;
-
-        // Strategy: Empty ALL found targets. Inject content into the first valid container found.
-        
-        // 1. Identify the container we want to use (First match)
-        let primaryContainer = main.querySelector(".us_custom_0490361b");
-        
-        // Fallback: search for any wpb content wrapper with a table
-        if (!primaryContainer) {
-             const tables = main.querySelectorAll("table");
-             if(tables.length > 0) primaryContainer = tables[0].closest(".wpb_wrapper") || tables[0].closest(".wpb_text_column");
-        }
-
-        // 2. Clear known "Old Price" areas
-        // We iterate specifically over the class matches to clear them out
-        main.querySelectorAll(".us_custom_0490361b").forEach(el => el.innerHTML = "");
-
-        // 3. Inject into Primary
-        if (primaryContainer) {
-            // If we just cleared it, it's empty, perfect.
-            primaryContainer.innerHTML = newHtml;
-            injected = true;
+        if (oilCol && oilCol.parentElement) {
+            const wrapper = oilCol.parentElement; // The .w-hwrapper or row container
+             
+             // Ensure the wrapper allows full width and flex flow
+             wrapper.style.display = "block"; // Reset any existing flex that might constrain width
+             wrapper.style.maxWidth = "100%";
+             
+             // Replace ALL children (Oil, old Brakes, Tires) with our single integrated component
+             wrapper.innerHTML = newHtml;
         } else {
-            console.warn("Could not find specific container to replace. Appending to main.");
-            // Last resort
-            main.innerHTML = newHtml + main.innerHTML; // Prepend? Or append?
+             // Fallback if structure changes
+             const tables = main.querySelectorAll("table");
+             if(tables.length > 0) {
+                 const container = tables[0].closest(".wpb_wrapper") || tables[0].closest(".vc_column-inner");
+                 if(container) container.innerHTML = newHtml;
+             }
         }
       }
     })
