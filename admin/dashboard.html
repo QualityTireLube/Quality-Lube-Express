@@ -342,8 +342,6 @@ async function importServices(auto = false) {
             }
             
             rows.forEach((row, rIndex) => {
-                // If we used first row as category, skip it as a service? 
-                // Let's keep it if it has a price.
                 const cells = row.querySelectorAll('td');
                 if(cells.length >= 1) {
                     let name = cells[0].textContent.trim();
@@ -356,17 +354,7 @@ async function importServices(auto = false) {
                     
                     if(name && !name.includes('Service') && name.length < 50) { 
                         const newRef = db.collection("pricing_services").doc();
-                        batch.set(newRef, { name, price, category: currentCategory
-                const cells = row.querySelectorAll('td');
-                if(cells.length >= 1) {
-                    let name = cells[0].textContent.trim();
-                    let price = cells.length > 1 ? cells[1].textContent.trim() : '';
-
-                    name = name.replace(/\s+/g, ' '); 
-
-                    if(name && !name.includes('Service') && name.length < 50) { 
-                        const newRef = db.collection("pricing_services").doc();
-                        batch.set(newRef, { name, price });
+                        batch.set(newRef, { name, price, category: currentCategory });
                         count++;
                     }
                 }
