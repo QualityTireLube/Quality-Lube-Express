@@ -76,38 +76,43 @@ document.addEventListener("DOMContentLoaded", function () {
       };
 
       let newHtml = `
-      <div class="dynamic-pricing-container" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; max-width: 1200px; margin: 0 auto; padding: 20px;">
+      <div class="dynamic-pricing-container" style="display: flex; justify-content: center; max-width: 500px; margin: 0 auto; padding: 20px;">
         
-        <!-- Left Card (Oil) -->
-        <div class="pricing-card" style="background: white; border-radius: 15px; padding: 25px 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); flex: 1; min-width: 300px;">
-           ${renderOilCol(cats['Oil'])}
-        </div>
+        <!-- Single Integrated Card -->
+        <div class="pricing-card" style="background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; overflow: hidden;">
+           
+           <!-- Top Section: Oil -->
+           <div style="padding: 25px 30px;">
+             ${renderOilCol(cats['Oil'])}
+           </div>
 
-        <!-- Center Card (Brakes - Dark) -->
-        <div class="pricing-card-dark" style="background: url('../assets/img/pricing-technet-bg-cl-01.jpg') #1a1a1a; background-size: cover; border-radius: 4px; padding: 0; flex: 1; min-width: 300px; position: relative; display: flex; flex-direction: column;">
-            <div style="background: rgba(0,0,0,0.6); padding: 25px 30px; height: 100%; display: flex; flex-direction: column; align-items: center;">
-                <div style="width: 100%; text-align: center; border-bottom: 1px solid white; margin-bottom: 20px;">
-                    <h3 style="color: white; margin: 0 auto; padding-bottom: 5px; display: inline-block; border-bottom: 3px solid white; margin-bottom: -2px;">Brakes</h3>
+           <!-- Middle Section: Brakes (Dark) -->
+           <div class="pricing-card-dark" style="background: url('../assets/img/pricing-technet-bg-cl-01.jpg') #1a1a1a; background-size: cover; position: relative;">
+                <div style="background: rgba(0,0,0,0.6); padding: 25px 30px; display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 100%; text-align: center; border-bottom: 1px solid white; margin-bottom: 20px;">
+                        <h3 style="color: white; margin: 0 auto; padding-bottom: 5px; display: inline-block; border-bottom: 3px solid white; margin-bottom: -2px;">Brakes</h3>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: auto;">
+                        <tbody>
+                            ${genRowsDark(cats['Brakes'])}
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 20px; text-align: center; color: white; font-size: 0.85em; font-weight: bold; font-style: italic; letter-spacing: 1px;">*PRICES FOR MOST CARS/TRUCKS</div>
+                    <div style="margin-top: 30px; text-align: center;">
+                        <img src="../assets/img/technet-warranty-logo.png" style="max-width: 180px;"> 
+                    </div>
                 </div>
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: auto;">
-                    <tbody>
-                        ${genRowsDark(cats['Brakes'])}
-                    </tbody>
-                </table>
-                <div style="margin-top: 20px; text-align: center; color: white; font-size: 0.85em; font-weight: bold; font-style: italic; letter-spacing: 1px;">*PRICES FOR MOST CARS/TRUCKS</div>
-                <div style="margin-top: 30px; text-align: center;">
-                     <img src="../assets/img/technet-warranty-logo.png" style="max-width: 180px;"> 
-                </div>
-            </div>
-        </div>
+           </div>
 
-        <!-- Right Card (Tires) -->
-        <div class="pricing-card" style="background: white; border-radius: 15px; padding: 25px 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); flex: 1; min-width: 300px;">
-           <table style="width: 100%; border-collapse: collapse;">
-             <tbody>
-                ${genRows(cats['Tires'])}
-             </tbody>
-           </table>
+           <!-- Bottom Section: Tires -->
+           <div style="padding: 25px 30px;">
+               <table style="width: 100%; border-collapse: collapse;">
+                 <tbody>
+                    ${genRows(cats['Tires'])}
+                 </tbody>
+               </table>
+           </div>
+
         </div>
 
       </div>`;
