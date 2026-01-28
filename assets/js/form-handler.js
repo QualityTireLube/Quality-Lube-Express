@@ -138,6 +138,16 @@
         
         // Log what we're sending for debugging
         console.log('Sending JSON payload:', JSON.stringify(payload, null, 2));
+
+        // Save to Firestore (Fire and forget, or handle independently)
+        if (typeof firebase !== 'undefined' && firebase.apps.length) {
+            const db = firebase.firestore();
+            db.collection("form_submissions").add(data)
+              .then(() => console.log("Saved to Firestore"))
+              .catch(err => console.error("Firestore Error:", err));
+        } else {
+             console.warn("Firebase not initialized; skipping Firestore save.");
+        }
         
         // Send as JSON - Google Apps Script expects JSON.parse(e.postData.contents)
         fetch(GOOGLE_SCRIPT_URL, {
