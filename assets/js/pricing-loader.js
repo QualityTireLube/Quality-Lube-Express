@@ -31,13 +31,13 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       // Helper to generate rows for Center/Right
-      const genRows = (list) => list.map(s => `<tr><td style="padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">${s.name}</td><td style="text-align: right; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-weight: bold;">${s.price}</td></tr>`).join('');
+      const genRows = (list) => list.map(s => `<tr><td style="text-align: left; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">${s.name}</td><td style="text-align: right; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-weight: bold;">${s.price}</td></tr>`).join('');
       const genRowsDark = (list) => list.map(s => {
           // If description row (empty price or trimmed empty)
           if (!s.price || s.price.trim() === '') {
-              return `<tr><td colspan="2" style="padding: 2px 0 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #ddd; font-size: 0.9em;">${s.name}</td></tr>`;
+              return `<tr><td colspan="2" style="text-align: left; padding: 2px 0 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: #ddd; font-size: 0.9em;">${s.name}</td></tr>`;
           }
-          return `<tr><td style="padding: 12px 0 2px 0; color: #fff; font-size: 1.1em;">${s.name}</td><td style="text-align: right; padding: 12px 0 2px 0; font-weight: bold; color: #fff; font-size: 1.1em;">${s.price}</td></tr>`;
+          return `<tr><td style="text-align: left; padding: 12px 0 2px 0; color: #fff; font-size: 1.1em;">${s.name}</td><td style="text-align: right; padding: 12px 0 2px 0; font-weight: bold; color: #fff; font-size: 1.1em;">${s.price}</td></tr>`;
       }).join('');
 
       // Formatter for Left Col (Oil Layout with headers)
@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         ${subtitle ? `<span style="font-size: 0.85em; color: #666;">${subtitle}</span>` : ''}
                     </div>
                     <table style="width:100%;"><tbody>
-                        ${items.map(s => `<tr><td style="padding:5px 0; font-size: 0.95em;">${s.name}</td><td style="text-align:right; font-weight:bold; font-size: 0.95em;">${s.price}</td></tr>`).join('')}
+                        ${items.map(s => `<tr><td style="text-align: left; padding:5px 0; font-size: 0.95em;">${s.name}</td><td style="text-align:right; font-weight:bold; font-size: 0.95em;">${s.price}</td></tr>`).join('')}
                     </tbody></table>
                 </div>`;
           };
@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function () {
         
            <!-- Left Column: Oil & Wipers -->
            <div class="pricing-col" style="flex: 1; min-width: 300px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); padding: 25px;">
-                <h3 style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">Oil & Lube</h3>
+                <h3 style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">Oil</h3>
                 ${renderOilCol(cats['Oil'])}
            </div>
 
@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
            <!-- Right Column: Tires -->
            <div class="pricing-col" style="flex: 1; min-width: 300px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); padding: 25px;">
-               <h3 style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">Tires & Services</h3>
+               <h3 style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">Tires</h3>
                <table style="width: 100%; border-collapse: collapse;">
                  <tbody>
                     ${genRows(cats['Tires'])}
