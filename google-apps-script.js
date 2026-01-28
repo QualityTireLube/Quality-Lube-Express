@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Google Apps Script for Quality Lube Express Form Handling
  * 
  * Instructions:
@@ -7,11 +7,12 @@
  * 3. Paste this code into Code.gs (replacing existing code)
  * 4. Save
  * 5. Deploy -> New Deployment -> Web App -> "Me" -> "Anyone" -> Deploy
- * 6. Update the URL in assets/js/form-handler.js if you created a NEW project.
+ * 6. Update the URL in assets/js/form-handler.js 
  */
 
 // CONFIGURATION
-const EMAIL_RECIPIENT = "qualitylubezachary@gmail.com"; // Change to correct email
+// const EMAIL_RECIPIENT = "qualitylubezachary@gmail.com"; 
+const EMAIL_RECIPIENT = "stanj@bryansplaceautocenter.com"; // Updated for testing as requested or revert to production
 const EMAIL_SUBJECT_PREFIX = "[Quality Lube Web Form] ";
 
 function doPost(e) {
@@ -19,115 +20,116 @@ function doPost(e) {
     const postData = JSON.parse(e.postData.contents);
     
     // Default Values
-    const site = postData.site || "Quality Lube Express";
-    const formName = postData.form_name || postData.form_id || "Unknown Form";
-    const fields = postData.fields || {};
+    const site = postData.site_domain || postData.site || "Quality Lube Express";
+    const formType = postData.form_type || "Contact";
     
-    // 3. Construct Email Body (HTML)
-    let subject = EMAIL_SUBJECT_PREFIX + formName;
+    // 1. Prepare Attachments
+    const emailAttachments = [];
+    if (postData.attachments && Array.isArray(postData.attachments)) {
+      postData.attachments.forEach(file => {
+        if (file.content && file.name && file.type) {
+          const checkBlob = Utilities.newBlob(Utilities.base64Decode(file.content), file.type, file.name);
+          emailAttachments.push(checkBlob);
+        }
+      });
+    }
+
+    // 2. Construct Email Body (HTML)
+    let subject = EMAIL_SUBJECT_PREFIX + formType.charAt(0).toUpperCase() + formType.slice(1);
     
     // HTML Header with Logo/Title style
-    // Using Red/Dark theme for Quality Lube
-    let htmlBody = `
+    let htmlBody = \
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 5px; overflow: hidden;">
         <div style="background-color: #ffffff; padding: 20px; text-align: center; border-bottom: 3px solid #D32F2F;">
-          <!-- Using the file path from your site assets (assuming site is live) -->
-          <img src="https://qualitytirelube.com/assets/img/logo-01.png" alt="${site}" style="max-width: 250px; height: auto;">
+          <img src="https://qualitytirelube.com/assets/img/logo-01.png" alt="\" style="max-width: 250px; height: auto;">
         </div>
         <div style="background-color: #D32F2F; padding: 15px; color: #ffffff; text-align: center;">
-          <h2 style="margin: 0; font-size: 20px;">New Website Form Submission</h2>
-          <p style="margin: 5px 0 0; opacity: 0.9;">${formName}</p>
+          <h2 style="margin: 0; font-size: 20px;">New Form Submission</h2>
+          <p style="margin: 5px 0 0; opacity: 0.9;">\</p>
         </div>
         
         <div style="padding: 20px; background-color: #ffffff;">
           <table style="width: 100%; border-collapse: collapse;">
-    `;
+    \;
     
-    // Text Body fallback
-    let textBody = "";
-    textBody += "New submission from " + site + "\n";
-    textBody += "Form: " + formName + "\n";
-    textBody += "Date: " + new Date().toLocaleString() + "\n";
-    textBody += "----------------------------------------\n\n";
+    // Text version fallback
+    let textBody = "New submission from " + site + "\\n";
+    textBody += "Form: " + formType + "\\n";
+    textBody += "Date: " + new Date().toLocaleString() + "\\n\\n";
     
-    // Add all dynamic fields
-    // Filter out internal fields if flattened
-    const internalFields = ['site', 'form_id', 'form_name', 'timestamp', 'page_url', 'fields', 'spam_check'];
+    // Fields to Ignore in Table
+    const ignoreKeys = ['site', 'site_domain', 'form_type', 'timestamp', 'page_url', 'attachments', 'raw_data'];
     
-    // Handle both nested 'fields' and flattened structure
-    let displayFields = {};
-    if (Object.keys(fields).length > 0) {
-      displayFields = fields;
-    } else {
-       for (const key in postData) {
-        if (internalFields.indexOf(key) === -1) {
-          displayFields[key] = postData[key];
-        }
-      }
-    }
-
+    // Add specific fields first for order
+    const priorityFields = ['name', 'email', 'phone', 'message'];
+    
     let isAlternate = false;
-    for (const key in displayFields) {
-      let value = displayFields[key];
+    
+    // Helper to add row
+    function addRow(key, value) {
+      if (!value) return;
+      let displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
       let rowBg = isAlternate ? "#f9f9f9" : "#ffffff";
       
-      // HTML Row
-      htmlBody += `
-        <tr style="background-color: ${rowBg}; border-bottom: 1px solid #eeeeee;">
-          <td style="padding: 12px; font-weight: bold; color: #333333; width: 40%;">${key}</td>
-          <td style="padding: 12px; color: #555555;">${value}</td>
+      htmlBody += \
+        <tr style="background-color: \; border-bottom: 1px solid #eeeeee;">
+          <td style="padding: 12px; font-weight: bold; color: #333333; width: 30%;">\</td>
+          <td style="padding: 12px; color: #555555; white-space: pre-wrap;">\</td>
         </tr>
-      `;
+      \;
       
-      // Text Row
-      textBody += key + ": " + value + "\n";
-      
+      textBody += "\: \\\n";
       isAlternate = !isAlternate;
     }
     
-    htmlBody += `
+    // 1. Add Priority Fields
+    priorityFields.forEach(key => {
+        if (postData[key]) {
+            addRow(key, postData[key]);
+        }
+    });
+    
+    // 2. Add Remaining Fields
+    for (const key in postData) {
+        if (!ignoreKeys.includes(key) && !priorityFields.includes(key)) {
+            addRow(key, postData[key]);
+        }
+    }
+
+    // Close HTML
+    htmlBody += \
           </table>
-          
           <div style="margin-top: 25px; font-size: 12px; color: #999999; text-align: center; border-top: 1px solid #eeeeee; padding-top: 15px;">
-            Submitted on ${new Date().toLocaleString()}<br>
-            Page: <a href="${postData.page_url}" style="color: #D32F2F;">${postData.page_url || "Unknown"}</a>
+            Submitted on \<br>
+            Page: <a href="\" style="color: #D32F2F;">\</a>
           </div>
         </div>
       </div>
-    `;
+    \;
+    
+    textBody += "\\n----------------------------------------\\n";
+    textBody += "Page: " + (postData.page_url || "Unknown");
 
-    textBody += "\n----------------------------------------\n";
-    textBody += "Submitted from: " + (postData.page_url || "Unknown URL");
-    
     // 4. Send Email
-    // Prefer the 'Email' field for Reply-To if it exists
-    const replyTo = displayFields['Email'] || displayFields['email'] || postData.email;
-    const options = {
-      htmlBody: htmlBody
-    };
-    if (replyTo && replyTo.includes('@')) {
-      options.replyTo = replyTo;
-    }
-    
     MailApp.sendEmail({
       to: EMAIL_RECIPIENT,
       subject: subject,
-      body: textBody, 
       htmlBody: htmlBody,
-      replyTo: options.replyTo
+      body: textBody, // Fallback
+      attachments: emailAttachments
     });
-    
-    // 5. Return Success JSON
-    return ContentService.createTextOutput(JSON.stringify({ 'result': 'success' }))
-      .setMimeType(ContentService.MimeType.JSON);
-      
-  } catch (error) {
-    console.error(error);
-    return ContentService.createTextOutput(JSON.stringify({ 'result': 'error', 'error': error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
 
-function doGet(e) {
-  return ContentService.createTextOutput("Quality Lube Form Handler is active.");
+    // 5. Return JSON Success
+    return ContentService.createTextOutput(JSON.stringify({ 
+      "status": "success", 
+      "message": "Email sent successfully" 
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) {
+    Logger.log(error);
+    return ContentService.createTextOutput(JSON.stringify({ 
+      "status": "error", 
+      "message": error.toString() 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
 }

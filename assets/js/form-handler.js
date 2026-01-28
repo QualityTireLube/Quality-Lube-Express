@@ -1,16 +1,17 @@
-/**
+﻿/**
  * Quality Lube Express - Simple Form Handler
  * Sends form submissions directly to Google Apps Script
+ * Supports file attachments via Base64 encoding.
  */
 
 (function() {
     'use strict';
     
+    // Google Apps Script Web App URL
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxlDZg38Hp2LO46GQgOAS2ch1SX3OjNko9nfxCQJDGsvkx1ML_HlKQTpeQwZQhHeGVKg/exec';
     const SITE_DOMAIN = 'qualitytirelube.com';
     
     function init() {
-        // Wait for DOM to be ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', setupForms);
         } else {
@@ -19,43 +20,44 @@
     }
     
     function setupForms() {
-        // Find all WPForms forms
         const forms = document.querySelectorAll('form.wpforms-form');
-        
         forms.forEach(form => {
-            // Remove the wpforms-ajax-form class to prevent WPForms from handling it
             form.classList.remove('wpforms-ajax-form');
-            
-            // Add our submit handler
             form.addEventListener('submit', handleSubmit);
         });
-        
-        // Also disable WPForms JavaScript if it loaded
         disableWPForms();
     }
     
     function disableWPForms() {
-        // Neutralize WPForms settings only - do not delete the global object
-        // Deleting the global object causes errors when WPForms event listeners fire
         if (window.wpforms_settings) {
             window.wpforms_settings.ajaxurl = '';
         }
-
-        // Monkey-patch the wpforms object to stop it from trying to do backend stuff or validation
         if (window.wpforms) {
-             // Stop the annoying HTML dump in console (token update 404s)
             if (typeof window.wpforms.updateToken === 'function') {
                 window.wpforms.updateToken = function() { };
             }
-
-            // Prevent WPForms from trying to handle the submit or recaptcha
             if (typeof window.wpforms.submitHandler === 'function') {
                 window.wpforms.submitHandler = function(e) { return false; };
             }
         }
     }
     
-    function handleSubmit(e) {
+    // --- FILE HANDLING HELPERS ---
+    
+    function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve({
+                name: file.name,
+                type: file.type,
+                content: reader.result.split(',')[1] // Get base64 part
+            });
+            reader.onerror = error => reject(error);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function handleSubmit(e) {
         e.preventDefault();
         e.stopPropagation();
         
@@ -63,7 +65,6 @@
         const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
         const spinner = form.querySelector('.wpforms-submit-spinner');
         
-        // Show loading state
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.textContent = 'Sending...';
@@ -72,94 +73,123 @@
             spinner.style.display = 'inline';
         }
         
-        // Extract form data
-        const formData = extractFormData(form);
-        
-        // Send to Google Apps Script
-        sendToGoogleScript(formData, form, submitBtn, spinner);
+        try {
+            // Await the extraction of data (files take time to read)
+            const formData = await extractFormData(form);
+            sendToGoogleScript(formData, form, submitBtn, spinner);
+        } catch (error) {
+            console.error("Error preparing form data:", error);
+            showError(form, submitBtn, spinner, "Error preparing form data.");
+        }
     }
     
-    function extractFormData(form) {
+    async function extractFormData(form) {
         const data = {
             site: SITE_DOMAIN,
-            form_type: 'contact',
+            form_type: 'contact', 
             timestamp: new Date().toISOString(),
-            page_url: window.location.href
+            page_url: window.location.href,
+            attachments: [] // Array to hold file objects
         };
         
-        // Get all form inputs
-        const formData = new FormData(form);
+        if (form.getAttribute('data-form-name')) {
+            data.form_type = form.getAttribute('data-form-name').toLowerCase();
+        }
         
-        // Extract WPForms fields
+        const formData = new FormData(form);
+        const filePromises = [];
+
+        // Identify inputs and map them
         for (const [key, value] of formData.entries()) {
+            // Check if it's a file
+            if (value instanceof File) {
+                if (value.size > 0) {
+                    filePromises.push(readFileAsBase64(value));
+                }
+                continue; // Don't add file object to simple key values
+            }
+            
             if (!value) continue;
             
-            // First name
-            if (key.includes('[0][first]') || key.toLowerCase().includes('first')) {
-                data.first_name = value;
-            }
-            // Last name
-            else if (key.includes('[0][last]') || key.toLowerCase().includes('last')) {
-                data.last_name = value;
-            }
-            // Email
-            else if (key.includes('[1]') && !key.includes('[0]') || key.toLowerCase().includes('email')) {
-                if (value.includes('@')) {
-                    data.email = value;
-                }
-            }
-            // Phone
-            else if (key.includes('[3]') || key.toLowerCase().includes('phone') || key.toLowerCase().includes('tel')) {
-                data.phone = value;
-            }
-            // Message
-            else if (key.includes('[2]') || key.toLowerCase().includes('message') || key.toLowerCase().includes('comment')) {
-                data.message = value;
-            }
+            const k = key.toLowerCase();
+            
+            // Heuristic Mapping
+            if (k.includes('first') && k.includes('name')) data.first_name = value;
+            else if (k.includes('last') && k.includes('name')) data.last_name = value;
+            else if (k.includes('email')) data.email = value;
+            else if (k.includes('phone') || k.includes('tel')) data.phone = value;
+            else if (k.includes('address1')) data.address1 = value;
+            else if (k.includes('address2')) data.address2 = value;
+            else if (k.includes('city')) data.city = value;
+            else if (k.includes('state')) data.state = value;
+            else if (k.includes('postal') || k.includes('zip')) data.zip = value;
+            else if (k.includes('message') || k.includes('comment') || k.includes('[5]')) data.message = value; // Fallback for ID 5 (textarea)
         }
         
-        // Combine first and last name
-        if (data.first_name || data.last_name) {
+        // Wait for all files to be read
+        if (filePromises.length > 0) {
+            data.attachments = await Promise.all(filePromises);
+        }
+
+        // Combine Name if split
+        if ((data.first_name || data.last_name) && !data.name) {
             data.name = [data.first_name, data.last_name].filter(Boolean).join(' ');
         }
+        
+        // Generic "Full message" blob for email if fields don't map perfectly
+        let fullKeyValues = "";
+        for (const [key, value] of formData.entries()) {
+            if (!(value instanceof File)) {
+                fullKeyValues += ${key}: \n;
+            }
+        }
+        data.raw_data = fullKeyValues;
         
         return data;
     }
     
     function sendToGoogleScript(data, form, submitBtn, spinner) {
-        // Format data to match what Google Apps Script expects
+        // Construct Payload
         const payload = {
-            name: data.name || '',
-            email: data.email || '',
+            name: data.name || 'Unknown',
+            email: data.email || 'no-reply@qualitytirelube.com',
             phone: data.phone || '',
-            message: data.message || '',
-            site_domain: SITE_DOMAIN
+            message: data.message || data.raw_data || '',
+            site_domain: SITE_DOMAIN,
+            form_type: data.form_type,
+            // Pass attachments directly; Google Script must parse them
+            attachments: data.attachments 
         };
         
-        // Log what we're sending for debugging
-        console.log('Sending JSON payload:', JSON.stringify(payload, null, 2));
+        // Add extended address info to message if present
+        if (data.address1) {
+            const addressFunc = [data.address1, data.address2, data.city, data.state, data.zip].filter(Boolean).join(', ');
+            payload.message = Applicant Address: \n\nNotes:\n;
+        }
+        
+        console.log('Sending Payload with ' + (payload.attachments ? payload.attachments.length : 0) + ' attachments.');
 
-        // Save to Firestore (Fire and forget, or handle independently)
+        // 1. Save to Firebase
         if (typeof firebase !== 'undefined' && firebase.apps.length) {
             const db = firebase.firestore();
+            // Saving full data including attachments as requested
+            // Note: Firestore has a 1MB limit per document. 
+            // Large files might fail or need Storage.
+            
             db.collection("form_submissions").add(data)
               .then(() => console.log("Saved to Firestore"))
               .catch(err => console.error("Firestore Error:", err));
-        } else {
-             console.warn("Firebase not initialized; skipping Firestore save.");
         }
-        
-        // Send as JSON - Google Apps Script expects JSON.parse(e.postData.contents)
+
+        // 2. Send to Google Apps Script
         fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
         .then(() => {
-            console.log('Fetch completed (no-cors mode)');
+            console.log('Fetch completed');
             showSuccess(form, submitBtn, spinner);
         })
         .catch(error => {
@@ -169,70 +199,35 @@
     }
     
     function showSuccess(form, submitBtn, spinner) {
-        // Hide spinner
-        if (spinner) {
-            spinner.style.display = 'none';
-        }
-        
-        // Reset button
+        if (spinner) spinner.style.display = 'none';
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Submit';
         }
         
-        // Show success message
         const existingMsg = form.querySelector('.form-success-message');
-        if (existingMsg) {
-            existingMsg.remove();
-        }
+        if (existingMsg) existingMsg.remove();
         
         const successDiv = document.createElement('div');
         successDiv.className = 'form-success-message';
         successDiv.style.cssText = 'background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-top: 15px; text-align: center;';
-        successDiv.innerHTML = '<strong>Thank you!</strong> Your message has been sent. We\'ll get back to you soon.';
+        successDiv.innerHTML = '<strong>Success!</strong> Your application has been sent.';
         
         form.appendChild(successDiv);
-        
-        // Clear form
         form.reset();
         
-        // Remove success message after 5 seconds
-        setTimeout(() => {
-            successDiv.remove();
-        }, 5000);
+        setTimeout(() => { successDiv.remove(); }, 8000);
     }
     
-    function showError(form, submitBtn, spinner, message) {
-        // Hide spinner
-        if (spinner) {
-            spinner.style.display = 'none';
-        }
-        
-        // Reset button
+    function showError(form, submitBtn, spinner, msg) {
+        if (spinner) spinner.style.display = 'none';
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Submit';
         }
-        
-        // Show error message
-        const existingMsg = form.querySelector('.form-error-message');
-        if (existingMsg) {
-            existingMsg.remove();
-        }
-        
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'form-error-message';
-        errorDiv.style.cssText = 'background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-top: 15px; text-align: center;';
-        errorDiv.innerHTML = '<strong>Error:</strong> ' + (message || 'Failed to send message. Please try again or call us directly.');
-        
-        form.appendChild(errorDiv);
-        
-        // Remove error message after 5 seconds
-        setTimeout(() => {
-            errorDiv.remove();
-        }, 5000);
+        alert(msg);
     }
     
-    // Start
     init();
+
 })();
