@@ -119,69 +119,35 @@
     }
     
     function sendToGoogleScript(data, form, submitBtn, spinner) {
+        // Format data to match what Google Apps Script expects
+        const payload = {
+            name: data.name || '',
+            email: data.email || '',
+            phone: data.phone || '',
+            message: data.message || '',
+            site_domain: SITE_DOMAIN
+        };
+        
         // Log what we're sending for debugging
-        console.log('Sending form data:', JSON.stringify(data, null, 2));
+        console.log('Sending JSON payload:', JSON.stringify(payload, null, 2));
         
-        // Create URL with parameters
-        const params = new URLSearchParams();
-        for (const [key, value] of Object.entries(data)) {
-            if (value) params.append(key, value);
-        }
-        
-        console.log('POST body:', params.toString());
-        
-        // Try fetch first - Google Apps Script should handle CORS if configured correctly
+        // Send as JSON - Google Apps Script expects JSON.parse(e.postData.contents)
         fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json',
             },
-            body: params.toString()
+            body: JSON.stringify(payload)
         })
         .then(() => {
-            console.log('Fetch completed (no-cors mode - cannot verify response)');
-            // Since no-cors doesn't let us read the response, also send via GET as backup
-            sendViaGet(data);
+            console.log('Fetch completed (no-cors mode)');
             showSuccess(form, submitBtn, spinner);
         })
         .catch(error => {
             console.error('Form submission error:', error);
-            // Try alternative method
-            sendViaImage(data, form, submitBtn, spinner);
+            showError(form, submitBtn, spinner, 'Failed to send. Please try again.');
         });
-    }
-    
-    function sendViaGet(data) {
-        // Also send via GET request as a backup
-        const params = new URLSearchParams();
-        for (const [key, value] of Object.entries(data)) {
-            if (value) params.append(key, value);
-        }
-        const url = GOOGLE_SCRIPT_URL + '?' + params.toString();
-        console.log('Backup GET request to:', url);
-        
-        // Use a hidden iframe to send GET request
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = url;
-        document.body.appendChild(iframe);
-        setTimeout(() => iframe.remove(), 5000);
-    }
-    
-    function sendViaImage(data, form, submitBtn, spinner) {
-        // Fallback: send via image request (GET)
-        const params = new URLSearchParams();
-        for (const [key, value] of Object.entries(data)) {
-            if (value) params.append(key, value);
-        }
-        
-        const img = new Image();
-        img.onload = img.onerror = function() {
-            // Either way, show success (we can't tell with this method)
-            showSuccess(form, submitBtn, spinner);
-        };
-        img.src = GOOGLE_SCRIPT_URL + '?' + params.toString();
     }
     
     function showSuccess(form, submitBtn, spinner) {
