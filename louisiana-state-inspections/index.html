@@ -163,6 +163,82 @@ img.wp-smiley, img.emoji {
     font-style: italic !important;
 }
 
+/* Nested Sub-Accordion Styles */
+.la-sub-accordion {
+    margin-top: 15px !important;
+}
+
+.la-sub-accordion-item {
+    margin-bottom: 8px !important;
+    border: 1px solid #d0d0d0 !important;
+    border-radius: 3px !important;
+    overflow: hidden !important;
+    background: #fff !important;
+}
+
+.la-sub-accordion-header {
+    background: #f0f0f0 !important;
+    color: #333 !important;
+    padding: 12px 15px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    transition: background 0.3s ease !important;
+    margin: 0 !important;
+    border: none !important;
+}
+
+.la-sub-accordion-header:hover {
+    background: #e0e0e0 !important;
+}
+
+.la-sub-accordion-icon {
+    font-size: 18px !important;
+    transition: transform 0.3s ease !important;
+    flex-shrink: 0 !important;
+    margin-left: 10px !important;
+}
+
+.la-sub-accordion-item.active .la-sub-accordion-icon {
+    transform: rotate(180deg) !important;
+}
+
+.la-sub-accordion-content {
+    max-height: 0 !important;
+    overflow: hidden !important;
+    transition: max-height 0.4s ease !important;
+    background: #fafafa !important;
+}
+
+.la-sub-accordion-item.active .la-sub-accordion-content {
+    max-height: 2000px !important;
+}
+
+.la-sub-accordion-body {
+    padding: 15px !important;
+    line-height: 1.7 !important;
+    color: #333 !important;
+}
+
+.la-sub-accordion-body ul {
+    margin: 10px 0 !important;
+    padding-left: 25px !important;
+    list-style-type: disc !important;
+}
+
+.la-sub-accordion-body li {
+    margin-bottom: 8px !important;
+    color: #333 !important;
+}
+
+.la-sub-accordion-body p {
+    margin: 10px 0 !important;
+    color: #333 !important;
+}
+
 @media (max-width: 768px) {
     .la-accordion-header {
         font-size: 16px !important;
@@ -179,6 +255,15 @@ img.wp-smiley, img.emoji {
     
     .la-accordion {
         padding: 0 10px !important;
+    }
+    
+    .la-sub-accordion-header {
+        font-size: 14px !important;
+        padding: 10px 12px !important;
+    }
+    
+    .la-sub-accordion-body {
+        padding: 12px !important;
     }
 }
 </style>
@@ -259,16 +344,6 @@ img.wp-smiley, img.emoji {
     </div>
     <div class="la-accordion-content">
         <div class="la-accordion-body">
-            <h4>What Is a Readiness Test?</h4>
-            <p>Your vehicle has an onboard computer that self-tests emissions systems while you drive.</p>
-            <p>These tests are called <strong>readiness monitors</strong>.</p>
-            <p>The state inspection checks if these tests:</p>
-            <ul>
-                <li>Have run</li>
-                <li>Have passed</li>
-                <li>Show no active emissions problems</li>
-            </ul>
-            
             <h4>PASS:</h4>
             <ul>
                 <li>No Check Engine light</li>
@@ -284,79 +359,144 @@ img.wp-smiley, img.emoji {
             </ul>
             <p><strong>Clearing codes does not fix the problem — it resets the tests.</strong></p>
             
-            <h4>Why Readiness Tests Are NOT Ready (Most Common Reasons)</h4>
-            
-            <p><strong>Recent Repairs</strong></p>
-            <ul>
-                <li>Check Engine light was cleared</li>
-                <li>Emissions parts were replaced</li>
-                <li>Codes were reset after repairs</li>
-            </ul>
-            <p>➡️ The vehicle needs to be driven so the computer can re-test itself.</p>
-            
-            <p><strong>Battery Replacement or Disconnect</strong></p>
-            <ul>
-                <li>Battery replaced</li>
-                <li>Battery disconnected</li>
-                <li>Dead battery</li>
-            </ul>
-            <p>➡️ This resets the computer and wipes out readiness data.</p>
-            
-            <p><strong>Jump Starting the Vehicle</strong></p>
-            <ul>
-                <li>Jump starts can reset or interrupt computer memory</li>
-                <li>Voltage spikes can clear readiness status</li>
-            </ul>
-            <p>➡️ The system must re-run all tests.</p>
-            
-            <p><strong>Low Battery or Weak Charging System</strong></p>
-            <ul>
-                <li>Sluggish starts</li>
-                <li>Dim lights</li>
-                <li>Weak alternator or battery</li>
-            </ul>
-            <p>➡️ The computer may not run tests correctly.</p>
-            
-            <p><strong>Short Trips Only</strong></p>
-            <ul>
-                <li>Only driving short distances</li>
-                <li>No highway driving</li>
-                <li>No steady cruising speeds</li>
-            </ul>
-            <p>➡️ Some tests require highway speeds and full warm-up cycles.</p>
-            
-            <h4>How to Make Readiness Tests Run and Pass</h4>
-            <p>While every vehicle is different, most require:</p>
-            <ul>
-                <li>Cold start</li>
-                <li>City driving</li>
-                <li>Highway driving</li>
-                <li>Steady speeds</li>
-                <li>Normal acceleration and deceleration</li>
-            </ul>
-            <p>⏱️ This can take 50–100 miles or several drive cycles.</p>
-            
-            <h4>Important to Know</h4>
-            <ul>
-                <li>Driving longer does not guarantee readiness if a problem still exists</li>
-                <li>Clearing codes right before inspection almost always causes a failure</li>
-                <li>Readiness is computer-controlled, not inspector-controlled</li>
-            </ul>
-            
-            <h4>What We Can Do</h4>
-            <ul>
-                <li>Check readiness status before inspection</li>
-                <li>Identify which monitors are incomplete</li>
-                <li>Advise how to complete drive cycles</li>
-                <li>Diagnose issues preventing readiness</li>
-            </ul>
-            
-            <h4>Bottom Line</h4>
-            <p>If your vehicle fails for readiness:</p>
-            <ul>
-                <li>Nothing is "wrong" with the inspection</li>
-                <li>The vehicle just hasn't completed its self-tests yet</li>
-            </ul>
+            <!-- Nested Sub-Accordions -->
+            <div class="la-sub-accordion">
+                
+                <!-- Sub-Topic 1 -->
+                <div class="la-sub-accordion-item">
+                    <div class="la-sub-accordion-header">
+                        <span>What Is a Readiness Test?</span>
+                        <span class="la-sub-accordion-icon">▼</span>
+                    </div>
+                    <div class="la-sub-accordion-content">
+                        <div class="la-sub-accordion-body">
+                            <p>A readiness test is a self-check run by your vehicle's computer to verify emissions systems are working correctly. These tests run automatically while you drive. The state inspection checks whether these tests have run and passed.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sub-Topic 2 -->
+                <div class="la-sub-accordion-item">
+                    <div class="la-sub-accordion-header">
+                        <span>Readiness Monitors – What They Are &amp; What They Do</span>
+                        <span class="la-sub-accordion-icon">▼</span>
+                    </div>
+                    <div class="la-sub-accordion-content">
+                        <div class="la-sub-accordion-body">
+                            <p>Gasoline vehicles run multiple readiness monitors. Each monitor checks a specific emissions or engine system while you drive.</p>
+                            <ul>
+                                <li><strong>Misfire Monitor:</strong> Detects engine misfires that increase emissions.</li>
+                                <li><strong>Fuel System Monitor:</strong> Checks proper fuel delivery.</li>
+                                <li><strong>Comprehensive Components Monitor:</strong> Checks sensors and electrical components.</li>
+                                <li><strong>Catalyst Monitor:</strong> Verifies catalytic converter efficiency.</li>
+                                <li><strong>Heated Catalyst Monitor (if equipped):</strong> Checks heated catalytic converters.</li>
+                                <li><strong>EVAP Monitor:</strong> Detects fuel vapor leaks.</li>
+                                <li><strong>Secondary Air Monitor (if equipped):</strong> Checks cold-start air injection system.</li>
+                                <li><strong>Oxygen Sensor Monitor:</strong> Verifies oxygen sensor operation.</li>
+                                <li><strong>Oxygen Sensor Heater Monitor:</strong> Checks oxygen sensor heaters.</li>
+                                <li><strong>EGR / VVT Monitor:</strong> Verifies exhaust gas recirculation or valve timing systems.</li>
+                            </ul>
+                            <p><strong>Note:</strong> Not all vehicles have every monitor.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sub-Topic 3 -->
+                <div class="la-sub-accordion-item">
+                    <div class="la-sub-accordion-header">
+                        <span>Why Readiness Tests Are NOT Ready (Most Common Reasons)</span>
+                        <span class="la-sub-accordion-icon">▼</span>
+                    </div>
+                    <div class="la-sub-accordion-content">
+                        <div class="la-sub-accordion-body">
+                            <ul>
+                                <li>Repairs were done recently</li>
+                                <li>Check Engine light was cleared</li>
+                                <li>Battery was replaced or disconnected</li>
+                                <li>Vehicle was jump-started</li>
+                                <li>Weak or failing battery</li>
+                                <li>Sluggish or slow engine starts</li>
+                                <li>Short trips only (no highway driving)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sub-Topic 4 -->
+                <div class="la-sub-accordion-item">
+                    <div class="la-sub-accordion-header">
+                        <span>How to Make Readiness Tests Run and Pass</span>
+                        <span class="la-sub-accordion-icon">▼</span>
+                    </div>
+                    <div class="la-sub-accordion-content">
+                        <div class="la-sub-accordion-body">
+                            <p>While every vehicle is different, most require:</p>
+                            <ul>
+                                <li>Cold start</li>
+                                <li>City driving</li>
+                                <li>Highway driving</li>
+                                <li>Steady cruising speeds</li>
+                                <li>Normal acceleration and deceleration</li>
+                            </ul>
+                            <p><strong>Note:</strong> This usually takes 50–100 miles or several drive cycles.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sub-Topic 5 -->
+                <div class="la-sub-accordion-item">
+                    <div class="la-sub-accordion-header">
+                        <span>Important to Know</span>
+                        <span class="la-sub-accordion-icon">▼</span>
+                    </div>
+                    <div class="la-sub-accordion-content">
+                        <div class="la-sub-accordion-body">
+                            <ul>
+                                <li>Driving longer does not guarantee readiness if a problem still exists</li>
+                                <li>Clearing codes right before inspection almost always causes a failure</li>
+                                <li>Readiness is controlled by the vehicle computer, not the inspector</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sub-Topic 6 -->
+                <div class="la-sub-accordion-item">
+                    <div class="la-sub-accordion-header">
+                        <span>What We Can Do</span>
+                        <span class="la-sub-accordion-icon">▼</span>
+                    </div>
+                    <div class="la-sub-accordion-content">
+                        <div class="la-sub-accordion-body">
+                            <ul>
+                                <li>Check readiness status before inspection</li>
+                                <li>Identify which monitors are incomplete</li>
+                                <li>Advise how to complete drive cycles</li>
+                                <li>Diagnose issues preventing readiness</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sub-Topic 7 -->
+                <div class="la-sub-accordion-item">
+                    <div class="la-sub-accordion-header">
+                        <span>Bottom Line</span>
+                        <span class="la-sub-accordion-icon">▼</span>
+                    </div>
+                    <div class="la-sub-accordion-content">
+                        <div class="la-sub-accordion-body">
+                            <p>If your vehicle fails for readiness:</p>
+                            <ul>
+                                <li>Nothing is wrong with the inspection</li>
+                                <li>The vehicle simply has not completed its self-tests yet</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <!-- End Nested Sub-Accordions -->
         </div>
     </div>
 </div>
@@ -391,7 +531,7 @@ img.wp-smiley, img.emoji {
             <h4>PASS:</h4>
             <ul>
                 <li>Windshield: Clear strip only, maximum 5 inches from the top</li>
-                <li>Front side windows: 40% light transmission</li>
+                <li>Front side windows: 25% light transmission</li>
                 <li>Rear side windows: 25% light transmission</li>
                 <li>Rear glass: 12% light transmission</li>
                 <li>Reflectivity: Maximum 20%</li>
@@ -418,7 +558,7 @@ img.wp-smiley, img.emoji {
             <h4>PASS:</h4>
             <ul>
                 <li>Windshield: Clear strip only, maximum 5 inches from the top</li>
-                <li>Front side windows: 40% light transmission</li>
+                <li>Front side windows: 25% light transmission</li>
                 <li>Rear side windows: Any darkness allowed</li>
                 <li>Rear glass: Any darkness allowed</li>
                 <li>Reflectivity: Maximum 20%</li>
@@ -634,6 +774,7 @@ img.wp-smiley, img.emoji {
 <script>
 // Accordion functionality
 document.addEventListener('DOMContentLoaded', function() {
+    // Main accordion functionality
     const accordionHeaders = document.querySelectorAll('.la-accordion-header');
     
     accordionHeaders.forEach(header => {
@@ -641,8 +782,30 @@ document.addEventListener('DOMContentLoaded', function() {
             const item = this.parentElement;
             const isActive = item.classList.contains('active');
             
-            // Close all accordion items
+            // Close all main accordion items
             document.querySelectorAll('.la-accordion-item').forEach(i => {
+                i.classList.remove('active');
+            });
+            
+            // Open clicked item if it wasn't active
+            if (!isActive) {
+                item.classList.add('active');
+            }
+        });
+    });
+    
+    // Sub-accordion functionality (nested)
+    const subAccordionHeaders = document.querySelectorAll('.la-sub-accordion-header');
+    
+    subAccordionHeaders.forEach(header => {
+        header.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent triggering parent accordion
+            const item = this.parentElement;
+            const isActive = item.classList.contains('active');
+            
+            // Close all sub-accordion items within the same parent
+            const parentAccordion = this.closest('.la-sub-accordion');
+            parentAccordion.querySelectorAll('.la-sub-accordion-item').forEach(i => {
                 i.classList.remove('active');
             });
             
