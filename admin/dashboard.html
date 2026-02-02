@@ -928,7 +928,7 @@
               ` : ''}
             </div>
             
-            ${message ? `<div class="submission-message">${escapeHtml(message)}</div>` : ''}
+            ${message ? `<div class="submission-message">${escapeHtml(message.length > 200 ? message.substring(0, 200) + '...' : message)}</div>` : ''}
             
             <div class="submission-actions">
               <button class="btn btn-sm btn-outline-primary" onclick="quickReply('${sub.id}')">
