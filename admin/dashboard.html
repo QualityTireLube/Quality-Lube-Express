@@ -785,10 +785,10 @@
               allSubmissions.push({ id: doc.id, ...doc.data() });
             });
             
-            // Sort by timestamp descending (client-side)
+            // Sort by timestamp/date descending (client-side)
             allSubmissions.sort((a, b) => {
-              const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
-              const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+              const dateA = a.timestamp || a.date ? new Date(a.timestamp || a.date) : new Date(0);
+              const dateB = b.timestamp || b.date ? new Date(b.timestamp || b.date) : new Date(0);
               return dateB - dateA;
             });
             
@@ -833,6 +833,12 @@
         }
       }
 
+      // Get submission date (handles both 'timestamp' and 'date' fields)
+      function getSubmissionDate(sub) {
+        const dateStr = sub.timestamp || sub.date;
+        return dateStr ? new Date(dateStr) : null;
+      }
+
       // Update statistics
       function updateStats() {
         const now = new Date();
@@ -841,7 +847,7 @@
         const total = allSubmissions.length;
         const unread = allSubmissions.filter(s => !s.read).length;
         const todayCount = allSubmissions.filter(s => {
-          const subDate = s.timestamp ? new Date(s.timestamp) : null;
+          const subDate = getSubmissionDate(s);
           return subDate && subDate >= today;
         }).length;
         const appointments = allSubmissions.filter(s => 
@@ -902,7 +908,7 @@
           
           if (startDate) {
             filtered = filtered.filter(s => {
-              const subDate = s.timestamp ? new Date(s.timestamp) : null;
+              const subDate = getSubmissionDate(s);
               return subDate && subDate >= startDate;
             });
           }
@@ -949,7 +955,7 @@
           // Group by date first
           const byDate = {};
           submissions.forEach(sub => {
-            const date = sub.timestamp ? new Date(sub.timestamp) : null;
+            const date = getSubmissionDate(sub);
             const dateKey = date ? date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : 'Unknown Date';
             if (!byDate[dateKey]) byDate[dateKey] = [];
             byDate[dateKey].push(sub);
@@ -1063,7 +1069,7 @@
 
       // Render individual submission card
       function renderSubmissionCard(sub) {
-        const date = sub.timestamp ? new Date(sub.timestamp) : null;
+        const date = getSubmissionDate(sub);
         const dateStr = date ? date.toLocaleDateString('en-US', { 
           month: 'short', day: 'numeric', year: 'numeric',
           hour: 'numeric', minute: '2-digit'
@@ -1586,7 +1592,8 @@
         const email = sub.email || sub['wpforms[fields][4]'] || sub['wpforms[fields][2]'] || '';
         const phone = sub.phone || sub['wpforms[fields][3]'] || '';
         const vehicle = sub.vehicle || sub['wpforms[fields][7]'] || '';
-        const date = sub.timestamp ? new Date(sub.timestamp).toLocaleString() : 'Unknown';
+        const subDate = getSubmissionDate(sub);
+        const date = subDate ? subDate.toLocaleString() : 'Unknown';
         
         let html = `
           <div class="row mb-4">
