@@ -77,9 +77,15 @@
     const form = e.target;
     
     // Fix for "phantom" submits: specific element interactions (like hCaptcha iframe clicks)
-    // sometimes bubble up or trigger script-based submits.
-    // We only want to alert/submit if the USER explicitly clicked the submit button (or pressed Enter).
-    if (e.submitter && !e.submitter.matches('button[type="submit"], input[type="submit"], .wpforms-submit')) {
+    // sometimes trigger script-based submits without a submitter, or bubble up in unexpected ways.
+    // We only want to process the submit if it comes from a valid submit button (which includes "Enter" on inputs).
+    const isExplicitSubmit = e.submitter && (
+        e.submitter.matches('button[type="submit"]') || 
+        e.submitter.matches('input[type="submit"]') || 
+        e.submitter.matches('.wpforms-submit')
+    );
+
+    if (!isExplicitSubmit) {
         return; 
     }
 
