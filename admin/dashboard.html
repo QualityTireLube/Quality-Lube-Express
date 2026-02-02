@@ -610,15 +610,21 @@
 
       // Initialize real-time listener for form submissions
       function initLiveSubmissions() {
-        // Real-time listener
+        // Real-time listener - fetch all and sort client-side to avoid index requirements
         unsubscribe = db.collection('form_submissions')
-          .orderBy('timestamp', 'desc')
           .limit(500)
           .onSnapshot((snapshot) => {
             const previousCount = allSubmissions.length;
             allSubmissions = [];
             snapshot.forEach((doc) => {
               allSubmissions.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Sort by timestamp descending (client-side)
+            allSubmissions.sort((a, b) => {
+              const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
+              const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+              return dateB - dateA;
             });
             
             // Check for new submissions
@@ -740,7 +746,10 @@
         if (searchFilter) {
           filtered = filtered.filter(s => {
             const searchStr = [
-              s.name, s.email, s.phone, s.message, s.form_name, s.vehicle
+              s.name, s.email, s.phone, s.message, s.form_name, s.vehicle,
+              s['wpforms[fields][1][first]'], s['wpforms[fields][1][last]'],
+              s['wpforms[fields][3]'], s['wpforms[fields][4]'], s['wpforms[fields][5]'],
+              s.raw_data
             ].filter(Boolean).join(' ').toLowerCase();
             return searchStr.includes(searchFilter);
           });
@@ -771,11 +780,15 @@
         const typeClass = sub.form_type || 'contact';
         const typeName = (sub.form_name || sub.form_type || 'Contact').replace(/_/g, ' ');
         
-        const name = sub.name || sub.first_name || 'Unknown';
-        const email = sub.email || '';
-        const phone = sub.phone || '';
-        const message = sub.message || sub.comments || '';
-        const vehicle = sub.vehicle || '';
+        // Handle various field name formats (wpforms uses bracket notation)
+        const firstName = sub.name || sub.first_name || sub['wpforms[fields][1][first]'] || '';
+        const lastName = sub.last_name || sub['wpforms[fields][1][last]'] || '';
+        const name = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Unknown');
+        
+        const email = sub.email || sub['wpforms[fields][4]'] || sub['wpforms[fields][2]'] || '';
+        const phone = sub.phone || sub['wpforms[fields][3]'] || '';
+        const message = sub.message || sub.comments || sub['wpforms[fields][5]'] || sub['wpforms[fields][6]'] || '';
+        const vehicle = sub.vehicle || sub['wpforms[fields][7]'] || '';
         
         return `
           <div class="submission-card ${sub.read ? 'read' : 'unread'}" data-id="${sub.id}">
