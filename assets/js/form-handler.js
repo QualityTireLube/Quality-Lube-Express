@@ -25,6 +25,15 @@
     forms.forEach((form) => {
       form.classList.remove("wpforms-ajax-form");
       form.addEventListener("submit", handleSubmit);
+
+      // Prevent clicks on the captcha container from bubbling up
+      // (Fixes issue where clicking captcha might trigger form submission handlers)
+      const captchaContainer = form.querySelector(".h-captcha, .recaptcha, .g-recaptcha");
+      if (captchaContainer) {
+        captchaContainer.addEventListener("click", (e) => {
+          e.stopPropagation();
+        });
+      }
     });
     disableWPForms();
   }
