@@ -612,7 +612,7 @@
       function initLiveSubmissions() {
         // Real-time listener
         unsubscribe = db.collection('form_submissions')
-          .orderBy('date', 'desc')
+          .orderBy('timestamp', 'desc')
           .limit(500)
           .onSnapshot((snapshot) => {
             const previousCount = allSubmissions.length;
@@ -670,7 +670,7 @@
         const total = allSubmissions.length;
         const unread = allSubmissions.filter(s => !s.read).length;
         const todayCount = allSubmissions.filter(s => {
-          const subDate = s.date ? new Date(s.date) : null;
+          const subDate = s.timestamp ? new Date(s.timestamp) : null;
           return subDate && subDate >= today;
         }).length;
         const appointments = allSubmissions.filter(s => 
@@ -731,7 +731,7 @@
           
           if (startDate) {
             filtered = filtered.filter(s => {
-              const subDate = s.date ? new Date(s.date) : null;
+              const subDate = s.timestamp ? new Date(s.timestamp) : null;
               return subDate && subDate >= startDate;
             });
           }
@@ -762,7 +762,7 @@
 
       // Render individual submission card
       function renderSubmissionCard(sub) {
-        const date = sub.date ? new Date(sub.date) : null;
+        const date = sub.timestamp ? new Date(sub.timestamp) : null;
         const dateStr = date ? date.toLocaleDateString('en-US', { 
           month: 'short', day: 'numeric', year: 'numeric',
           hour: 'numeric', minute: '2-digit'
@@ -950,7 +950,7 @@
       function exportSubmissions() {
         const headers = ['Date', 'Type', 'Name', 'Email', 'Phone', 'Vehicle', 'Message', 'Read'];
         const rows = allSubmissions.map(sub => [
-          sub.date || '',
+          sub.timestamp || '',
           sub.form_type || '',
           sub.name || sub.first_name || '',
           sub.email || '',
