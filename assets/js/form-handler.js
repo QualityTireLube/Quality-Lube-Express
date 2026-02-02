@@ -12,9 +12,6 @@
     "https://script.google.com/macros/s/AKfycbwxlDZg38Hp2LO46GQgOAS2ch1SX3OjNko9nfxCQJDGsvkx1ML_HlKQTpeQwZQhHeGVKg/exec";
   const SITE_DOMAIN = "qualitytirelube.com";
 
-  // Track if user actually clicked the submit button (vs phantom/programmatic submit)
-  let submitButtonClicked = false;
-
   function init() {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", setupForms);
@@ -28,25 +25,29 @@
     forms.forEach((form) => {
       form.classList.remove("wpforms-ajax-form");
       
-      // Track actual submit button clicks
+      // COMPLETELY disable form submission - we handle everything via button click
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+      }, true);
+      
+      // Handle submit ONLY via direct button click
       const submitBtn = form.querySelector('button[type="submit"], input[type="submit"], .wpforms-submit');
       if (submitBtn) {
-        submitBtn.addEventListener("click", () => {
-          submitButtonClicked = true;
-          // Reset after a short delay in case submit doesn't happen
-          setTimeout(() => { submitButtonClicked = false; }, 1000);
-        }, true);
+        submitBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleFormSubmission(form, submitBtn);
+        });
       }
       
-      // Use capture phase to intercept submit BEFORE other handlers
-      form.addEventListener("submit", handleSubmit, true);
-      
-      // Disable HTML5 form validation which can also trigger alerts
+      // Disable HTML5 form validation
       form.setAttribute("novalidate", "novalidate");
     });
     disableWPForms();
   }
-
 
   function disableWPForms() {
     if (window.wpforms_settings) {
@@ -80,25 +81,7 @@
     });
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-
-    const form = e.target;
-    
-    // ONLY process if user actually clicked the submit button
-    // This blocks ALL phantom submits from captcha interactions, validation libraries, etc.
-    if (!submitButtonClicked) {
-        return;
-    }
-    
-    // Reset the flag immediately
-    submitButtonClicked = false;
-
-    const submitBtn = form.querySelector(
-      'button[type="submit"], input[type="submit"]',
-    );
+  async function handleFormSubmission(form, submitBtn) {
     const spinner = form.querySelector(".wpforms-submit-spinner");
 
     // Check for hCaptcha
