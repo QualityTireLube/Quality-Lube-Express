@@ -71,7 +71,59 @@
     });
   }
 
+  // --- FORM VALIDATION ---
+  
+  function validateForm(form) {
+    // Check all inputs with required attribute
+    const requiredInputs = form.querySelectorAll('input[required], textarea[required], select[required]');
+    for (const input of requiredInputs) {
+      if (!input.value || input.value.trim() === '') {
+        const label = form.querySelector(`label[for="${input.id}"]`);
+        const fieldName = label ? label.textContent.replace('*', '').trim() : 'Required field';
+        return `Please fill in the ${fieldName} field.`;
+      }
+    }
+    
+    // Check inputs inside wpforms-field-required containers
+    const requiredContainers = form.querySelectorAll('.wpforms-field-required');
+    for (const container of requiredContainers) {
+      const input = container.querySelector('input, textarea, select');
+      if (input && (!input.value || input.value.trim() === '')) {
+        const label = container.querySelector('label');
+        const fieldName = label ? label.textContent.replace('*', '').trim() : 'Required field';
+        return `Please fill in the ${fieldName} field.`;
+      }
+    }
+    
+    // Validate email format if email field exists
+    const emailInput = form.querySelector('input[type="email"], input[name*="email"]');
+    if (emailInput && emailInput.value) {
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(emailInput.value.trim())) {
+        return 'Please enter a valid email address.';
+      }
+    }
+    
+    // Validate phone number format if phone field exists
+    const phoneInput = form.querySelector('input[type="tel"], input[name*="phone"]');
+    if (phoneInput && phoneInput.value) {
+      const digitsOnly = phoneInput.value.replace(/\D/g, '');
+      if (digitsOnly.length < 10) {
+        return 'Please enter a valid phone number with at least 10 digits.';
+      }
+    }
+    
+    return null; // No validation errors
+  }
+
   async function handleFormSubmission(form, submitBtn) {
+    // Validate required fields first
+    const validationError = validateForm(form);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     const spinner = form.querySelector(".wpforms-submit-spinner");
 
     // Check for hCaptcha
