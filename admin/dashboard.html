@@ -475,9 +475,11 @@
                 <option value="">All Types</option>
                 <option value="contact">Contact</option>
                 <option value="appointment">Appointment</option>
-                <option value="careers">Careers</option>
+                <option value="appointment_only">Appointment Only</option>
                 <option value="self_check">Self-Check</option>
                 <option value="lead_capture_start">Lead Capture</option>
+                <option value="careers">Careers</option>
+                <option value="quote">Quote Request</option>
               </select>
             </div>
             <div>
@@ -874,7 +876,7 @@
         const searchFilter = document.getElementById('filter-search').value.toLowerCase();
 
         if (typeFilter) {
-          filtered = filtered.filter(s => s.form_type === typeFilter);
+          filtered = filtered.filter(s => getFormType(s) === typeFilter);
         }
 
         if (statusFilter === 'unread') {
@@ -958,7 +960,7 @@
               // Further group by type within each date
               const byType = {};
               dateSubs.forEach(sub => {
-                const type = sub.form_type || 'other';
+                const type = getFormType(sub);
                 if (!byType[type]) byType[type] = [];
                 byType[type].push(sub);
               });
@@ -966,7 +968,7 @@
               html += `<div class="group-header date-header"><i class="fas fa-calendar me-2"></i>${dateKey}</div>`;
               
               for (const [typeKey, typeSubs] of Object.entries(byType)) {
-                const typeName = typeKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const typeName = getFormTypeName(typeKey);
                 html += `<div class="group-header type-subheader"><i class="fas fa-tag me-2"></i>${typeName} (${typeSubs.length})</div>`;
                 html += typeSubs.map(sub => renderSubmissionCard(sub)).join('');
               }
@@ -979,19 +981,84 @@
           // Group by type only
           const byType = {};
           submissions.forEach(sub => {
-            const type = sub.form_type || 'other';
+            const type = getFormType(sub);
             if (!byType[type]) byType[type] = [];
             byType[type].push(sub);
           });
           
           for (const [typeKey, typeSubs] of Object.entries(byType)) {
-            const typeName = typeKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const typeName = getFormTypeName(typeKey);
             html += `<div class="group-header type-header"><i class="fas fa-tag me-2"></i>${typeName} (${typeSubs.length})</div>`;
             html += typeSubs.map(sub => renderSubmissionCard(sub)).join('');
           }
         }
         
         return html;
+      }
+
+      // Determine form type from submission data
+      function getFormType(sub) {
+        // If form_type is explicitly set, use it
+        if (sub.form_type) return sub.form_type;
+        
+        // Try to infer from form_name
+        const formName = (sub.form_name || '').toLowerCase();
+        const formId = (sub.form_id || '').toLowerCase();
+        
+        if (formName.includes('career') || formName.includes('job') || formName.includes('employment')) {
+          return 'careers';
+        }
+        if (formName.includes('appointment') || formName.includes('schedule')) {
+          return 'appointment';
+        }
+        if (formName.includes('self-check') || formName.includes('self check') || formName.includes('inspection')) {
+          return 'self_check';
+        }
+        if (formName.includes('quote') || formName.includes('estimate')) {
+          return 'quote';
+        }
+        if (formName.includes('contact')) {
+          return 'contact';
+        }
+        
+        // Check form_id patterns
+        if (formId.includes('career') || formId.includes('job')) {
+          return 'careers';
+        }
+        if (formId.includes('appointment') || formId.includes('schedule')) {
+          return 'appointment';
+        }
+        if (formId.includes('contact')) {
+          return 'contact';
+        }
+        
+        // Check fields for clues - wpforms uses bracket notation
+        const allFields = Object.keys(sub).join(' ').toLowerCase();
+        
+        if (allFields.includes('resume') || allFields.includes('position') || allFields.includes('job')) {
+          return 'careers';
+        }
+        if (allFields.includes('appointment') || allFields.includes('schedule')) {
+          return 'appointment';
+        }
+        
+        // Default to contact
+        return 'contact';
+      }
+
+      // Get readable name for form type
+      function getFormTypeName(type) {
+        const typeNames = {
+          'contact': 'Contact Forms',
+          'appointment': 'Appointments',
+          'appointment_only': 'Appointment Requests',
+          'self_check': 'Vehicle Self-Check',
+          'lead_capture_start': 'Lead Captures',
+          'careers': 'Career Applications',
+          'quote': 'Quote Requests',
+          'other': 'Other'
+        };
+        return typeNames[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       }
 
       // Render individual submission card
@@ -1002,8 +1069,9 @@
           hour: 'numeric', minute: '2-digit'
         }) : 'Unknown date';
 
-        const typeClass = sub.form_type || 'contact';
-        const typeName = (sub.form_name || sub.form_type || 'Contact').replace(/_/g, ' ');
+        const formType = getFormType(sub);
+        const typeClass = formType;
+        const typeName = sub.form_name || getFormTypeName(formType);
         
         // Handle various field name formats (wpforms uses bracket notation)
         const firstName = sub.name || sub.first_name || sub['wpforms[fields][1][first]'] || '';
