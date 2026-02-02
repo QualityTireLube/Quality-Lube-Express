@@ -1017,7 +1017,10 @@
         if (formName.includes('appointment') || formName.includes('schedule')) {
           return 'appointment';
         }
-        if (formName.includes('self-check') || formName.includes('self check') || formName.includes('inspection')) {
+        // Check for self-check/safety inspection forms
+        if (formName.includes('self-check') || formName.includes('self check') || 
+            formName.includes('safety self') || formName.includes('vehicle safety') ||
+            formName.includes('inspection') || sub.items) {
           return 'self_check';
         }
         if (formName.includes('quote') || formName.includes('estimate')) {
@@ -1125,7 +1128,7 @@
             
             ${message ? `<div class="submission-message">${escapeHtml(message.length > 200 ? message.substring(0, 200) + '...' : message)}</div>` : ''}
             
-            ${sub.form_type === 'self_check' && sub.items ? renderInspectionPreview(sub) : ''}
+            ${formType === 'self_check' && sub.items ? renderInspectionPreview(sub) : ''}
             
             <div class="submission-actions">
               <button class="btn btn-sm btn-outline-primary" onclick="quickReply('${sub.id}')">
@@ -1134,11 +1137,11 @@
               <button class="btn btn-sm btn-outline-secondary" onclick="viewDetails('${sub.id}')">
                 <i class="fas fa-eye me-1"></i>View Details
               </button>
-              ${sub.form_type === 'self_check' && sub.items ? `
+              ${formType === 'self_check' && sub.items ? `
                 <button class="btn btn-sm btn-outline-info" onclick="viewInspectionResults('${sub.id}')">
                   <i class="fas fa-clipboard-check me-1"></i>View Inspection
                 </button>
-              ` : ''}
+              ` : ''}}
               ${!sub.read ? `
                 <button class="btn btn-sm btn-outline-success" onclick="markAsRead('${sub.id}')">
                   <i class="fas fa-check me-1"></i>Mark Read
