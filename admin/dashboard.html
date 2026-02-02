@@ -908,9 +908,14 @@
         if (!sub) return;
 
         currentReplyData = sub;
-        const name = sub.name || sub.first_name || 'Customer';
-        const email = sub.email || '';
-        const phone = sub.phone || '';
+        
+        // Handle various field name formats (wpforms uses bracket notation)
+        const firstName = sub.name || sub.first_name || sub['wpforms[fields][1][first]'] || '';
+        const lastName = sub.last_name || sub['wpforms[fields][1][last]'] || '';
+        const name = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Customer');
+        
+        const email = sub.email || sub['wpforms[fields][4]'] || sub['wpforms[fields][2]'] || '';
+        const phone = sub.phone || sub['wpforms[fields][3]'] || '';
 
         document.getElementById('reply-to').value = `${name} - ${email || phone}`;
         document.getElementById('reply-message').value = '';
@@ -920,7 +925,7 @@
         emailBtn.onclick = () => {
           const message = encodeURIComponent(document.getElementById('reply-message').value);
           const subject = encodeURIComponent("Re: Your inquiry at Quality Lube Express");
-          window.open(`mailto:${email}?subject=${subject}&body=${message}`);
+          window.location.href = `mailto:${email}?subject=${subject}&body=${message}`;
         };
 
         // Set up SMS link
@@ -928,7 +933,7 @@
         smsBtn.onclick = () => {
           const message = encodeURIComponent(document.getElementById('reply-message').value);
           const cleanPhone = phone.replace(/\D/g, '');
-          window.open(`sms:${cleanPhone}?body=${message}`);
+          window.location.href = `sms:${cleanPhone}?body=${message}`;
         };
 
         new bootstrap.Modal(document.getElementById('quickReplyModal')).show();
@@ -936,7 +941,11 @@
 
       // Template messages
       function useTemplate(type) {
-        const name = currentReplyData?.name || currentReplyData?.first_name || 'there';
+        // Handle various field name formats for name
+        const firstName = currentReplyData?.name || currentReplyData?.first_name || currentReplyData?.['wpforms[fields][1][first]'] || '';
+        const lastName = currentReplyData?.last_name || currentReplyData?.['wpforms[fields][1][last]'] || '';
+        const name = firstName && lastName ? `${firstName}` : (firstName || 'there');
+        
         const templates = {
           appointment_confirm: `Hi ${name},\n\nThank you for scheduling an appointment with Quality Lube Express!\n\nWe've received your request and will contact you shortly to confirm the date and time.\n\nIf you have any questions, feel free to call us at (940) 566-5169.\n\nThank you,\nQuality Lube Express`,
           callback: `Hi ${name},\n\nThank you for reaching out to Quality Lube Express!\n\nWe've received your message and will give you a call back shortly.\n\nIf this is urgent, please call us directly at (940) 566-5169.\n\nThank you,\nQuality Lube Express`,
