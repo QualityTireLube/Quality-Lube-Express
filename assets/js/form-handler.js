@@ -21,78 +21,27 @@
   }
 
   function setupForms() {
-    // FIRST: Disable WPForms and jQuery validation before setting up our handlers
-    disableWPForms();
-    
     const forms = document.querySelectorAll("form.wpforms-form");
     forms.forEach((form) => {
+      // Remove WPForms classes that trigger their JS
       form.classList.remove("wpforms-ajax-form");
       form.classList.remove("wpforms-validate");
       
-      // Block form submission - we handle everything via button click
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      });
-      
-      const submitBtn = form.querySelector('button[type="submit"], input[type="submit"], .wpforms-submit');
-      if (submitBtn) {
-        // Simple click handler - only process direct clicks on the submit button
-        submitBtn.addEventListener("click", (e) => {
-          // Check if user clicked directly on the button (not something else)
-          const rect = submitBtn.getBoundingClientRect();
-          const clickedInsideButton = 
-            e.clientX >= rect.left && 
-            e.clientX <= rect.right && 
-            e.clientY >= rect.top && 
-            e.clientY <= rect.bottom;
-          
-          if (!clickedInsideButton) {
-            return; // Click didn't originate from button area
-          }
-          
-          e.preventDefault();
-          handleFormSubmission(form, submitBtn);
-        });
-      }
-      
       // Disable HTML5 form validation
       form.setAttribute("novalidate", "novalidate");
+      
+      // Handle form submit event
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const submitBtn = form.querySelector('button[type="submit"], .wpforms-submit');
+        handleFormSubmission(form, submitBtn);
+      });
     });
   }
 
+  // No longer needed - keeping it simple
   function disableWPForms() {
-    if (window.wpforms_settings) {
-      window.wpforms_settings.ajaxurl = "";
-    }
-    if (window.wpforms) {
-      if (typeof window.wpforms.updateToken === "function") {
-        window.wpforms.updateToken = function () {};
-      }
-      if (typeof window.wpforms.submitHandler === "function") {
-        window.wpforms.submitHandler = function (e) {
-          return false;
-        };
-      }
-    }
-    
-    // Disable jQuery validation on our forms (it intercepts click events)
-    if (window.jQuery && jQuery.fn.validate) {
-      document.querySelectorAll("form.wpforms-form").forEach((form) => {
-        const $form = jQuery(form);
-        // Destroy any existing validator
-        const validator = $form.data('validator');
-        if (validator) {
-          validator.destroy();
-        }
-        // Remove wpforms-validate class that triggers validation
-        form.classList.remove('wpforms-validate');
-        // Remove any jQuery click handlers on submit buttons
-        const $submitBtn = $form.find('button[type="submit"], input[type="submit"], .wpforms-submit');
-        $submitBtn.off('click');
-      });
-    }
+    // Intentionally empty - we just handle submit event directly
   }
 
   // --- FILE HANDLING HELPERS ---
