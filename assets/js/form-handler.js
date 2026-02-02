@@ -12,6 +12,9 @@
     "https://script.google.com/macros/s/AKfycbwxlDZg38Hp2LO46GQgOAS2ch1SX3OjNko9nfxCQJDGsvkx1ML_HlKQTpeQwZQhHeGVKg/exec";
   const SITE_DOMAIN = "qualitytirelube.com";
 
+  // Track if captcha was recently clicked to block phantom submits
+  let captchaRecentlyClicked = false;
+
   function init() {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", setupForms);
@@ -24,16 +27,35 @@
     const forms = document.querySelectorAll("form.wpforms-form");
     forms.forEach((form) => {
       form.classList.remove("wpforms-ajax-form");
-      form.addEventListener("submit", handleSubmit);
+      
+      // Use capture phase to intercept submit BEFORE other handlers
+      form.addEventListener("submit", handleSubmit, true);
 
-      // Prevent clicks on the captcha container from bubbling up
-      // (Fixes issue where clicking captcha might trigger form submission handlers)
-      const captchaContainer = form.querySelector(".h-captcha, .recaptcha, .g-recaptcha");
+      // Prevent clicks on the captcha container from triggering ANY form behavior
+      const captchaContainer = form.querySelector(".h-captcha, .recaptcha, .g-recaptcha, [class*='captcha']");
       if (captchaContainer) {
+        // Track captcha clicks to block phantom form submissions
         captchaContainer.addEventListener("click", (e) => {
+          captchaRecentlyClicked = true;
           e.stopPropagation();
-        });
+          e.stopImmediatePropagation();
+          // Reset flag after a short delay
+          setTimeout(() => { captchaRecentlyClicked = false; }, 500);
+        }, true);
+        
+        // Also handle mousedown/mouseup which some libraries use
+        captchaContainer.addEventListener("mousedown", (e) => {
+          captchaRecentlyClicked = true;
+          e.stopPropagation();
+          setTimeout(() => { captchaRecentlyClicked = false; }, 500);
+        }, true);
+        captchaContainer.addEventListener("mouseup", (e) => {
+          e.stopPropagation();
+        }, true);
       }
+      
+      // Disable HTML5 form validation which can also trigger alerts
+      form.setAttribute("novalidate", "novalidate");
     });
     disableWPForms();
   }
@@ -73,8 +95,15 @@
   async function handleSubmit(e) {
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
 
     const form = e.target;
+    
+    // If the captcha was just clicked, ignore this submit event entirely
+    // (It's a phantom submit triggered by captcha interaction)
+    if (captchaRecentlyClicked) {
+        return;
+    }
     
     // Fix for "phantom" submits: specific element interactions (like hCaptcha iframe clicks)
     // sometimes trigger script-based submits without a submitter, or bubble up in unexpected ways.
