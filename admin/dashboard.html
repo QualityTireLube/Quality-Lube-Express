@@ -1,205 +1,284 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - Quality Lube Express</title>
     <!-- Site Assets -->
-    <link href="../assets/css/main.css" rel="stylesheet"/>
-    <link href="../assets/css/icon.css" rel="stylesheet"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="../assets/css/qualitytirelube.com.css" rel="stylesheet"/>
-    
+    <link href="../assets/css/main.css" rel="stylesheet" />
+    <link href="../assets/css/icon.css" rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <link href="../assets/css/qualitytirelube.com.css" rel="stylesheet" />
+
     <!-- Admin Specific Assets (Bootstrap for UI components) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
     <style>
-        body { background-color: #f5f5f5; font-family: var(--font-body, "Roboto", sans-serif); }
-        .l-header { background: #000; color: #fff; padding: 10px 0; }
-        .l-subheader-h { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        .admin-brand { font-size: 20px; font-weight: bold; color: #fff; text-decoration: none; }
-        .dashboard-container { max-width: 1200px; margin: 40px auto; padding: 30px; background: white; border-radius: 4px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); }
-        .loading { display: none; }
-        /* Override Bootstrap conflicts */
-        a { text-decoration: none; }
+      body {
+        background-color: #f5f5f5;
+        font-family: var(--font-body, "Roboto", sans-serif);
+      }
+      .l-header {
+        background: #000;
+        color: #fff;
+        padding: 10px 0;
+      }
+      .l-subheader-h {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 15px;
+      }
+      .admin-brand {
+        font-size: 20px;
+        font-weight: bold;
+        color: #fff;
+        text-decoration: none;
+      }
+      .dashboard-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+      }
+      .loading {
+        display: none;
+      }
+      /* Override Bootstrap conflicts */
+      a {
+        text-decoration: none;
+      }
     </style>
-</head>
-<body>
-
-<!-- Mock Site Header -->
-<header class="l-header">
-    <div class="l-subheader at_middle">
+  </head>
+  <body>
+    <!-- Mock Site Header -->
+    <header class="l-header">
+      <div class="l-subheader at_middle">
         <div class="l-subheader-h">
-            <div class="l-subheader-cell">
-                <a href="../index.html" class="admin-brand">
-                    <img src="../assets/img/logo-01.png" alt="Quality Lube" style="height: 60px;">
-                    <span style="margin-left: 15px; vertical-align: middle;">Admin Portal</span>
-                </a>
-            </div>
-            <div class="l-subheader-cell">
-                 <button class="btn btn-outline-light btn-sm" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
-            </div>
+          <div class="l-subheader-cell">
+            <a href="../" class="admin-brand">
+              <img
+                src="../assets/img/logo-01.png"
+                alt="Quality Lube"
+                style="height: 60px"
+              />
+              <span style="margin-left: 15px; vertical-align: middle"
+                >Admin Portal</span
+              >
+            </a>
+          </div>
+          <div class="l-subheader-cell">
+            <button class="btn btn-outline-light btn-sm" id="logout-btn">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </div>
         </div>
-    </div>
-</header>
+      </div>
+    </header>
 
-<div class="container dashboard-container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 style="margin:0;">Pricing Management</h2>
+    <div class="container dashboard-container">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="margin: 0">Pricing Management</h2>
         <div>
-            <span class="badge bg-success" id="connection-status">Firebase Connected</span>
+          <span class="badge bg-success" id="connection-status"
+            >Firebase Connected</span
+          >
         </div>
-    </div>
-    
-    <div class="alert alert-info" id="status-msg" style="display:none;"></div>
+      </div>
 
-    <div class="mb-4 d-flex gap-2 flex-wrap">
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
-            <i class="fas fa-plus"></i> Add New Service
+      <div class="alert alert-info" id="status-msg" style="display: none"></div>
+
+      <div class="mb-4 d-flex gap-2 flex-wrap">
+        <button
+          class="btn btn-primary"
+          data-bs-toggle="modal"
+          data-bs-target="#addServiceModal"
+        >
+          <i class="fas fa-plus"></i> Add New Service
         </button>
-         <button class="btn btn-secondary" onclick="loadServices()">
-            <i class="fas fa-sync"></i> Refresh
+        <button class="btn btn-secondary" onclick="loadServices()">
+          <i class="fas fa-sync"></i> Refresh
         </button>
         <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-warning text-dark" onclick="reimportDefaults()">
-                <i class="fas fa-history"></i> Reset Data & Imports
-            </button>
-            <button class="btn btn-danger" onclick="resetToDefaults()">
-                <i class="fas fa-ban"></i> Disable Dynamic/Revert Styling
-            </button>
+          <button
+            class="btn btn-warning text-dark"
+            onclick="reimportDefaults()"
+          >
+            <i class="fas fa-history"></i> Reset Data & Imports
+          </button>
+          <button class="btn btn-danger" onclick="resetToDefaults()">
+            <i class="fas fa-ban"></i> Disable Dynamic/Revert Styling
+          </button>
         </div>
-    </div>
+      </div>
 
-    <!-- Filter Removed -->
+      <!-- Filter Removed -->
 
-    <div class="table-responsive">
+      <div class="table-responsive">
         <table class="table table-hover align-middle">
-            <thead class="table-dark">
-                <tr>
-                    <th style="width: 50%;">Service Name</th>
-                    <th>Price</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="services-table-body">
-                <!-- Data will be loaded here -->
-            </tbody>
+          <thead class="table-dark">
+            <tr>
+              <th style="width: 50%">Service Name</th>
+              <th>Price</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="services-table-body">
+            <!-- Data will be loaded here -->
+          </tbody>
         </table>
-    </div>
+      </div>
 
-    <div id="loading-spinner" class="text-center my-5">
+      <div id="loading-spinner" class="text-center my-5">
         <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">Loading...</span>
         </div>
-    </div>
-</div>
-
-<!-- Add/Edit Modal -->
-<div class="modal fade" id="addServiceModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Service Details</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <form id="service-form">
-            <input type="hidden" id="service-id">
-            <div class="mb-3">
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal fade" id="addServiceModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Service Details</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="service-form">
+              <input type="hidden" id="service-id" />
+              <div class="mb-3">
                 <label class="form-label">Service Name</label>
-                <input type="text" class="form-control" id="service-name" required placeholder="e.g. Mobil 1">
-            </div>
-            <div class="mb-3">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="service-name"
+                  required
+                  placeholder="e.g. Mobil 1"
+                />
+              </div>
+              <div class="mb-3">
                 <label class="form-label">Price / Description</label>
-                <input type="text" class="form-control" id="service-price" required placeholder="e.g. $89.99">
-            </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" id="save-service-btn">Save changes</button>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="service-price"
+                  required
+                  placeholder="e.g. $89.99"
+                />
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+            <button type="button" class="btn btn-primary" id="save-service-btn">
+              Save changes
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-<script>
-// Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyA2DI7LRK4kR7DZtGRridtmCZYl8F32cLg",
-  authDomain: "qualityexpress-c19f2.firebaseapp.com",
-  projectId: "qualityexpress-c19f2",
-  storageBucket: "qualityexpress-c19f2.firebasestorage.app",
-  messagingSenderId: "201962327491",
-  appId: "1:201962327491:web:342d771b9013d901cc8176",
-  measurementId: "G-HJDBXM5CLX"
-};
+    <script>
+      // Firebase Config
+      const firebaseConfig = {
+        apiKey: "AIzaSyA2DI7LRK4kR7DZtGRridtmCZYl8F32cLg",
+        authDomain: "qualityexpress-c19f2.firebaseapp.com",
+        projectId: "qualityexpress-c19f2",
+        storageBucket: "qualityexpress-c19f2.firebasestorage.app",
+        messagingSenderId: "201962327491",
+        appId: "1:201962327491:web:342d771b9013d901cc8176",
+        measurementId: "G-HJDBXM5CLX",
+      };
 
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+      // Initialize Firebase
+      const app = firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const db = firebase.firestore();
 
-let allServices = [];
+      let allServices = [];
 
-// Auth Guard
-auth.onAuthStateChanged((user) => {
-    if (!user) {
-        window.location.href = '../login.html';
-    } else {
-        loadServices();
-    }
-});
-
-document.getElementById('logout-btn').addEventListener('click', () => {
-    auth.signOut().then(() => window.location.href = '../index.html');
-});
-
-// Load Services
-function loadServices() {
-    document.getElementById('loading-spinner').style.display = 'block';
-    const tbody = document.getElementById('services-table-body');
-    tbody.innerHTML = '';
-    
-    // Debugging: Ensure collection name is consistent
-    db.collection("pricing_services").get()
-    .then((querySnapshot) => {
-        document.getElementById('loading-spinner').style.display = 'none';
-        allServices = [];
-        
-        if (querySnapshot.empty) {
-             tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No services found. Importing from website automatically...</td></tr>';
-             importServices(true); // Auto-import if empty
-             return;
+      // Auth Guard
+      auth.onAuthStateChanged((user) => {
+        if (!user) {
+          window.location.href = "../login.html";
+        } else {
+          loadServices();
         }
+      });
 
-        querySnapshot.forEach((doc) => {
-            allServices.push({ id: doc.id, ...doc.data() });
+      document.getElementById("logout-btn").addEventListener("click", () => {
+        auth.signOut().then(() => (window.location.href = "../index.html"));
+      });
+
+      // Load Services
+      function loadServices() {
+        document.getElementById("loading-spinner").style.display = "block";
+        const tbody = document.getElementById("services-table-body");
+        tbody.innerHTML = "";
+
+        // Debugging: Ensure collection name is consistent
+        db.collection("pricing_services")
+          .get()
+          .then((querySnapshot) => {
+            document.getElementById("loading-spinner").style.display = "none";
+            allServices = [];
+
+            if (querySnapshot.empty) {
+              tbody.innerHTML =
+                '<tr><td colspan="4" class="text-center text-muted">No services found. Importing from website automatically...</td></tr>';
+              importServices(true); // Auto-import if empty
+              return;
+            }
+
+            querySnapshot.forEach((doc) => {
+              allServices.push({ id: doc.id, ...doc.data() });
+            });
+
+            renderTable(allServices);
+          })
+          .catch((error) => {
+            console.error("Error getting documents: ", error);
+            document.getElementById("loading-spinner").innerHTML =
+              '<span class="text-danger">Error loading data.</span>';
+          });
+      }
+
+      function renderTable(services) {
+        const tbody = document.getElementById("services-table-body");
+        tbody.innerHTML = "";
+
+        // Sort: Name only
+        services.sort((a, b) => {
+          return a.name.localeCompare(b.name);
         });
-        
-        renderTable(allServices);
-    })
-    .catch((error) => {
-        console.error("Error getting documents: ", error);
-        document.getElementById('loading-spinner').innerHTML = '<span class="text-danger">Error loading data.</span>';
-    });
-}
 
-function renderTable(services) {
-    const tbody = document.getElementById('services-table-body');
-    tbody.innerHTML = '';
-
-    // Sort: Name only
-    services.sort((a, b) => {
-        return a.name.localeCompare(b.name);
-    });
-
-    services.forEach(data => {
-        const row = `
+        services.forEach((data) => {
+          const row = `
             <tr>
                 <td class="fw-bold">${data.name}</td>
                 <td>${data.price}</td>
@@ -209,157 +288,217 @@ function renderTable(services) {
                 </td>
             </tr>
         `;
-        tbody.innerHTML += row;
-    });
-}
+          tbody.innerHTML += row;
+        });
+      }
 
+      // Save Service
+      document
+        .getElementById("save-service-btn")
+        .addEventListener("click", () => {
+          const id = document.getElementById("service-id").value;
+          const name = document.getElementById("service-name").value;
+          const price = document.getElementById("service-price").value;
 
-// Save Service
-document.getElementById('save-service-btn').addEventListener('click', () => {
-    const id = document.getElementById('service-id').value;
-    const name = document.getElementById('service-name').value;
-    const price = document.getElementById('service-price').value;
+          const data = { name, price };
 
-    const data = { name, price };
+          if (id) {
+            db.collection("pricing_services")
+              .doc(id)
+              .update(data)
+              .then(() => {
+                bootstrap.Modal.getInstance(
+                  document.getElementById("addServiceModal"),
+                ).hide();
+                loadServices();
+              });
+          } else {
+            db.collection("pricing_services")
+              .add(data)
+              .then(() => {
+                bootstrap.Modal.getInstance(
+                  document.getElementById("addServiceModal"),
+                ).hide();
+                loadServices();
+              });
+          }
+        });
 
-    if(id) {
-        db.collection("pricing_services").doc(id).update(data).then(() => {
-            bootstrap.Modal.getInstance(document.getElementById('addServiceModal')).hide();
+      // Delete Service
+      window.deleteService = (id) => {
+        if (confirm("Are you sure you want to delete this service?")) {
+          db.collection("pricing_services")
+            .doc(id)
+            .delete()
+            .then(() => loadServices());
+        }
+      };
+
+      // Reset to Defaults (Clear Database)
+      window.resetToDefaults = () => {
+        if (
+          !confirm(
+            "DANGER: This will delete ALL Services from the Database.\nThe website will revert to its original static HTML styling.\nAre you sure completely remove the dynamic pricing?",
+          )
+        )
+          return;
+
+        document.getElementById("loading-spinner").style.display = "block";
+
+        db.collection("pricing_services")
+          .get()
+          .then((snapshot) => {
+            const batch = db.batch();
+            snapshot.docs.forEach((doc) => {
+              batch.delete(doc.ref);
+            });
+            return batch.commit();
+          })
+          .then(() => {
+            alert(
+              "Database Cleared. Website will now use default static HTML.",
+            );
             loadServices();
-        });
-    } else {
-        db.collection("pricing_services").add(data).then(() => {
-            bootstrap.Modal.getInstance(document.getElementById('addServiceModal')).hide();
-            loadServices();
-        });
-    }
-});
+          })
+          .catch((err) => {
+            alert("Error: " + err.message);
+            document.getElementById("loading-spinner").style.display = "none";
+          });
+      };
 
-// Delete Service
-window.deleteService = (id) => {
-    if(confirm('Are you sure you want to delete this service?')) {
-        db.collection("pricing_services").doc(id).delete().then(() => loadServices());
-    }
-};
+      // Re-Import (Reset Data)
+      window.reimportDefaults = () => {
+        if (
+          !confirm(
+            "This will DELETE all current data and re-import from the website source.\nUseful for resetting after mistakes.\nContinue?",
+          )
+        )
+          return;
 
-// Reset to Defaults (Clear Database)
-window.resetToDefaults = () => {
-    if(!confirm('DANGER: This will delete ALL Services from the Database.\nThe website will revert to its original static HTML styling.\nAre you sure completely remove the dynamic pricing?')) return;
-    
-    document.getElementById('loading-spinner').style.display = 'block';
-    
-    db.collection("pricing_services").get().then(snapshot => {
-        const batch = db.batch();
-        snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-        return batch.commit();
-    }).then(() => {
-        alert('Database Cleared. Website will now use default static HTML.');
-        loadServices();
-    }).catch(err => {
-        alert('Error: ' + err.message);
-        document.getElementById('loading-spinner').style.display = 'none';
-    });
-};
+        document.getElementById("loading-spinner").style.display = "block";
 
-// Re-Import (Reset Data)
-window.reimportDefaults = () => {
-    if(!confirm('This will DELETE all current data and re-import from the website source.\nUseful for resetting after mistakes.\nContinue?')) return;
-    
-    document.getElementById('loading-spinner').style.display = 'block';
-    
-    // First clear
-    db.collection("pricing_services").get().then(snapshot => {
-        const batch = db.batch();
-        snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-        return batch.commit();
-    }).then(() => {
-        // Then Import
-        return importServices(true);
-    });
-};
+        // First clear
+        db.collection("pricing_services")
+          .get()
+          .then((snapshot) => {
+            const batch = db.batch();
+            snapshot.docs.forEach((doc) => {
+              batch.delete(doc.ref);
+            });
+            return batch.commit();
+          })
+          .then(() => {
+            // Then Import
+            return importServices(true);
+          });
+      };
 
+      // Edit Service Helper
+      window.editService = (id) => {
+        const service = allServices.find((s) => s.id === id);
+        if (service) {
+          document.getElementById("service-id").value = id;
+          document.getElementById("service-name").value = service.name;
+          document.getElementById("service-price").value = service.price;
+          new bootstrap.Modal(
+            document.getElementById("addServiceModal"),
+          ).show();
+        }
+      };
 
-// Edit Service Helper
-window.editService = (id) => {
-    const service = allServices.find(s => s.id === id);
-    if(service) {
-        document.getElementById('service-id').value = id;
-        document.getElementById('service-name').value = service.name;
-        document.getElementById('service-price').value = service.price;
-        new bootstrap.Modal(document.getElementById('addServiceModal')).show();
-    }
-};
+      // Import Services Logic
+      async function importServices(auto = false) {
+        if (
+          !auto &&
+          !confirm(
+            "This will RESET the database to the Hardcoded Defaults (Oil, Brakes, Tires). Continue?",
+          )
+        )
+          return;
 
-// Import Services Logic
-async function importServices(auto = false) {
-    if(!auto && !confirm('This will RESET the database to the Hardcoded Defaults (Oil, Brakes, Tires). Continue?')) return;
-    
-    if (auto) {
-         document.getElementById('status-msg').innerText = "Setting up default services...";
-         document.getElementById('status-msg').style.display = "block";
-    }
+        if (auto) {
+          document.getElementById("status-msg").innerText =
+            "Setting up default services...";
+          document.getElementById("status-msg").style.display = "block";
+        }
 
-    try {
-        const defaultServices = [
+        try {
+          const defaultServices = [
             // Left Column: Oil
             { name: "Mobil 1", price: "$96.99 10k/Mi", category: "Oil" },
-            { name: "MOBILE SYNTHETIC", price: "$74.99 7k/Mi", category: "Oil" },
-            
+            {
+              name: "MOBILE SYNTHETIC",
+              price: "$74.99 7k/Mi",
+              category: "Oil",
+            },
+
             { name: "DELVAC 1300", price: "$109.99 7K/Mi", category: "Oil" },
             { name: "DELVAC 15w40", price: "$149.99 12K/Mi", category: "Oil" },
             { name: "DELVAC 1 5w40", price: "$149.99 12K/Mi", category: "Oil" },
-            
+
             { name: "WIPER BLADES", price: "12.99/PC", category: "Oil" }, // Acts as header item
 
             // Center Column: Brakes
             { name: "Cars/SUV", price: "$178.48*", category: "Brakes" },
-            { name: "Front and Rear Brake pads. Per axle", price: "", category: "Brakes" },
+            {
+              name: "Front and Rear Brake pads. Per axle",
+              price: "",
+              category: "Brakes",
+            },
             { name: "Heavy Duty", price: "$232.52*", category: "Brakes" },
-            { name: "Front and Rear Brake pads. Per axle", price: " ", category: "Brakes" }, // Space to ensure uniqueness if needed
+            {
+              name: "Front and Rear Brake pads. Per axle",
+              price: " ",
+              category: "Brakes",
+            }, // Space to ensure uniqueness if needed
 
             // Right Column: Tires
             { name: "TIRE REPAIR", price: "$25.99", category: "Tires" },
             { name: "TIRE ROTATION", price: "$19.99", category: "Tires" },
             { name: "ROTATE & BALANCE", price: "$43.99", category: "Tires" },
             { name: "33+ TIRE ROTATION", price: "$34.99", category: "Tires" },
-            { name: "33+ ROTATE & BALANCE", price: "$83.99", category: "Tires" },
+            {
+              name: "33+ ROTATE & BALANCE",
+              price: "$83.99",
+              category: "Tires",
+            },
             { name: "MOUNT/BALANCE", price: "$24.99/TIRE", category: "Tires" },
             { name: "OVERSIZED", price: "$34.99/Tire", category: "Tires" },
             { name: "REVERSED MOUNT", price: "+15%", category: "Tires" },
-            { name: "TPMS SENSOR", price: "$42.99", category: "Tires" }
-        ];
+            { name: "TPMS SENSOR", price: "$42.99", category: "Tires" },
+          ];
 
-        let count = 0;
-        const batch = db.batch();
+          let count = 0;
+          const batch = db.batch();
 
-        defaultServices.forEach(service => {
+          defaultServices.forEach((service) => {
             const newRef = db.collection("pricing_services").doc();
             batch.set(newRef, service);
             count++;
-        });
+          });
 
-        await batch.commit();
-        
-        if(auto) {
-            document.getElementById('status-msg').className = "alert alert-success";
-            document.getElementById('status-msg').innerText = `Setup Complete! Added ${count} default services.`;
-            setTimeout(() => document.getElementById('status-msg').style.display='none', 5000);
-        } else {
+          await batch.commit();
+
+          if (auto) {
+            document.getElementById("status-msg").className =
+              "alert alert-success";
+            document.getElementById("status-msg").innerText =
+              `Setup Complete! Added ${count} default services.`;
+            setTimeout(
+              () =>
+                (document.getElementById("status-msg").style.display = "none"),
+              5000,
+            );
+          } else {
             alert(`Successfully added ${count} default services!`);
+          }
+          loadServices();
+        } catch (e) {
+          console.error("Error importing:", e);
+          if (!auto) alert("Error importing: " + e.message);
         }
-        loadServices();
-
-    } catch (e) {
-        console.error('Error importing:', e);
-        if(!auto) alert('Error importing: ' + e.message);
-    }
-}
-
-</script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
 </html>
