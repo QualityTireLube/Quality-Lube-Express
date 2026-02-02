@@ -7,17 +7,12 @@
     <!-- Site Assets -->
     <link href="../assets/css/main.css" rel="stylesheet" />
     <link href="../assets/css/icon.css" rel="stylesheet" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link href="../assets/css/qualitytirelube.com.css" rel="stylesheet" />
 
-    <!-- Admin Specific Assets (Bootstrap for UI components) -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+    <!-- Admin Specific Assets -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
     <style>
       body {
         background-color: #f5f5f5;
@@ -43,37 +38,239 @@
         text-decoration: none;
       }
       .dashboard-container {
-        max-width: 1200px;
+        max-width: 1400px;
         margin: 40px auto;
         padding: 30px;
         background: white;
         border-radius: 4px;
         box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
       }
-      .loading {
-        display: none;
-      }
+      
       /* Override Bootstrap conflicts */
-      a {
+      a { text-decoration: none; }
+      
+      /* Tab Navigation */
+      .nav-tabs .nav-link {
+        color: #666;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 12px 20px;
+        font-weight: 500;
+      }
+      .nav-tabs .nav-link:hover {
+        border-color: #ddd;
+        color: #333;
+      }
+      .nav-tabs .nav-link.active {
+        color: #0066cc;
+        border-bottom-color: #0066cc;
+        background: transparent;
+      }
+      
+      /* Submission Cards */
+      .submission-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        background: #fff;
+        transition: all 0.2s ease;
+      }
+      .submission-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      .submission-card.unread {
+        border-left: 4px solid #0066cc;
+        background: #f8faff;
+      }
+      .submission-card.read {
+        border-left: 4px solid #28a745;
+      }
+      .submission-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+      .submission-meta {
+        font-size: 12px;
+        color: #888;
+      }
+      .submission-type {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .submission-type.contact { background: #e3f2fd; color: #1976d2; }
+      .submission-type.appointment { background: #fff3e0; color: #f57c00; }
+      .submission-type.self_check { background: #e8f5e9; color: #388e3c; }
+      .submission-type.lead_capture_start { background: #fce4ec; color: #c2185b; }
+      
+      .submission-contact {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+      }
+      .submission-contact-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+      }
+      .submission-contact-item i {
+        color: #666;
+        width: 16px;
+      }
+      .submission-contact-item a {
+        color: #0066cc;
         text-decoration: none;
+      }
+      .submission-contact-item a:hover {
+        text-decoration: underline;
+      }
+      
+      .submission-message {
+        background: #f9f9f9;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-top: 10px;
+        white-space: pre-wrap;
+      }
+      
+      .submission-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 15px;
+        flex-wrap: wrap;
+      }
+      
+      /* Filter Bar */
+      .filter-bar {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f9f9f9;
+        border-radius: 8px;
+      }
+      .filter-bar select, .filter-bar input {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      
+      /* Stats Bar */
+      .stats-bar {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .stat-item {
+        background: #f5f5f5;
+        padding: 15px 25px;
+        border-radius: 8px;
+        text-align: center;
+        min-width: 100px;
+      }
+      .stat-number {
+        font-size: 28px;
+        font-weight: bold;
+        color: #0066cc;
+      }
+      .stat-label {
+        font-size: 12px;
+        color: #666;
+        text-transform: uppercase;
+      }
+      
+      /* Live indicator */
+      .live-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: #e8f5e9;
+        border-radius: 20px;
+        font-size: 12px;
+        color: #388e3c;
+      }
+      .live-indicator::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        background: #4caf50;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      
+      /* Quick Reply Modal */
+      .quick-reply-options {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+      .quick-reply-btn {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        background: #f9f9f9;
+        cursor: pointer;
+        text-align: left;
+        font-size: 13px;
+        transition: all 0.2s;
+      }
+      .quick-reply-btn:hover {
+        border-color: #0066cc;
+        background: #fff;
+      }
+      .quick-reply-btn i {
+        margin-right: 8px;
+        color: #0066cc;
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #888;
+      }
+      .empty-state i {
+        font-size: 48px;
+        margin-bottom: 15px;
+        color: #ddd;
+      }
+      
+      @media (max-width: 768px) {
+        .filter-bar { flex-direction: column; align-items: stretch; }
+        .stats-bar { justify-content: center; }
+        .submission-header { flex-direction: column; gap: 10px; }
+        .quick-reply-options { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
-    <!-- Mock Site Header -->
+    <!-- Header -->
     <header class="l-header">
       <div class="l-subheader at_middle">
         <div class="l-subheader-h">
           <div class="l-subheader-cell">
             <a href="../" class="admin-brand">
-              <img
-                src="../assets/img/logo-01.png"
-                alt="Quality Lube"
-                style="height: 60px"
-              />
-              <span style="margin-left: 15px; vertical-align: middle"
-                >Admin Portal</span
-              >
+              <img src="../assets/img/logo-01.png" alt="Quality Lube" style="height: 60px" />
+              <span style="margin-left: 15px; vertical-align: middle">Admin Portal</span>
             </a>
           </div>
           <div class="l-subheader-cell">
@@ -87,121 +284,278 @@
 
     <div class="container dashboard-container">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 style="margin: 0">Pricing Management</h2>
-        <div>
-          <span class="badge bg-success" id="connection-status"
-            >Firebase Connected</span
-          >
+        <h2 style="margin: 0">Admin Dashboard</h2>
+        <div class="d-flex align-items-center gap-3">
+          <span class="live-indicator">Live Updates</span>
+          <span class="badge bg-success" id="connection-status">Connected</span>
         </div>
       </div>
 
-      <div class="alert alert-info" id="status-msg" style="display: none"></div>
+      <!-- Tab Navigation -->
+      <ul class="nav nav-tabs mb-4" id="dashboardTabs">
+        <li class="nav-item">
+          <a class="nav-link active" data-bs-toggle="tab" href="#submissions-tab">
+            <i class="fas fa-inbox me-2"></i>Form Submissions
+            <span class="badge bg-danger ms-2" id="unread-count" style="display:none;">0</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#pricing-tab">
+            <i class="fas fa-dollar-sign me-2"></i>Pricing Management
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#settings-tab">
+            <i class="fas fa-cog me-2"></i>Settings
+          </a>
+        </li>
+      </ul>
 
-      <div class="mb-4 d-flex gap-2 flex-wrap">
-        <button
-          class="btn btn-primary"
-          data-bs-toggle="modal"
-          data-bs-target="#addServiceModal"
-        >
-          <i class="fas fa-plus"></i> Add New Service
-        </button>
-        <button class="btn btn-secondary" onclick="loadServices()">
-          <i class="fas fa-sync"></i> Refresh
-        </button>
-        <div class="ms-auto d-flex gap-2">
-          <button
-            class="btn btn-warning text-dark"
-            onclick="reimportDefaults()"
-          >
-            <i class="fas fa-history"></i> Reset Data & Imports
-          </button>
-          <button class="btn btn-danger" onclick="resetToDefaults()">
-            <i class="fas fa-ban"></i> Disable Dynamic/Revert Styling
-          </button>
+      <!-- Tab Content -->
+      <div class="tab-content">
+        <!-- Submissions Tab -->
+        <div class="tab-pane fade show active" id="submissions-tab">
+          <!-- Stats Bar -->
+          <div class="stats-bar">
+            <div class="stat-item">
+              <div class="stat-number" id="stat-total">0</div>
+              <div class="stat-label">Total</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" id="stat-unread">0</div>
+              <div class="stat-label">Unread</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" id="stat-today">0</div>
+              <div class="stat-label">Today</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" id="stat-appointments">0</div>
+              <div class="stat-label">Appointments</div>
+            </div>
+          </div>
+
+          <!-- Filter Bar -->
+          <div class="filter-bar">
+            <div>
+              <label class="form-label mb-1" style="font-size:12px;">Type</label>
+              <select id="filter-type" class="form-select form-select-sm">
+                <option value="">All Types</option>
+                <option value="contact">Contact</option>
+                <option value="appointment">Appointment</option>
+                <option value="self_check">Self-Check</option>
+                <option value="lead_capture_start">Lead Capture</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label mb-1" style="font-size:12px;">Status</label>
+              <select id="filter-status" class="form-select form-select-sm">
+                <option value="">All</option>
+                <option value="unread">Unread</option>
+                <option value="read">Read</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label mb-1" style="font-size:12px;">Date Range</label>
+              <select id="filter-date" class="form-select form-select-sm">
+                <option value="">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label mb-1" style="font-size:12px;">Search</label>
+              <input type="text" id="filter-search" class="form-control form-control-sm" placeholder="Name, email, phone...">
+            </div>
+            <div class="ms-auto d-flex gap-2 align-items-end">
+              <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                <i class="fas fa-times"></i> Clear
+              </button>
+              <button class="btn btn-outline-primary btn-sm" onclick="exportSubmissions()">
+                <i class="fas fa-download"></i> Export CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Submissions List -->
+          <div id="submissions-list">
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Filter Removed -->
+        <!-- Pricing Tab -->
+        <div class="tab-pane fade" id="pricing-tab">
+          <div class="mb-4 d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+              <i class="fas fa-plus"></i> Add New Service
+            </button>
+            <button class="btn btn-secondary" onclick="loadServices()">
+              <i class="fas fa-sync"></i> Refresh
+            </button>
+            <div class="ms-auto d-flex gap-2">
+              <button class="btn btn-warning text-dark" onclick="reimportDefaults()">
+                <i class="fas fa-history"></i> Reset Data & Imports
+              </button>
+              <button class="btn btn-danger" onclick="resetToDefaults()">
+                <i class="fas fa-ban"></i> Disable Dynamic/Revert Styling
+              </button>
+            </div>
+          </div>
 
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead class="table-dark">
-            <tr>
-              <th style="width: 50%">Service Name</th>
-              <th>Price</th>
-              <th class="text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="services-table-body">
-            <!-- Data will be loaded here -->
-          </tbody>
-        </table>
-      </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-dark">
+                <tr>
+                  <th style="width: 50%">Service Name</th>
+                  <th>Price</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="services-table-body">
+                <!-- Data will be loaded here -->
+              </tbody>
+            </table>
+          </div>
 
-      <div id="loading-spinner" class="text-center my-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <div id="loading-spinner" class="text-center my-5" style="display:none;">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-pane fade" id="settings-tab">
+          <div class="card">
+            <div class="card-body">
+              <h5>Dashboard Settings</h5>
+              <hr>
+              <h6>Notification Settings</h6>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="sound-notifications" checked>
+                <label class="form-check-label" for="sound-notifications">Play sound for new submissions</label>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="browser-notifications">
+                <label class="form-check-label" for="browser-notifications">Browser notifications</label>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Add/Edit Modal -->
+    <!-- Quick Reply Modal -->
+    <div class="modal fade" id="quickReplyModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-reply me-2"></i>Quick Reply</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">To:</label>
+              <input type="text" class="form-control" id="reply-to" readonly>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Quick Templates:</label>
+              <div class="quick-reply-options">
+                <button class="quick-reply-btn" onclick="useTemplate('appointment_confirm')">
+                  <i class="fas fa-calendar-check"></i>Confirm Appointment
+                </button>
+                <button class="quick-reply-btn" onclick="useTemplate('callback')">
+                  <i class="fas fa-phone"></i>Will Call Back
+                </button>
+                <button class="quick-reply-btn" onclick="useTemplate('quote')">
+                  <i class="fas fa-file-invoice-dollar"></i>Quote/Estimate
+                </button>
+                <button class="quick-reply-btn" onclick="useTemplate('thank_you')">
+                  <i class="fas fa-heart"></i>Thank You
+                </button>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Message:</label>
+              <textarea class="form-control" id="reply-message" rows="6"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <a href="#" class="btn btn-success" id="send-email-btn">
+              <i class="fas fa-envelope me-2"></i>Open in Email
+            </a>
+            <a href="#" class="btn btn-primary" id="send-sms-btn">
+              <i class="fas fa-sms me-2"></i>Open in SMS
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Details Modal -->
+    <div class="modal fade" id="viewDetailsModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-file-alt me-2"></i>Submission Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" id="details-content">
+            <!-- Content loaded dynamically -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Service Modal -->
     <div class="modal fade" id="addServiceModal" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Service Details</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-            ></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <form id="service-form">
               <input type="hidden" id="service-id" />
               <div class="mb-3">
                 <label class="form-label">Service Name</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="service-name"
-                  required
-                  placeholder="e.g. Mobil 1"
-                />
+                <input type="text" class="form-control" id="service-name" required placeholder="e.g. Mobil 1" />
               </div>
               <div class="mb-3">
                 <label class="form-label">Price / Description</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="service-price"
-                  required
-                  placeholder="e.g. $89.99"
-                />
+                <input type="text" class="form-control" id="service-price" required placeholder="e.g. $89.99" />
               </div>
             </form>
           </div>
           <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              data-bs-dismiss="modal"
-            >
-              Close
-            </button>
-            <button type="button" class="btn btn-primary" id="save-service-btn">
-              Save changes
-            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="save-service-btn">Save changes</button>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Notification Sound -->
+    <audio id="notification-sound" preload="auto">
+      <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp+PfXFxgI2Xk4N0bXOAipOOgXRvcX2Ii4mAdnBxe4SGhH53c3R7gIKAfXl3d3t+f358enl5e31+fXx7e3t8fX19fHt7e3x9fX18fHx8fX19fXx8fH19fX19fHx9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fHx8fH19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fQ==" type="audio/wav">
+    </audio>
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
       // Firebase Config
@@ -220,38 +574,421 @@
       const auth = firebase.auth();
       const db = firebase.firestore();
 
+      let allSubmissions = [];
       let allServices = [];
+      let unsubscribe = null;
+      let currentReplyData = null;
 
       // Auth Guard
       auth.onAuthStateChanged((user) => {
         if (!user) {
-          window.location.href = "../login.html";
+          window.location.href = '../login.html';
         } else {
+          initLiveSubmissions();
           loadServices();
+          requestNotificationPermission();
         }
       });
 
-      document.getElementById("logout-btn").addEventListener("click", () => {
-        auth.signOut().then(() => (window.location.href = "../index.html"));
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        if (unsubscribe) unsubscribe();
+        auth.signOut().then(() => (window.location.href = '../index.html'));
       });
+
+      // Request notification permission
+      function requestNotificationPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+          document.getElementById('browser-notifications').addEventListener('change', function() {
+            if (this.checked) {
+              Notification.requestPermission();
+            }
+          });
+        }
+      }
+
+      // ==================== FORM SUBMISSIONS ====================
+
+      // Initialize real-time listener for form submissions
+      function initLiveSubmissions() {
+        // Real-time listener
+        unsubscribe = db.collection('form_submissions')
+          .orderBy('date', 'desc')
+          .limit(500)
+          .onSnapshot((snapshot) => {
+            const previousCount = allSubmissions.length;
+            allSubmissions = [];
+            snapshot.forEach((doc) => {
+              allSubmissions.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Check for new submissions
+            if (previousCount > 0 && allSubmissions.length > previousCount) {
+              playNotificationSound();
+              showBrowserNotification(allSubmissions[0]);
+            }
+            
+            updateStats();
+            renderSubmissions();
+          }, (error) => {
+            console.error('Error listening to submissions:', error);
+            document.getElementById('submissions-list').innerHTML = `
+              <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Error loading submissions: ${error.message}
+              </div>
+            `;
+          });
+      }
+
+      // Play notification sound
+      function playNotificationSound() {
+        if (document.getElementById('sound-notifications')?.checked) {
+          const audio = document.getElementById('notification-sound');
+          audio.currentTime = 0;
+          audio.play().catch(() => {});
+        }
+      }
+
+      // Show browser notification
+      function showBrowserNotification(submission) {
+        if (document.getElementById('browser-notifications')?.checked && 
+            'Notification' in window && 
+            Notification.permission === 'granted') {
+          const name = submission.name || submission.first_name || 'Someone';
+          new Notification('New Form Submission', {
+            body: `${name} submitted a ${submission.form_type || 'contact'} form`,
+            icon: '../assets/img/logo-01.png'
+          });
+        }
+      }
+
+      // Update statistics
+      function updateStats() {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        const total = allSubmissions.length;
+        const unread = allSubmissions.filter(s => !s.read).length;
+        const todayCount = allSubmissions.filter(s => {
+          const subDate = s.date ? new Date(s.date) : null;
+          return subDate && subDate >= today;
+        }).length;
+        const appointments = allSubmissions.filter(s => 
+          s.form_type === 'appointment' || s.appointment_request
+        ).length;
+
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-unread').textContent = unread;
+        document.getElementById('stat-today').textContent = todayCount;
+        document.getElementById('stat-appointments').textContent = appointments;
+
+        // Update unread badge
+        const badge = document.getElementById('unread-count');
+        if (unread > 0) {
+          badge.textContent = unread;
+          badge.style.display = 'inline';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      // Render submissions with filters
+      function renderSubmissions() {
+        const container = document.getElementById('submissions-list');
+        
+        // Apply filters
+        let filtered = [...allSubmissions];
+        
+        const typeFilter = document.getElementById('filter-type').value;
+        const statusFilter = document.getElementById('filter-status').value;
+        const dateFilter = document.getElementById('filter-date').value;
+        const searchFilter = document.getElementById('filter-search').value.toLowerCase();
+
+        if (typeFilter) {
+          filtered = filtered.filter(s => s.form_type === typeFilter);
+        }
+
+        if (statusFilter === 'unread') {
+          filtered = filtered.filter(s => !s.read);
+        } else if (statusFilter === 'read') {
+          filtered = filtered.filter(s => s.read);
+        }
+
+        if (dateFilter) {
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          let startDate;
+          
+          if (dateFilter === 'today') {
+            startDate = today;
+          } else if (dateFilter === 'week') {
+            startDate = new Date(today);
+            startDate.setDate(startDate.getDate() - 7);
+          } else if (dateFilter === 'month') {
+            startDate = new Date(today);
+            startDate.setMonth(startDate.getMonth() - 1);
+          }
+          
+          if (startDate) {
+            filtered = filtered.filter(s => {
+              const subDate = s.date ? new Date(s.date) : null;
+              return subDate && subDate >= startDate;
+            });
+          }
+        }
+
+        if (searchFilter) {
+          filtered = filtered.filter(s => {
+            const searchStr = [
+              s.name, s.email, s.phone, s.message, s.form_name, s.vehicle
+            ].filter(Boolean).join(' ').toLowerCase();
+            return searchStr.includes(searchFilter);
+          });
+        }
+
+        if (filtered.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-inbox"></i>
+              <h5>No Submissions Found</h5>
+              <p>No form submissions match your current filters.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = filtered.map(sub => renderSubmissionCard(sub)).join('');
+      }
+
+      // Render individual submission card
+      function renderSubmissionCard(sub) {
+        const date = sub.date ? new Date(sub.date) : null;
+        const dateStr = date ? date.toLocaleDateString('en-US', { 
+          month: 'short', day: 'numeric', year: 'numeric',
+          hour: 'numeric', minute: '2-digit'
+        }) : 'Unknown date';
+
+        const typeClass = sub.form_type || 'contact';
+        const typeName = (sub.form_name || sub.form_type || 'Contact').replace(/_/g, ' ');
+        
+        const name = sub.name || sub.first_name || 'Unknown';
+        const email = sub.email || '';
+        const phone = sub.phone || '';
+        const message = sub.message || sub.comments || '';
+        const vehicle = sub.vehicle || '';
+        
+        return `
+          <div class="submission-card ${sub.read ? 'read' : 'unread'}" data-id="${sub.id}">
+            <div class="submission-header">
+              <div>
+                <span class="submission-type ${typeClass}">${typeName}</span>
+                <h5 style="margin: 8px 0 0; font-size: 18px;">${escapeHtml(name)}</h5>
+              </div>
+              <div class="submission-meta">
+                ${dateStr}
+                ${!sub.read ? '<span class="badge bg-danger ms-2">NEW</span>' : ''}
+              </div>
+            </div>
+            
+            <div class="submission-contact">
+              ${email ? `
+                <div class="submission-contact-item">
+                  <i class="fas fa-envelope"></i>
+                  <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>
+                </div>
+              ` : ''}
+              ${phone ? `
+                <div class="submission-contact-item">
+                  <i class="fas fa-phone"></i>
+                  <a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>
+                </div>
+              ` : ''}
+              ${vehicle ? `
+                <div class="submission-contact-item">
+                  <i class="fas fa-car"></i>
+                  <span>${escapeHtml(vehicle)}</span>
+                </div>
+              ` : ''}
+            </div>
+            
+            ${message ? `<div class="submission-message">${escapeHtml(message)}</div>` : ''}
+            
+            <div class="submission-actions">
+              <button class="btn btn-sm btn-outline-primary" onclick="quickReply('${sub.id}')">
+                <i class="fas fa-reply me-1"></i>Quick Reply
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="viewDetails('${sub.id}')">
+                <i class="fas fa-eye me-1"></i>View Details
+              </button>
+              ${!sub.read ? `
+                <button class="btn btn-sm btn-outline-success" onclick="markAsRead('${sub.id}')">
+                  <i class="fas fa-check me-1"></i>Mark Read
+                </button>
+              ` : `
+                <button class="btn btn-sm btn-outline-warning" onclick="markAsUnread('${sub.id}')">
+                  <i class="fas fa-undo me-1"></i>Mark Unread
+                </button>
+              `}
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteSubmission('${sub.id}')">
+                <i class="fas fa-trash me-1"></i>Delete
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      // Mark as read
+      function markAsRead(id) {
+        db.collection('form_submissions').doc(id).update({ read: true });
+      }
+
+      // Mark as unread  
+      function markAsUnread(id) {
+        db.collection('form_submissions').doc(id).update({ read: false });
+      }
+
+      // Delete submission
+      function deleteSubmission(id) {
+        if (confirm('Are you sure you want to delete this submission?')) {
+          db.collection('form_submissions').doc(id).delete();
+        }
+      }
+
+      // View full details
+      function viewDetails(id) {
+        const sub = allSubmissions.find(s => s.id === id);
+        if (!sub) return;
+
+        // Mark as read
+        markAsRead(id);
+
+        const content = document.getElementById('details-content');
+        content.innerHTML = `
+          <table class="table table-bordered">
+            <tbody>
+              ${Object.entries(sub).map(([key, value]) => {
+                if (key === 'id') return '';
+                let displayValue = value;
+                if (typeof value === 'object') {
+                  displayValue = '<pre style="margin:0;font-size:12px;white-space:pre-wrap;">' + JSON.stringify(value, null, 2) + '</pre>';
+                }
+                return `
+                  <tr>
+                    <th style="width:200px;background:#f9f9f9;">${escapeHtml(key)}</th>
+                    <td>${displayValue}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+
+        new bootstrap.Modal(document.getElementById('viewDetailsModal')).show();
+      }
+
+      // Quick reply
+      function quickReply(id) {
+        const sub = allSubmissions.find(s => s.id === id);
+        if (!sub) return;
+
+        currentReplyData = sub;
+        const name = sub.name || sub.first_name || 'Customer';
+        const email = sub.email || '';
+        const phone = sub.phone || '';
+
+        document.getElementById('reply-to').value = `${name} - ${email || phone}`;
+        document.getElementById('reply-message').value = '';
+
+        // Set up email link
+        const emailBtn = document.getElementById('send-email-btn');
+        emailBtn.onclick = () => {
+          const message = encodeURIComponent(document.getElementById('reply-message').value);
+          const subject = encodeURIComponent("Re: Your inquiry at Quality Lube Express");
+          window.open(`mailto:${email}?subject=${subject}&body=${message}`);
+        };
+
+        // Set up SMS link
+        const smsBtn = document.getElementById('send-sms-btn');
+        smsBtn.onclick = () => {
+          const message = encodeURIComponent(document.getElementById('reply-message').value);
+          const cleanPhone = phone.replace(/\D/g, '');
+          window.open(`sms:${cleanPhone}?body=${message}`);
+        };
+
+        new bootstrap.Modal(document.getElementById('quickReplyModal')).show();
+      }
+
+      // Template messages
+      function useTemplate(type) {
+        const name = currentReplyData?.name || currentReplyData?.first_name || 'there';
+        const templates = {
+          appointment_confirm: `Hi ${name},\n\nThank you for scheduling an appointment with Quality Lube Express!\n\nWe've received your request and will contact you shortly to confirm the date and time.\n\nIf you have any questions, feel free to call us at (940) 566-5169.\n\nThank you,\nQuality Lube Express`,
+          callback: `Hi ${name},\n\nThank you for reaching out to Quality Lube Express!\n\nWe've received your message and will give you a call back shortly.\n\nIf this is urgent, please call us directly at (940) 566-5169.\n\nThank you,\nQuality Lube Express`,
+          quote: `Hi ${name},\n\nThank you for your inquiry at Quality Lube Express!\n\nBased on your request, here's what we can offer:\n\n[Quote details here]\n\nPlease let us know if you have any questions or would like to schedule an appointment.\n\nThank you,\nQuality Lube Express`,
+          thank_you: `Hi ${name},\n\nThank you for choosing Quality Lube Express!\n\nWe appreciate your business and look forward to serving you again.\n\nIf you have any questions or need anything else, don't hesitate to reach out.\n\nThank you,\nQuality Lube Express`
+        };
+        
+        document.getElementById('reply-message').value = templates[type] || '';
+      }
+
+      // Filter event listeners
+      ['filter-type', 'filter-status', 'filter-date'].forEach(id => {
+        document.getElementById(id).addEventListener('change', renderSubmissions);
+      });
+      document.getElementById('filter-search').addEventListener('input', debounce(renderSubmissions, 300));
+
+      // Clear filters
+      function clearFilters() {
+        document.getElementById('filter-type').value = '';
+        document.getElementById('filter-status').value = '';
+        document.getElementById('filter-date').value = '';
+        document.getElementById('filter-search').value = '';
+        renderSubmissions();
+      }
+
+      // Export to CSV
+      function exportSubmissions() {
+        const headers = ['Date', 'Type', 'Name', 'Email', 'Phone', 'Vehicle', 'Message', 'Read'];
+        const rows = allSubmissions.map(sub => [
+          sub.date || '',
+          sub.form_type || '',
+          sub.name || sub.first_name || '',
+          sub.email || '',
+          sub.phone || '',
+          sub.vehicle || '',
+          (sub.message || sub.comments || '').replace(/[\n\r]/g, ' '),
+          sub.read ? 'Yes' : 'No'
+        ]);
+
+        let csv = headers.join(',') + '\n';
+        rows.forEach(row => {
+          csv += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `form-submissions-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+      }
+
+      // ==================== PRICING MANAGEMENT ====================
 
       // Load Services
       function loadServices() {
-        document.getElementById("loading-spinner").style.display = "block";
-        const tbody = document.getElementById("services-table-body");
-        tbody.innerHTML = "";
+        document.getElementById('loading-spinner').style.display = 'block';
+        const tbody = document.getElementById('services-table-body');
+        tbody.innerHTML = '';
 
-        // Debugging: Ensure collection name is consistent
-        db.collection("pricing_services")
+        db.collection('pricing_services')
           .get()
           .then((querySnapshot) => {
-            document.getElementById("loading-spinner").style.display = "none";
+            document.getElementById('loading-spinner').style.display = 'none';
             allServices = [];
 
             if (querySnapshot.empty) {
-              tbody.innerHTML =
-                '<tr><td colspan="4" class="text-center text-muted">No services found. Importing from website automatically...</td></tr>';
-              importServices(true); // Auto-import if empty
+              tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No services found. Click "Reset Data & Imports" to import defaults.</td></tr>';
               return;
             }
 
@@ -259,246 +996,160 @@
               allServices.push({ id: doc.id, ...doc.data() });
             });
 
-            renderTable(allServices);
+            renderServicesTable(allServices);
           })
           .catch((error) => {
-            console.error("Error getting documents: ", error);
-            document.getElementById("loading-spinner").innerHTML =
-              '<span class="text-danger">Error loading data.</span>';
+            console.error('Error getting documents: ', error);
+            document.getElementById('loading-spinner').innerHTML = '<span class="text-danger">Error loading data.</span>';
           });
       }
 
-      function renderTable(services) {
-        const tbody = document.getElementById("services-table-body");
-        tbody.innerHTML = "";
+      function renderServicesTable(services) {
+        const tbody = document.getElementById('services-table-body');
+        tbody.innerHTML = '';
 
-        // Sort: Name only
-        services.sort((a, b) => {
-          return a.name.localeCompare(b.name);
-        });
+        services.sort((a, b) => a.name.localeCompare(b.name));
 
         services.forEach((data) => {
           const row = `
             <tr>
-                <td class="fw-bold">${data.name}</td>
-                <td>${data.price}</td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editService('${data.id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteService('${data.id}')"><i class="fas fa-trash"></i></button>
-                </td>
+              <td class="fw-bold">${data.name}</td>
+              <td>${data.price}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="editService('${data.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteService('${data.id}')"><i class="fas fa-trash"></i></button>
+              </td>
             </tr>
-        `;
+          `;
           tbody.innerHTML += row;
         });
       }
 
       // Save Service
-      document
-        .getElementById("save-service-btn")
-        .addEventListener("click", () => {
-          const id = document.getElementById("service-id").value;
-          const name = document.getElementById("service-name").value;
-          const price = document.getElementById("service-price").value;
+      document.getElementById('save-service-btn').addEventListener('click', () => {
+        const id = document.getElementById('service-id').value;
+        const name = document.getElementById('service-name').value;
+        const price = document.getElementById('service-price').value;
 
-          const data = { name, price };
+        const data = { name, price };
 
-          if (id) {
-            db.collection("pricing_services")
-              .doc(id)
-              .update(data)
-              .then(() => {
-                bootstrap.Modal.getInstance(
-                  document.getElementById("addServiceModal"),
-                ).hide();
-                loadServices();
-              });
-          } else {
-            db.collection("pricing_services")
-              .add(data)
-              .then(() => {
-                bootstrap.Modal.getInstance(
-                  document.getElementById("addServiceModal"),
-                ).hide();
-                loadServices();
-              });
-          }
-        });
+        if (id) {
+          db.collection('pricing_services').doc(id).update(data).then(() => {
+            bootstrap.Modal.getInstance(document.getElementById('addServiceModal')).hide();
+            loadServices();
+          });
+        } else {
+          db.collection('pricing_services').add(data).then(() => {
+            bootstrap.Modal.getInstance(document.getElementById('addServiceModal')).hide();
+            loadServices();
+          });
+        }
+      });
 
       // Delete Service
       window.deleteService = (id) => {
-        if (confirm("Are you sure you want to delete this service?")) {
-          db.collection("pricing_services")
-            .doc(id)
-            .delete()
-            .then(() => loadServices());
+        if (confirm('Are you sure you want to delete this service?')) {
+          db.collection('pricing_services').doc(id).delete().then(() => loadServices());
         }
       };
 
-      // Reset to Defaults (Clear Database)
-      window.resetToDefaults = () => {
-        if (
-          !confirm(
-            "DANGER: This will delete ALL Services from the Database.\nThe website will revert to its original static HTML styling.\nAre you sure completely remove the dynamic pricing?",
-          )
-        )
-          return;
-
-        document.getElementById("loading-spinner").style.display = "block";
-
-        db.collection("pricing_services")
-          .get()
-          .then((snapshot) => {
-            const batch = db.batch();
-            snapshot.docs.forEach((doc) => {
-              batch.delete(doc.ref);
-            });
-            return batch.commit();
-          })
-          .then(() => {
-            alert(
-              "Database Cleared. Website will now use default static HTML.",
-            );
-            loadServices();
-          })
-          .catch((err) => {
-            alert("Error: " + err.message);
-            document.getElementById("loading-spinner").style.display = "none";
-          });
-      };
-
-      // Re-Import (Reset Data)
-      window.reimportDefaults = () => {
-        if (
-          !confirm(
-            "This will DELETE all current data and re-import from the website source.\nUseful for resetting after mistakes.\nContinue?",
-          )
-        )
-          return;
-
-        document.getElementById("loading-spinner").style.display = "block";
-
-        // First clear
-        db.collection("pricing_services")
-          .get()
-          .then((snapshot) => {
-            const batch = db.batch();
-            snapshot.docs.forEach((doc) => {
-              batch.delete(doc.ref);
-            });
-            return batch.commit();
-          })
-          .then(() => {
-            // Then Import
-            return importServices(true);
-          });
-      };
-
-      // Edit Service Helper
+      // Edit Service
       window.editService = (id) => {
         const service = allServices.find((s) => s.id === id);
         if (service) {
-          document.getElementById("service-id").value = id;
-          document.getElementById("service-name").value = service.name;
-          document.getElementById("service-price").value = service.price;
-          new bootstrap.Modal(
-            document.getElementById("addServiceModal"),
-          ).show();
+          document.getElementById('service-id').value = id;
+          document.getElementById('service-name').value = service.name;
+          document.getElementById('service-price').value = service.price;
+          new bootstrap.Modal(document.getElementById('addServiceModal')).show();
         }
       };
 
-      // Import Services Logic
+      // Reset to Defaults
+      window.resetToDefaults = () => {
+        if (!confirm('DANGER: This will delete ALL Services from the Database.\nThe website will revert to its original static HTML styling.\nAre you sure?')) return;
+
+        document.getElementById('loading-spinner').style.display = 'block';
+
+        db.collection('pricing_services').get().then((snapshot) => {
+          const batch = db.batch();
+          snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+          return batch.commit();
+        }).then(() => {
+          alert('Database Cleared. Website will now use default static HTML.');
+          loadServices();
+        }).catch((err) => {
+          alert('Error: ' + err.message);
+          document.getElementById('loading-spinner').style.display = 'none';
+        });
+      };
+
+      // Re-Import Defaults
+      window.reimportDefaults = () => {
+        if (!confirm('This will DELETE all current data and re-import defaults.\nContinue?')) return;
+
+        document.getElementById('loading-spinner').style.display = 'block';
+
+        db.collection('pricing_services').get().then((snapshot) => {
+          const batch = db.batch();
+          snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+          return batch.commit();
+        }).then(() => importServices(true));
+      };
+
+      // Import Services
       async function importServices(auto = false) {
-        if (
-          !auto &&
-          !confirm(
-            "This will RESET the database to the Hardcoded Defaults (Oil, Brakes, Tires). Continue?",
-          )
-        )
-          return;
-
-        if (auto) {
-          document.getElementById("status-msg").innerText =
-            "Setting up default services...";
-          document.getElementById("status-msg").style.display = "block";
-        }
-
         try {
           const defaultServices = [
-            // Left Column: Oil
-            { name: "Mobil 1", price: "$96.99 10k/Mi", category: "Oil" },
-            {
-              name: "MOBILE SYNTHETIC",
-              price: "$74.99 7k/Mi",
-              category: "Oil",
-            },
-
-            { name: "DELVAC 1300", price: "$109.99 7K/Mi", category: "Oil" },
-            { name: "DELVAC 15w40", price: "$149.99 12K/Mi", category: "Oil" },
-            { name: "DELVAC 1 5w40", price: "$149.99 12K/Mi", category: "Oil" },
-
-            { name: "WIPER BLADES", price: "12.99/PC", category: "Oil" }, // Acts as header item
-
-            // Center Column: Brakes
-            { name: "Cars/SUV", price: "$178.48*", category: "Brakes" },
-            {
-              name: "Front and Rear Brake pads. Per axle",
-              price: "",
-              category: "Brakes",
-            },
-            { name: "Heavy Duty", price: "$232.52*", category: "Brakes" },
-            {
-              name: "Front and Rear Brake pads. Per axle",
-              price: " ",
-              category: "Brakes",
-            }, // Space to ensure uniqueness if needed
-
-            // Right Column: Tires
-            { name: "TIRE REPAIR", price: "$25.99", category: "Tires" },
-            { name: "TIRE ROTATION", price: "$19.99", category: "Tires" },
-            { name: "ROTATE & BALANCE", price: "$43.99", category: "Tires" },
-            { name: "33+ TIRE ROTATION", price: "$34.99", category: "Tires" },
-            {
-              name: "33+ ROTATE & BALANCE",
-              price: "$83.99",
-              category: "Tires",
-            },
-            { name: "MOUNT/BALANCE", price: "$24.99/TIRE", category: "Tires" },
-            { name: "OVERSIZED", price: "$34.99/Tire", category: "Tires" },
-            { name: "REVERSED MOUNT", price: "+15%", category: "Tires" },
-            { name: "TPMS SENSOR", price: "$42.99", category: "Tires" },
+            { name: 'Mobil 1', price: '$96.99 10k/Mi', category: 'Oil' },
+            { name: 'MOBILE SYNTHETIC', price: '$74.99 7k/Mi', category: 'Oil' },
+            { name: 'DELVAC 1300', price: '$109.99 7K/Mi', category: 'Oil' },
+            { name: 'DELVAC 15w40', price: '$149.99 12K/Mi', category: 'Oil' },
+            { name: 'DELVAC 1 5w40', price: '$149.99 12K/Mi', category: 'Oil' },
+            { name: 'WIPER BLADES', price: '12.99/PC', category: 'Oil' },
+            { name: 'Cars/SUV', price: '$178.48*', category: 'Brakes' },
+            { name: 'Heavy Duty', price: '$232.52*', category: 'Brakes' },
+            { name: 'TIRE REPAIR', price: '$25.99', category: 'Tires' },
+            { name: 'TIRE ROTATION', price: '$19.99', category: 'Tires' },
+            { name: 'ROTATE & BALANCE', price: '$43.99', category: 'Tires' },
+            { name: '33+ TIRE ROTATION', price: '$34.99', category: 'Tires' },
+            { name: '33+ ROTATE & BALANCE', price: '$83.99', category: 'Tires' },
+            { name: 'MOUNT/BALANCE', price: '$24.99/TIRE', category: 'Tires' },
+            { name: 'OVERSIZED', price: '$34.99/Tire', category: 'Tires' },
+            { name: 'REVERSED MOUNT', price: '+15%', category: 'Tires' },
+            { name: 'TPMS SENSOR', price: '$42.99', category: 'Tires' },
           ];
 
-          let count = 0;
           const batch = db.batch();
-
           defaultServices.forEach((service) => {
-            const newRef = db.collection("pricing_services").doc();
+            const newRef = db.collection('pricing_services').doc();
             batch.set(newRef, service);
-            count++;
           });
 
           await batch.commit();
-
-          if (auto) {
-            document.getElementById("status-msg").className =
-              "alert alert-success";
-            document.getElementById("status-msg").innerText =
-              `Setup Complete! Added ${count} default services.`;
-            setTimeout(
-              () =>
-                (document.getElementById("status-msg").style.display = "none"),
-              5000,
-            );
-          } else {
-            alert(`Successfully added ${count} default services!`);
-          }
+          alert(`Successfully added ${defaultServices.length} default services!`);
           loadServices();
         } catch (e) {
-          console.error("Error importing:", e);
-          if (!auto) alert("Error importing: " + e.message);
+          console.error('Error importing:', e);
+          alert('Error importing: ' + e.message);
         }
       }
+
+      // ==================== UTILITY FUNCTIONS ====================
+
+      function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+      }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
