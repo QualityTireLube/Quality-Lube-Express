@@ -12,8 +12,8 @@
     "https://script.google.com/macros/s/AKfycbwxlDZg38Hp2LO46GQgOAS2ch1SX3OjNko9nfxCQJDGsvkx1ML_HlKQTpeQwZQhHeGVKg/exec";
   const SITE_DOMAIN = "qualitytirelube.com";
 
-  // Track if captcha was recently clicked to block phantom submits
-  let captchaRecentlyClicked = false;
+  // Track if user actually clicked the submit button (vs phantom/programmatic submit)
+  let submitButtonClicked = false;
 
   function init() {
     if (document.readyState === "loading") {
@@ -28,37 +28,25 @@
     forms.forEach((form) => {
       form.classList.remove("wpforms-ajax-form");
       
-      // Use capture phase to intercept submit BEFORE other handlers
-      form.addEventListener("submit", handleSubmit, true);
-
-      // Prevent clicks on the captcha container from triggering ANY form behavior
-      const captchaContainer = form.querySelector(".h-captcha, .recaptcha, .g-recaptcha, [class*='captcha']");
-      if (captchaContainer) {
-        // Track captcha clicks to block phantom form submissions
-        captchaContainer.addEventListener("click", (e) => {
-          captchaRecentlyClicked = true;
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-          // Reset flag after a short delay
-          setTimeout(() => { captchaRecentlyClicked = false; }, 500);
-        }, true);
-        
-        // Also handle mousedown/mouseup which some libraries use
-        captchaContainer.addEventListener("mousedown", (e) => {
-          captchaRecentlyClicked = true;
-          e.stopPropagation();
-          setTimeout(() => { captchaRecentlyClicked = false; }, 500);
-        }, true);
-        captchaContainer.addEventListener("mouseup", (e) => {
-          e.stopPropagation();
+      // Track actual submit button clicks
+      const submitBtn = form.querySelector('button[type="submit"], input[type="submit"], .wpforms-submit');
+      if (submitBtn) {
+        submitBtn.addEventListener("click", () => {
+          submitButtonClicked = true;
+          // Reset after a short delay in case submit doesn't happen
+          setTimeout(() => { submitButtonClicked = false; }, 1000);
         }, true);
       }
+      
+      // Use capture phase to intercept submit BEFORE other handlers
+      form.addEventListener("submit", handleSubmit, true);
       
       // Disable HTML5 form validation which can also trigger alerts
       form.setAttribute("novalidate", "novalidate");
     });
     disableWPForms();
   }
+
 
   function disableWPForms() {
     if (window.wpforms_settings) {
@@ -99,24 +87,14 @@
 
     const form = e.target;
     
-    // If the captcha was just clicked, ignore this submit event entirely
-    // (It's a phantom submit triggered by captcha interaction)
-    if (captchaRecentlyClicked) {
+    // ONLY process if user actually clicked the submit button
+    // This blocks ALL phantom submits from captcha interactions, validation libraries, etc.
+    if (!submitButtonClicked) {
         return;
     }
     
-    // Fix for "phantom" submits: specific element interactions (like hCaptcha iframe clicks)
-    // sometimes trigger script-based submits without a submitter, or bubble up in unexpected ways.
-    // We only want to process the submit if it comes from a valid submit button (which includes "Enter" on inputs).
-    const isExplicitSubmit = e.submitter && (
-        e.submitter.matches('button[type="submit"]') || 
-        e.submitter.matches('input[type="submit"]') || 
-        e.submitter.matches('.wpforms-submit')
-    );
-
-    if (!isExplicitSubmit) {
-        return; 
-    }
+    // Reset the flag immediately
+    submitButtonClicked = false;
 
     const submitBtn = form.querySelector(
       'button[type="submit"], input[type="submit"]',
