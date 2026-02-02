@@ -109,8 +109,37 @@
       }
       .submission-type.contact { background: #e3f2fd; color: #1976d2; }
       .submission-type.appointment { background: #fff3e0; color: #f57c00; }
+      .submission-type.careers { background: #ede7f6; color: #7b1fa2; }
       .submission-type.self_check { background: #e8f5e9; color: #388e3c; }
       .submission-type.lead_capture_start { background: #fce4ec; color: #c2185b; }
+      
+      /* Group Headers */
+      .group-header {
+        padding: 12px 15px;
+        margin: 20px 0 10px 0;
+        font-weight: 600;
+        border-radius: 6px;
+      }
+      .group-header:first-child {
+        margin-top: 0;
+      }
+      .date-header {
+        background: #e3f2fd;
+        color: #1565c0;
+        font-size: 16px;
+      }
+      .type-header {
+        background: #f3e5f5;
+        color: #7b1fa2;
+        font-size: 16px;
+      }
+      .type-subheader {
+        background: #f5f5f5;
+        color: #666;
+        font-size: 14px;
+        margin-left: 20px;
+        margin-right: 0;
+      }
       
       .submission-contact {
         display: flex;
@@ -346,6 +375,7 @@
                 <option value="">All Types</option>
                 <option value="contact">Contact</option>
                 <option value="appointment">Appointment</option>
+                <option value="careers">Careers</option>
                 <option value="self_check">Self-Check</option>
                 <option value="lead_capture_start">Lead Capture</option>
               </select>
@@ -365,6 +395,15 @@
                 <option value="today">Today</option>
                 <option value="week">This Week</option>
                 <option value="month">This Month</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label mb-1" style="font-size:12px;">Group By</label>
+              <select id="filter-group" class="form-select form-select-sm">
+                <option value="">No Grouping</option>
+                <option value="date">Date</option>
+                <option value="type">Type</option>
+                <option value="date-type">Date then Type</option>
               </select>
             </div>
             <div>
@@ -769,7 +808,69 @@
           return;
         }
 
-        container.innerHTML = filtered.map(sub => renderSubmissionCard(sub)).join('');
+        // Apply grouping
+        const groupBy = document.getElementById('filter-group').value;
+        
+        if (!groupBy) {
+          container.innerHTML = filtered.map(sub => renderSubmissionCard(sub)).join('');
+        } else {
+          container.innerHTML = renderGroupedSubmissions(filtered, groupBy);
+        }
+      }
+
+      // Render grouped submissions
+      function renderGroupedSubmissions(submissions, groupBy) {
+        let html = '';
+        
+        if (groupBy === 'date' || groupBy === 'date-type') {
+          // Group by date first
+          const byDate = {};
+          submissions.forEach(sub => {
+            const date = sub.timestamp ? new Date(sub.timestamp) : null;
+            const dateKey = date ? date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : 'Unknown Date';
+            if (!byDate[dateKey]) byDate[dateKey] = [];
+            byDate[dateKey].push(sub);
+          });
+          
+          for (const [dateKey, dateSubs] of Object.entries(byDate)) {
+            if (groupBy === 'date-type') {
+              // Further group by type within each date
+              const byType = {};
+              dateSubs.forEach(sub => {
+                const type = sub.form_type || 'other';
+                if (!byType[type]) byType[type] = [];
+                byType[type].push(sub);
+              });
+              
+              html += `<div class="group-header date-header"><i class="fas fa-calendar me-2"></i>${dateKey}</div>`;
+              
+              for (const [typeKey, typeSubs] of Object.entries(byType)) {
+                const typeName = typeKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                html += `<div class="group-header type-subheader"><i class="fas fa-tag me-2"></i>${typeName} (${typeSubs.length})</div>`;
+                html += typeSubs.map(sub => renderSubmissionCard(sub)).join('');
+              }
+            } else {
+              html += `<div class="group-header date-header"><i class="fas fa-calendar me-2"></i>${dateKey} (${dateSubs.length})</div>`;
+              html += dateSubs.map(sub => renderSubmissionCard(sub)).join('');
+            }
+          }
+        } else if (groupBy === 'type') {
+          // Group by type only
+          const byType = {};
+          submissions.forEach(sub => {
+            const type = sub.form_type || 'other';
+            if (!byType[type]) byType[type] = [];
+            byType[type].push(sub);
+          });
+          
+          for (const [typeKey, typeSubs] of Object.entries(byType)) {
+            const typeName = typeKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            html += `<div class="group-header type-header"><i class="fas fa-tag me-2"></i>${typeName} (${typeSubs.length})</div>`;
+            html += typeSubs.map(sub => renderSubmissionCard(sub)).join('');
+          }
+        }
+        
+        return html;
       }
 
       // Render individual submission card
@@ -957,7 +1058,7 @@
       }
 
       // Filter event listeners
-      ['filter-type', 'filter-status', 'filter-date'].forEach(id => {
+      ['filter-type', 'filter-status', 'filter-date', 'filter-group'].forEach(id => {
         document.getElementById(id).addEventListener('change', renderSubmissions);
       });
       document.getElementById('filter-search').addEventListener('input', debounce(renderSubmissions, 300));
@@ -967,6 +1068,7 @@
         document.getElementById('filter-type').value = '';
         document.getElementById('filter-status').value = '';
         document.getElementById('filter-date').value = '';
+        document.getElementById('filter-group').value = '';
         document.getElementById('filter-search').value = '';
         renderSubmissions();
       }
