@@ -37,6 +37,17 @@
       const submitBtn = form.querySelector('button[type="submit"], input[type="submit"], .wpforms-submit');
       if (submitBtn) {
         submitBtn.addEventListener("click", (e) => {
+          // CRITICAL: Only process if the click target is actually the submit button itself
+          // (not something that bubbled up from captcha or other elements)
+          const clickedElement = e.target;
+          const isActualButtonClick = 
+            clickedElement === submitBtn || 
+            submitBtn.contains(clickedElement);
+          
+          if (!isActualButtonClick) {
+            return; // Ignore clicks that bubbled up from elsewhere
+          }
+          
           e.preventDefault();
           e.stopPropagation();
           handleFormSubmission(form, submitBtn);
