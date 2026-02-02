@@ -75,6 +75,14 @@
     e.stopPropagation();
 
     const form = e.target;
+    
+    // Fix for "phantom" submits: specific element interactions (like hCaptcha iframe clicks)
+    // sometimes bubble up or trigger script-based submits.
+    // We only want to alert/submit if the USER explicitly clicked the submit button (or pressed Enter).
+    if (e.submitter && !e.submitter.matches('button[type="submit"], input[type="submit"], .wpforms-submit')) {
+        return; 
+    }
+
     const submitBtn = form.querySelector(
       'button[type="submit"], input[type="submit"]',
     );
