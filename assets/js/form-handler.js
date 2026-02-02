@@ -93,7 +93,6 @@
         $submitBtn.off('click');
       });
     }
-    }
   }
 
   // --- FILE HANDLING HELPERS ---
