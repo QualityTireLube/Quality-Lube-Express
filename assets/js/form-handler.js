@@ -30,11 +30,22 @@
       // Disable HTML5 form validation
       form.setAttribute("novalidate", "novalidate");
       
-      // Handle form submit event
+      // Find submit button and change its type to prevent any submit events
+      const submitBtn = form.querySelector('button[type="submit"], .wpforms-submit');
+      if (submitBtn) {
+        // Change type from "submit" to "button" - this prevents form submit events entirely
+        submitBtn.type = "button";
+        
+        // Handle click on the button directly
+        submitBtn.addEventListener("click", () => {
+          handleFormSubmission(form, submitBtn);
+        });
+      }
+      
+      // Also block any submit events just in case
       form.addEventListener("submit", (e) => {
         e.preventDefault();
-        const submitBtn = form.querySelector('button[type="submit"], .wpforms-submit');
-        handleFormSubmission(form, submitBtn);
+        e.stopPropagation();
       });
     });
   }
