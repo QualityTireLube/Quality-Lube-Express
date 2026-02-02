@@ -29,37 +29,32 @@
       form.classList.remove("wpforms-ajax-form");
       form.classList.remove("wpforms-validate");
       
-      // COMPLETELY disable form submission - we handle everything via button click
+      // Block form submission - we handle everything via button click
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        e.stopImmediatePropagation();
         return false;
-      }, true);
+      });
       
-      // Handle submit ONLY via direct button click using mousedown (fires before click)
       const submitBtn = form.querySelector('button[type="submit"], input[type="submit"], .wpforms-submit');
       if (submitBtn) {
-        // Use mousedown on capture phase - this fires BEFORE any click handlers
-        submitBtn.addEventListener("mousedown", (e) => {
-          // Only respond to left mouse button
-          if (e.button !== 0) return;
+        // Simple click handler - only process direct clicks on the submit button
+        submitBtn.addEventListener("click", (e) => {
+          // Check if user clicked directly on the button (not something else)
+          const rect = submitBtn.getBoundingClientRect();
+          const clickedInsideButton = 
+            e.clientX >= rect.left && 
+            e.clientX <= rect.right && 
+            e.clientY >= rect.top && 
+            e.clientY <= rect.bottom;
           
-          // CRITICAL: Only process if the click target is actually the submit button itself
-          const clickedElement = e.target;
-          const isActualButtonClick = 
-            clickedElement === submitBtn || 
-            submitBtn.contains(clickedElement);
-          
-          if (!isActualButtonClick) {
-            return; // Ignore events that bubbled up from elsewhere
+          if (!clickedInsideButton) {
+            return; // Click didn't originate from button area
           }
           
           e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
           handleFormSubmission(form, submitBtn);
-        }, true); // capture phase
+        });
       }
       
       // Disable HTML5 form validation
