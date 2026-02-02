@@ -21,9 +21,13 @@
   }
 
   function setupForms() {
+    // FIRST: Disable WPForms and jQuery validation before setting up our handlers
+    disableWPForms();
+    
     const forms = document.querySelectorAll("form.wpforms-form");
     forms.forEach((form) => {
       form.classList.remove("wpforms-ajax-form");
+      form.classList.remove("wpforms-validate");
       
       // COMPLETELY disable form submission - we handle everything via button click
       form.addEventListener("submit", (e) => {
@@ -33,31 +37,34 @@
         return false;
       }, true);
       
-      // Handle submit ONLY via direct button click
+      // Handle submit ONLY via direct button click using mousedown (fires before click)
       const submitBtn = form.querySelector('button[type="submit"], input[type="submit"], .wpforms-submit');
       if (submitBtn) {
-        submitBtn.addEventListener("click", (e) => {
+        // Use mousedown on capture phase - this fires BEFORE any click handlers
+        submitBtn.addEventListener("mousedown", (e) => {
+          // Only respond to left mouse button
+          if (e.button !== 0) return;
+          
           // CRITICAL: Only process if the click target is actually the submit button itself
-          // (not something that bubbled up from captcha or other elements)
           const clickedElement = e.target;
           const isActualButtonClick = 
             clickedElement === submitBtn || 
             submitBtn.contains(clickedElement);
           
           if (!isActualButtonClick) {
-            return; // Ignore clicks that bubbled up from elsewhere
+            return; // Ignore events that bubbled up from elsewhere
           }
           
           e.preventDefault();
           e.stopPropagation();
+          e.stopImmediatePropagation();
           handleFormSubmission(form, submitBtn);
-        });
+        }, true); // capture phase
       }
       
       // Disable HTML5 form validation
       form.setAttribute("novalidate", "novalidate");
     });
-    disableWPForms();
   }
 
   function disableWPForms() {
@@ -73,6 +80,24 @@
           return false;
         };
       }
+    }
+    
+    // Disable jQuery validation on our forms (it intercepts click events)
+    if (window.jQuery && jQuery.fn.validate) {
+      document.querySelectorAll("form.wpforms-form").forEach((form) => {
+        const $form = jQuery(form);
+        // Destroy any existing validator
+        const validator = $form.data('validator');
+        if (validator) {
+          validator.destroy();
+        }
+        // Remove wpforms-validate class that triggers validation
+        form.classList.remove('wpforms-validate');
+        // Remove any jQuery click handlers on submit buttons
+        const $submitBtn = $form.find('button[type="submit"], input[type="submit"], .wpforms-submit');
+        $submitBtn.off('click');
+      });
+    }
     }
   }
 
