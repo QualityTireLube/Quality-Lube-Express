@@ -391,6 +391,979 @@
         .stats-bar { justify-content: center; }
         .submission-header { flex-direction: column; gap: 10px; }
         .quick-reply-options { grid-template-columns: 1fr; }
+        .visual-pricing-columns { flex-direction: column; }
+      }
+
+      /* ==================== VISUAL PAGE BUILDER STYLES ==================== */
+      .page-builder-container {
+        background: #e8e8e8;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 25px rgba(0,0,0,0.15);
+      }
+      
+      /* Toolbar */
+      .builder-toolbar {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        padding: 12px 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        border-bottom: 2px solid #1a252f;
+      }
+      
+      .builder-toolbar .btn {
+        border-radius: 6px;
+        font-size: 0.85em;
+        padding: 8px 14px;
+      }
+      
+      .builder-toolbar .btn-tool {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: white;
+      }
+      
+      .builder-toolbar .btn-tool:hover {
+        background: rgba(255,255,255,0.2);
+        color: white;
+      }
+      
+      .builder-toolbar .btn-tool.active {
+        background: #3498db;
+        border-color: #3498db;
+      }
+      
+      .toolbar-divider {
+        width: 1px;
+        height: 30px;
+        background: rgba(255,255,255,0.2);
+        margin: 0 10px;
+      }
+      
+      /* Canvas Area */
+      .builder-canvas {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background-image: url('../assets/img/pricing-welcome-bg-cl-01.jpg');
+        background-size: cover;
+        background-position: center;
+        padding: 20px;
+        min-height: 600px;
+      }
+      
+      /* Page Header (editable) */
+      .builder-page-header {
+        text-align: center;
+        padding: 30px 20px;
+        margin-bottom: 20px;
+        position: relative;
+        border: 2px dashed transparent;
+        transition: border-color 0.2s;
+      }
+      
+      .builder-page-header:hover {
+        border-color: rgba(255,255,255,0.5);
+      }
+      
+      .builder-page-header.editing {
+        border-color: #3498db;
+        background: rgba(0,0,0,0.3);
+      }
+      
+      .editable-text {
+        background: transparent;
+        border: none;
+        color: inherit;
+        font: inherit;
+        text-align: inherit;
+        width: 100%;
+        outline: none;
+        cursor: text;
+      }
+      
+      .editable-text:hover {
+        background: rgba(255,255,255,0.1);
+        border-radius: 4px;
+      }
+      
+      .editable-text:focus {
+        background: rgba(255,255,255,0.2);
+        border-radius: 4px;
+      }
+      
+      /* Columns Container */
+      .builder-columns {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      
+      /* Individual Column */
+      .builder-column {
+        flex: 1;
+        min-width: 300px;
+        max-width: 400px;
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      
+      .builder-column:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      }
+      
+      .builder-column.light-theme {
+        background: white;
+      }
+      
+      .builder-column.dark-theme {
+        background: url('../assets/img/pricing-technet-bg-cl-01.jpg') center/cover;
+        background-color: #1a1a1a;
+      }
+      
+      .builder-column.dark-theme .column-content {
+        background: rgba(0,0,0,0.75);
+        color: white;
+      }
+      
+      /* Column Header */
+      .column-header {
+        padding: 15px;
+        text-align: center;
+        border-bottom: 2px solid rgba(0,0,0,0.1);
+        cursor: move;
+        position: relative;
+      }
+      
+      .dark-theme .column-header {
+        border-bottom-color: rgba(255,255,255,0.2);
+      }
+      
+      .column-title {
+        font-size: 1.3em;
+        font-weight: bold;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      
+      .column-title input {
+        background: transparent;
+        border: none;
+        text-align: center;
+        font: inherit;
+        color: inherit;
+        width: 100%;
+      }
+      
+      .column-title input:focus {
+        outline: 2px solid #3498db;
+        border-radius: 4px;
+      }
+      
+      .column-controls {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        display: flex;
+        gap: 5px;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      
+      .builder-column:hover .column-controls {
+        opacity: 1;
+      }
+      
+      .column-controls .btn {
+        padding: 4px 8px;
+        font-size: 0.75em;
+      }
+      
+      /* Column Content */
+      .column-content {
+        padding: 15px;
+        min-height: 200px;
+      }
+      
+      /* Section (subheader group) */
+      .builder-section {
+        margin-bottom: 20px;
+        border: 2px dashed transparent;
+        border-radius: 6px;
+        padding: 10px;
+        transition: border-color 0.2s, background 0.2s;
+        position: relative;
+      }
+      
+      .builder-section:hover {
+        border-color: rgba(0,0,0,0.2);
+        background: rgba(0,0,0,0.02);
+      }
+      
+      .dark-theme .builder-section:hover {
+        border-color: rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.05);
+      }
+      
+      .builder-section.dragging {
+        opacity: 0.5;
+        border-color: #3498db;
+      }
+      
+      .builder-section.drag-over {
+        border-color: #27ae60;
+        background: rgba(39, 174, 96, 0.1);
+      }
+      
+      /* Section Header */
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        cursor: move;
+      }
+      
+      .dark-theme .section-header {
+        border-bottom-color: rgba(255,255,255,0.2);
+      }
+      
+      .section-name {
+        font-weight: bold;
+        font-size: 0.95em;
+        text-transform: uppercase;
+      }
+      
+      .section-name input {
+        background: transparent;
+        border: none;
+        font: inherit;
+        color: inherit;
+        width: 150px;
+      }
+      
+      .section-name input:focus {
+        outline: 1px solid #3498db;
+        border-radius: 3px;
+      }
+      
+      .section-subtitle {
+        font-size: 0.85em;
+        color: #666;
+      }
+      
+      .dark-theme .section-subtitle {
+        color: #aaa;
+      }
+      
+      .section-subtitle input {
+        background: transparent;
+        border: none;
+        font: inherit;
+        color: inherit;
+        width: 80px;
+        text-align: right;
+      }
+      
+      .section-controls {
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      
+      .builder-section:hover .section-controls {
+        opacity: 1;
+      }
+      
+      .section-controls .btn {
+        padding: 2px 6px;
+        font-size: 0.7em;
+      }
+      
+      /* Service Item Row */
+      .builder-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        margin-bottom: 8px;
+        background: rgba(255,255,255,0.5);
+        border-radius: 6px;
+        border: 1px solid rgba(0,0,0,0.08);
+        cursor: move;
+        transition: all 0.2s;
+      }
+      
+      .builder-item:hover {
+        background: rgba(255,255,255,0.8);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      
+      .dark-theme .builder-item {
+        background: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.1);
+      }
+      
+      .dark-theme .builder-item:hover {
+        background: rgba(255,255,255,0.15);
+      }
+      
+      .builder-item.dragging {
+        opacity: 0.5;
+        transform: scale(1.02);
+      }
+      
+      .builder-item.drag-over {
+        border-color: #27ae60;
+        border-width: 2px;
+      }
+      
+      /* Drop indicators for items */
+      .builder-item.drop-above {
+        border-top: 3px solid #3498db !important;
+        margin-top: -2px;
+      }
+      
+      .builder-item.drop-below {
+        border-bottom: 3px solid #3498db !important;
+        margin-bottom: -2px;
+      }
+      
+      /* Drop indicators for sections */
+      .builder-section.dragging {
+        opacity: 0.5;
+        border: 2px dashed #3498db;
+      }
+      
+      .builder-section.drop-above {
+        border-top: 3px solid #e74c3c !important;
+      }
+      
+      .builder-section.drop-below {
+        border-bottom: 3px solid #e74c3c !important;
+      }
+      
+      /* Drop indicators for columns */
+      .builder-column.dragging {
+        opacity: 0.5;
+        transform: scale(0.98);
+      }
+      
+      .builder-column.drop-left {
+        border-left: 4px solid #9b59b6 !important;
+      }
+      
+      .builder-column.drop-right {
+        border-right: 4px solid #9b59b6 !important;
+      }
+      
+      /* Empty container drop zone */
+      .items-container.drag-over {
+        background: rgba(52, 152, 219, 0.1);
+        border: 2px dashed #3498db;
+        min-height: 50px;
+      }
+      
+      .item-drag-handle {
+        color: #999;
+        cursor: grab;
+        padding: 8px 10px;
+        font-size: 1.1em;
+        transition: color 0.2s;
+      }
+      
+      .item-drag-handle:hover {
+        color: #3498db;
+      }
+      
+      .item-drag-handle:active {
+        cursor: grabbing;
+      }
+      
+      /* Reorder buttons */
+      .item-reorder-btns {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-right: 8px;
+      }
+      
+      .reorder-btn {
+        background: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 2px 6px;
+        cursor: pointer;
+        font-size: 0.7em;
+        color: #666;
+        transition: all 0.2s;
+      }
+      
+      .reorder-btn:hover:not(.disabled) {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+      }
+      
+      .reorder-btn.disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      
+      .dark-theme .reorder-btn {
+        background: rgba(255,255,255,0.2);
+        border-color: rgba(255,255,255,0.3);
+        color: #ccc;
+      }
+      
+      .dark-theme .reorder-btn:hover:not(.disabled) {
+        background: #3498db;
+        color: white;
+      }
+      
+      /* Horizontal reorder buttons for columns */
+      .column-reorder-btns {
+        display: flex;
+        gap: 4px;
+        margin-right: 10px;
+      }
+      
+      .reorder-btn-horiz {
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 4px;
+        padding: 4px 8px;
+        cursor: pointer;
+        font-size: 0.8em;
+        color: #666;
+        transition: all 0.2s;
+      }
+      
+      .reorder-btn-horiz:hover:not(.disabled) {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+      }
+      
+      .reorder-btn-horiz.disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      
+      .dark-theme .reorder-btn-horiz {
+        background: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.2);
+        color: #aaa;
+      }
+      
+      .dark-theme .reorder-btn-horiz:hover:not(.disabled) {
+        background: #3498db;
+        color: white;
+      }
+      
+      /* Section reorder buttons */
+      .section-reorder-btns {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-right: 10px;
+      }
+      
+      .dark-theme .item-drag-handle {
+        color: #777;
+      }
+      
+      .item-name {
+        flex: 2;
+      }
+      
+      .item-name input {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9em;
+        background: white;
+      }
+      
+      .dark-theme .item-name input {
+        background: rgba(255,255,255,0.9);
+        color: #333;
+      }
+      
+      .item-price {
+        flex: 1;
+        max-width: 120px;
+      }
+      
+      .item-price input {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9em;
+        text-align: right;
+        font-weight: bold;
+        background: white;
+      }
+      
+      .dark-theme .item-price input {
+        background: rgba(255,255,255,0.9);
+        color: #333;
+      }
+      
+      .item-controls {
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      
+      .builder-item:hover .item-controls {
+        opacity: 1;
+      }
+      
+      .item-controls .btn {
+        padding: 4px 8px;
+        font-size: 0.75em;
+      }
+      
+      /* Add Buttons */
+      .add-section-btn, .add-item-btn {
+        width: 100%;
+        padding: 10px;
+        border: 2px dashed #ccc;
+        background: transparent;
+        border-radius: 6px;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 10px;
+      }
+      
+      .add-section-btn:hover, .add-item-btn:hover {
+        border-color: #3498db;
+        color: #3498db;
+        background: rgba(52, 152, 219, 0.05);
+      }
+      
+      .dark-theme .add-section-btn, .dark-theme .add-item-btn {
+        border-color: rgba(255,255,255,0.3);
+        color: rgba(255,255,255,0.7);
+      }
+      
+      .dark-theme .add-section-btn:hover, .dark-theme .add-item-btn:hover {
+        border-color: #3498db;
+        color: #3498db;
+      }
+      
+      /* Column Footer */
+      .column-footer {
+        padding: 15px;
+        text-align: center;
+        font-size: 0.85em;
+        color: #666;
+      }
+      
+      .dark-theme .column-footer {
+        color: rgba(255,255,255,0.7);
+        font-style: italic;
+      }
+      
+      /* Add Column Button */
+      .add-column-btn {
+        min-width: 150px;
+        min-height: 300px;
+        border: 3px dashed rgba(255,255,255,0.4);
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: white;
+      }
+      
+      .add-column-btn:hover {
+        border-color: white;
+        background: rgba(255,255,255,0.2);
+      }
+      
+      .add-column-btn i {
+        font-size: 2em;
+        margin-bottom: 10px;
+      }
+      
+      /* Preview vs Edit Mode */
+      .builder-canvas.preview-mode .column-controls,
+      .builder-canvas.preview-mode .section-controls,
+      .builder-canvas.preview-mode .item-controls,
+      .builder-canvas.preview-mode .add-section-btn,
+      .builder-canvas.preview-mode .add-item-btn,
+      .builder-canvas.preview-mode .add-column-btn,
+      .builder-canvas.preview-mode .item-drag-handle {
+        display: none !important;
+      }
+      
+      .builder-canvas.preview-mode .builder-section {
+        border-color: transparent !important;
+        padding: 5px;
+      }
+      
+      .builder-canvas.preview-mode .builder-item {
+        cursor: default;
+      }
+      
+      .builder-canvas.preview-mode input {
+        pointer-events: none;
+        border-color: transparent !important;
+        background: transparent !important;
+      }
+      
+      /* Dark theme text colors in preview mode */
+      .builder-canvas.preview-mode .dark-theme input {
+        color: white !important;
+      }
+      
+      .builder-canvas.preview-mode .dark-theme .section-name input,
+      .builder-canvas.preview-mode .dark-theme .section-subtitle input {
+        color: white !important;
+      }
+      
+      .builder-canvas.preview-mode .dark-theme .item-name input {
+        color: white !important;
+        font-size: 1.1em;
+      }
+      
+      .builder-canvas.preview-mode .dark-theme .item-price input {
+        color: white !important;
+        font-size: 1.1em;
+      }
+      
+      .builder-canvas.preview-mode .dark-theme .column-title input {
+        color: white !important;
+      }
+      
+      /* Light theme text colors in preview mode */
+      .builder-canvas.preview-mode .light-theme input {
+        color: #333 !important;
+      }
+      
+      /* Hide reorder buttons in preview mode */
+      .builder-canvas.preview-mode .item-reorder-btns,
+      .builder-canvas.preview-mode .section-reorder-btns,
+      .builder-canvas.preview-mode .column-reorder-btns {
+        display: none !important;
+      }
+      
+      /* Theme Picker */
+      .theme-picker {
+        display: flex;
+        gap: 8px;
+        padding: 10px;
+        background: white;
+        border-radius: 6px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        position: absolute;
+        z-index: 100;
+      }
+      
+      .theme-option {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      }
+      
+      .theme-option:hover {
+        transform: scale(1.1);
+      }
+      
+      .theme-option.selected {
+        border-color: #3498db;
+        box-shadow: 0 0 0 2px #3498db;
+      }
+      
+      .visual-col {
+        flex: 1;
+        padding: 20px;
+        min-width: 300px;
+      }
+      
+      .visual-col-light {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        margin: 8px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      }
+      
+      .visual-col-dark {
+        background: url('../assets/img/pricing-technet-bg-cl-01.jpg') center/cover;
+        background-color: #1a1a1a;
+        color: white;
+        margin: 8px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 25px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      }
+      
+      .visual-section {
+        margin-bottom: 20px;
+      }
+      
+      .visual-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        border-bottom: 2px solid #cc0000;
+        padding-bottom: 5px;
+        margin-bottom: 10px;
+        background: #f8f8f8;
+        padding: 8px 10px;
+        margin: -10px -10px 10px -10px;
+      }
+      
+      .section-title {
+        font-weight: bold;
+        font-size: 0.95em;
+        text-transform: uppercase;
+        color: #333;
+      }
+      
+      .section-subtitle {
+        font-size: 0.85em;
+        color: #666;
+      }
+      
+      .visual-section-header-dark {
+        width: 100%;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.3);
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+      }
+      
+      .section-title-dark {
+        font-size: 1.2em;
+        font-weight: 500;
+        color: white;
+      }
+      
+      .visual-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+        padding: 10px 8px;
+        border-bottom: 1px solid rgba(0,0,0,0.08);
+        border-radius: 4px;
+        background: rgba(255,255,255,0.5);
+      }
+      
+      .visual-row:hover {
+        background: rgba(255,255,255,0.9);
+      }
+      
+      .visual-row.empty-row {
+        opacity: 0.6;
+        border-bottom: 1px dashed #ccc;
+      }
+      
+      .visual-row.empty-row:hover {
+        opacity: 1;
+      }
+      
+      .visual-input {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px 12px;
+        font-size: 0.95em;
+        transition: all 0.2s;
+        background: #fff;
+      }
+      
+      .visual-input:focus {
+        border-color: #0066cc;
+        box-shadow: 0 0 0 2px rgba(0,102,204,0.2);
+        outline: none;
+      }
+      
+      .visual-input:hover {
+        border-color: #999;
+      }
+      
+      .name-input {
+        flex: 2;
+        min-width: 150px;
+        font-weight: 500;
+      }
+      
+      .price-input {
+        flex: 1;
+        min-width: 100px;
+        text-align: right;
+        font-weight: bold;
+      }
+      
+      .price-input.wide {
+        min-width: 120px;
+      }
+      
+      .interval-input {
+        width: 70px;
+        flex: 0 0 70px;
+        text-align: center;
+        font-size: 0.85em;
+        color: #666;
+      }
+      
+      /* Brakes Column Styles */
+      .visual-brake-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding: 14px 12px;
+        margin-bottom: 12px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.2);
+      }
+      
+      .visual-brake-row:hover {
+        background: rgba(255,255,255,0.15);
+      }
+      
+      .visual-brake-row.empty-row {
+        background: rgba(255,255,255,0.05);
+        border-style: dashed;
+        opacity: 0.7;
+      }
+      
+      .visual-brake-row.empty-row:hover {
+        opacity: 1;
+      }
+      
+      .brake-left {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+      }
+      
+      .brake-name-input {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        font-size: 1.1em;
+        font-weight: 600;
+        padding: 6px 10px;
+        border-radius: 3px;
+      }
+      
+      .brake-name-input:focus {
+        border-color: #fff;
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.1);
+      }
+      
+      .brake-name-input::placeholder {
+        color: rgba(255,255,255,0.5);
+      }
+      
+      .brake-desc {
+        font-size: 0.8em;
+        color: rgba(255,255,255,0.7);
+        padding-left: 10px;
+      }
+      
+      .brake-price-input {
+        background: white;
+        border: 1px solid #ddd;
+        font-size: 1.1em;
+        font-weight: bold;
+        padding: 8px 12px;
+        text-align: center;
+        min-width: 100px;
+        border-radius: 3px;
+      }
+      
+      .brake-price-input:focus {
+        border-color: #0066cc;
+        box-shadow: 0 0 0 2px rgba(0,102,204,0.3);
+      }
+      
+      .brake-disclaimer {
+        color: rgba(255,255,255,0.8);
+        font-size: 0.85em;
+        text-align: center;
+        margin-top: 15px;
+        font-style: italic;
+      }
+      
+      .technet-logo {
+        margin-top: 20px;
+        text-align: center;
+      }
+      
+      .technet-logo img {
+        opacity: 0.9;
+        filter: brightness(1.1);
+      }
+      
+      /* Delete button for rows */
+      .row-delete-btn {
+        background: none;
+        border: none;
+        color: #dc3545;
+        cursor: pointer;
+        padding: 4px 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        font-size: 14px;
+      }
+      
+      .visual-row:hover .row-delete-btn,
+      .visual-brake-row:hover .row-delete-btn {
+        opacity: 1;
+      }
+      
+      .row-delete-btn:hover {
+        color: #a71d2a;
+      }
+      
+      .visual-brake-row .row-delete-btn {
+        color: #ff6b6b;
+      }
+      
+      .visual-brake-row .row-delete-btn:hover {
+        color: #ff4757;
+      }
+      
+      /* Unsaved changes indicator */
+      .visual-input.modified {
+        background: #fffbeb;
+        border-color: #f59e0b;
+      }
+      
+      .visual-input.modified:focus {
+        box-shadow: 0 0 0 2px rgba(245,158,11,0.3);
       }
     </style>
   </head>
@@ -534,41 +1507,100 @@
 
         <!-- Pricing Tab -->
         <div class="tab-pane fade" id="pricing-tab">
-          <div class="mb-4 d-flex gap-2 flex-wrap">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
-              <i class="fas fa-plus"></i> Add New Service
+          <!-- Toolbar -->
+          <div class="mb-4 d-flex gap-2 flex-wrap align-items-center">
+            <button class="btn btn-success" onclick="saveAllPrices()">
+              <i class="fas fa-save"></i> Save All Changes
             </button>
-            <button class="btn btn-secondary" onclick="loadServices()">
+            <button class="btn btn-secondary" onclick="loadVisualPricing()">
               <i class="fas fa-sync"></i> Refresh
             </button>
+            <span class="text-muted ms-2" id="save-status"></span>
             <div class="ms-auto d-flex gap-2">
-              <button class="btn btn-warning text-dark" onclick="reimportDefaults()">
-                <i class="fas fa-history"></i> Reset Data & Imports
+              <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+                <i class="fas fa-plus"></i> Add Service
               </button>
-              <button class="btn btn-danger" onclick="resetToDefaults()">
-                <i class="fas fa-ban"></i> Disable Dynamic/Revert Styling
+              <button class="btn btn-warning text-dark" onclick="reimportDefaults()">
+                <i class="fas fa-history"></i> Reset Defaults
               </button>
             </div>
           </div>
 
-          <div class="table-responsive">
-            <table class="table table-hover align-middle">
-              <thead class="table-dark">
-                <tr>
-                  <th style="width: 50%">Service Name</th>
-                  <th>Price</th>
-                  <th class="text-end">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="services-table-body">
-                <!-- Data will be loaded here -->
-              </tbody>
-            </table>
+          <div class="alert alert-info py-2">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Page Builder:</strong> Drag sections and items to reorder. Click any text to edit. Use the toolbar to add columns, sections, and items.
           </div>
 
           <div id="loading-spinner" class="text-center my-5" style="display:none;">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+
+          <!-- Visual Page Builder -->
+          <div id="page-builder" class="page-builder-container">
+            
+            <!-- Builder Toolbar -->
+            <div class="builder-toolbar">
+              <button class="btn btn-tool" onclick="addColumn('light')" title="Add Light Column">
+                <i class="fas fa-plus-square"></i> Add Column
+              </button>
+              <button class="btn btn-tool" onclick="addColumn('dark')" title="Add Dark Column">
+                <i class="fas fa-plus-square"></i> Add Dark Column
+              </button>
+              <div class="toolbar-divider"></div>
+              <button class="btn btn-tool" id="preview-toggle" onclick="togglePreviewMode()">
+                <i class="fas fa-eye"></i> Preview
+              </button>
+              <div class="toolbar-divider"></div>
+              <button class="btn btn-tool" onclick="undoChange()" title="Undo">
+                <i class="fas fa-undo"></i>
+              </button>
+              <button class="btn btn-tool" onclick="redoChange()" title="Redo">
+                <i class="fas fa-redo"></i>
+              </button>
+              <div class="toolbar-divider"></div>
+              <span class="text-white-50 small">
+                <i class="fas fa-grip-vertical"></i> Drag to reorder &nbsp;|&nbsp;
+                <i class="fas fa-mouse-pointer"></i> Click to edit
+              </span>
+            </div>
+            
+            <!-- Builder Canvas - The actual page editor -->
+            <div class="builder-canvas" id="builder-canvas">
+              
+              <!-- Page Header (editable) -->
+              <div class="builder-page-header">
+                <h2 style="margin: 0; font-style: italic; font-weight: 400; color: white;">
+                  <input type="text" class="editable-text" id="header-line1" value="WELCOME TO" style="font-style: italic; font-weight: 400; font-size: 1em;">
+                </h2>
+                <h1 style="margin: 0; font-weight: bold; color: white;">
+                  <input type="text" class="editable-text" id="header-line2" value="QUALITY LUBE EXPRESS" style="font-weight: bold; font-size: 2em;">
+                </h1>
+              </div>
+              
+              <!-- Columns Container -->
+              <div class="builder-columns" id="columns-container">
+                <!-- Columns will be dynamically generated -->
+              </div>
+              
+            </div>
+          </div>
+
+          <!-- Legacy Table View (Hidden by default, can be toggled) -->
+          <div id="legacy-table-view" style="display: none;">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                  <tr>
+                    <th style="width: 50%">Service Name</th>
+                    <th>Price</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="services-table-body">
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -698,7 +1730,16 @@
               </div>
               <div class="mb-3">
                 <label class="form-label">Price / Description</label>
-                <input type="text" class="form-control" id="service-price" required placeholder="e.g. $89.99" />
+                <input type="text" class="form-control" id="service-price" required placeholder="e.g. $89.99 10k/Mi" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="service-category">
+                  <option value="Oil">Oil</option>
+                  <option value="Brakes">Brakes</option>
+                  <option value="Tires">Tires</option>
+                  <option value="General">General</option>
+                </select>
               </div>
             </form>
           </div>
@@ -1305,39 +2346,923 @@
         a.click();
       }
 
-      // ==================== PRICING MANAGEMENT ====================
+      // ==================== PAGE BUILDER FOR PRICING ====================
 
-      // Load Services
-      function loadServices() {
+      // Page Builder State
+      let pageData = {
+        header: {
+          line1: 'WELCOME TO',
+          line2: 'QUALITY LUBE EXPRESS'
+        },
+        columns: []
+      };
+      let undoStack = [];
+      let redoStack = [];
+      let hasUnsavedChanges = false;
+      let isPreviewMode = false;
+
+      // Initialize Page Builder
+      function initPageBuilder() {
+        loadPageData();
+      }
+
+      // Load page data from Firebase
+      async function loadPageData() {
         document.getElementById('loading-spinner').style.display = 'block';
-        const tbody = document.getElementById('services-table-body');
-        tbody.innerHTML = '';
+        
+        try {
+          // First, try to load the page structure
+          const structureDoc = await db.collection('pricing_page').doc('structure').get();
+          
+          if (structureDoc.exists) {
+            pageData = structureDoc.data();
+          } else {
+            // Create default structure from existing services
+            await createDefaultStructure();
+          }
+          
+          renderPageBuilder();
+          
+        } catch (error) {
+          console.error('Error loading page data:', error);
+          // Fallback to creating default structure
+          await createDefaultStructure();
+          renderPageBuilder();
+        } finally {
+          document.getElementById('loading-spinner').style.display = 'none';
+        }
+      }
 
-        db.collection('pricing_services')
-          .get()
-          .then((querySnapshot) => {
-            document.getElementById('loading-spinner').style.display = 'none';
-            allServices = [];
-
-            if (querySnapshot.empty) {
-              tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No services found. Click "Reset Data & Imports" to import defaults.</td></tr>';
-              return;
-            }
-
-            querySnapshot.forEach((doc) => {
-              allServices.push({ id: doc.id, ...doc.data() });
-            });
-
-            renderServicesTable(allServices);
-          })
-          .catch((error) => {
-            console.error('Error getting documents: ', error);
-            document.getElementById('loading-spinner').innerHTML = '<span class="text-danger">Error loading data.</span>';
+      // Create default structure from existing pricing_services
+      async function createDefaultStructure() {
+        try {
+          const snapshot = await db.collection('pricing_services').get();
+          const services = [];
+          snapshot.forEach(doc => services.push({ id: doc.id, ...doc.data() }));
+          
+          // Group by category
+          const oilServices = services.filter(s => s.category === 'Oil' || !s.category || s.category === 'General');
+          const brakeServices = services.filter(s => s.category === 'Brakes');
+          const tireServices = services.filter(s => s.category === 'Tires');
+          
+          // Create sub-sections for Oil column
+          const syntheticServices = oilServices.filter(s => {
+            const n = s.name.toUpperCase();
+            return n.includes('MOBIL') || n.includes('MOBILE') || (n.includes('SYNTHETIC') && !n.includes('DIESEL'));
           });
+          
+          const dieselServices = oilServices.filter(s => {
+            const n = s.name.toUpperCase();
+            return n.includes('DIESEL') || n.includes('DELVAC') || n.includes('ROTELLA');
+          });
+          
+          const wiperServices = oilServices.filter(s => {
+            const n = s.name.toUpperCase();
+            return n.includes('WIPER') || n.includes('BLADE');
+          });
+
+          pageData = {
+            header: {
+              line1: 'WELCOME TO',
+              line2: 'QUALITY LUBE EXPRESS'
+            },
+            columns: [
+              {
+                id: 'col-oil',
+                title: 'OIL',
+                theme: 'light',
+                sections: [
+                  {
+                    id: 'sec-synthetic',
+                    name: 'FULL SYNTHETIC',
+                    subtitle: '5QTs',
+                    items: syntheticServices.map(s => ({ id: s.id, name: s.name, price: s.price }))
+                  },
+                  {
+                    id: 'sec-diesel',
+                    name: 'DIESEL OIL CHANGE',
+                    subtitle: '10/QT',
+                    items: dieselServices.map(s => ({ id: s.id, name: s.name, price: s.price }))
+                  },
+                  {
+                    id: 'sec-wipers',
+                    name: 'WIPER BLADES',
+                    subtitle: '',
+                    items: wiperServices.map(s => ({ id: s.id, name: s.name, price: s.price }))
+                  }
+                ],
+                footer: ''
+              },
+              {
+                id: 'col-brakes',
+                title: 'BRAKES',
+                theme: 'dark',
+                sections: [
+                  {
+                    id: 'sec-brakes',
+                    name: '',
+                    subtitle: '',
+                    items: brakeServices.map(s => ({ id: s.id, name: s.name, price: s.price }))
+                  }
+                ],
+                footer: '*PRICES FOR MOST CARS/TRUCKS',
+                showLogo: true
+              },
+              {
+                id: 'col-tires',
+                title: 'TIRES',
+                theme: 'light',
+                sections: [
+                  {
+                    id: 'sec-tires',
+                    name: '',
+                    subtitle: '',
+                    items: tireServices.map(s => ({ id: s.id, name: s.name, price: s.price }))
+                  }
+                ],
+                footer: ''
+              }
+            ]
+          };
+          
+        } catch (error) {
+          console.error('Error creating default structure:', error);
+          // Create minimal default
+          pageData = {
+            header: { line1: 'WELCOME TO', line2: 'QUALITY LUBE EXPRESS' },
+            columns: []
+          };
+        }
+      }
+
+      // Render the entire page builder
+      function renderPageBuilder() {
+        // Update header inputs
+        document.getElementById('header-line1').value = pageData.header?.line1 || 'WELCOME TO';
+        document.getElementById('header-line2').value = pageData.header?.line2 || 'QUALITY LUBE EXPRESS';
+        
+        // Render columns
+        const container = document.getElementById('columns-container');
+        container.innerHTML = '';
+        
+        pageData.columns.forEach((column, colIndex) => {
+          container.innerHTML += renderColumn(column, colIndex);
+        });
+        
+        // Add "Add Column" button
+        container.innerHTML += `
+          <div class="add-column-btn" onclick="addColumn('light')">
+            <i class="fas fa-plus-circle"></i>
+            <span>Add Column</span>
+          </div>
+        `;
+        
+        // Setup drag and drop
+        setupDragAndDrop();
+      }
+
+      // Render a single column
+      function renderColumn(column, colIndex) {
+        const isDark = column.theme === 'dark';
+        const themeClass = isDark ? 'dark-theme' : 'light-theme';
+        const isFirst = colIndex === 0;
+        const isLast = colIndex === pageData.columns.length - 1;
+        
+        let sectionsHtml = column.sections.map((section, secIndex) => 
+          renderSection(section, colIndex, secIndex, isDark)
+        ).join('');
+        
+        let footerHtml = '';
+        if (column.footer) {
+          footerHtml += `<div class="column-footer">${escapeHtml(column.footer)}</div>`;
+        }
+        if (column.showLogo) {
+          footerHtml += `<div class="column-footer"><img src="../assets/img/technet-warranty-logo.png" alt="TechNet" style="max-width: 120px; opacity: 0.9;"></div>`;
+        }
+        
+        return `
+          <div class="builder-column ${themeClass}" data-col-index="${colIndex}">
+            <div class="column-header">
+              <div class="column-reorder-btns">
+                <button class="reorder-btn-horiz ${isFirst ? 'disabled' : ''}" onclick="moveColumnLeft(${colIndex})" title="Move Left" ${isFirst ? 'disabled' : ''}>
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="reorder-btn-horiz ${isLast ? 'disabled' : ''}" onclick="moveColumnRight(${colIndex})" title="Move Right" ${isLast ? 'disabled' : ''}>
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+              <h3 class="column-title">
+                <input type="text" value="${escapeHtml(column.title)}" 
+                       onchange="updateColumnTitle(${colIndex}, this.value)"
+                       placeholder="Column Title">
+              </h3>
+              <div class="column-controls">
+                <button class="btn btn-sm ${isDark ? 'btn-outline-light' : 'btn-outline-secondary'}" 
+                        onclick="toggleColumnTheme(${colIndex})" title="Toggle Theme">
+                  <i class="fas fa-adjust"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteColumn(${colIndex})" title="Delete Column">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+            <div class="column-content">
+              <div class="sections-container" data-col-index="${colIndex}">
+                ${sectionsHtml}
+              </div>
+              <button class="add-section-btn" onclick="addSection(${colIndex})">
+                <i class="fas fa-plus"></i> Add Section
+              </button>
+            </div>
+            ${footerHtml}
+          </div>
+        `;
+      }
+
+      // Render a section within a column
+      function renderSection(section, colIndex, secIndex, isDark) {
+        let itemsHtml = section.items.map((item, itemIndex) => 
+          renderItem(item, colIndex, secIndex, itemIndex, isDark)
+        ).join('');
+        
+        const showHeader = section.name || section.subtitle;
+        const sectionsCount = pageData.columns[colIndex].sections.length;
+        const isFirst = secIndex === 0;
+        const isLast = secIndex === sectionsCount - 1;
+        
+        return `
+          <div class="builder-section" data-col-index="${colIndex}" data-sec-index="${secIndex}">
+            <div class="section-header">
+              <div class="section-reorder-btns">
+                <button class="reorder-btn ${isFirst ? 'disabled' : ''}" onclick="moveSectionUp(${colIndex}, ${secIndex})" title="Move Section Up" ${isFirst ? 'disabled' : ''}>
+                  <i class="fas fa-chevron-up"></i>
+                </button>
+                <button class="reorder-btn ${isLast ? 'disabled' : ''}" onclick="moveSectionDown(${colIndex}, ${secIndex})" title="Move Section Down" ${isLast ? 'disabled' : ''}>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+              </div>
+              <div class="section-name">
+                <input type="text" value="${escapeHtml(section.name || '')}" 
+                       onchange="updateSectionName(${colIndex}, ${secIndex}, this.value)"
+                       placeholder="Section Name (optional)">
+              </div>
+              <div class="section-subtitle">
+                <input type="text" value="${escapeHtml(section.subtitle || '')}" 
+                       onchange="updateSectionSubtitle(${colIndex}, ${secIndex}, this.value)"
+                       placeholder="Subtitle">
+              </div>
+              <div class="section-controls">
+                <button class="btn btn-sm ${isDark ? 'btn-outline-light' : 'btn-outline-secondary'}" 
+                        onclick="deleteSection(${colIndex}, ${secIndex})" title="Delete Section">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+            <div class="items-container" data-col-index="${colIndex}" data-sec-index="${secIndex}">
+              ${itemsHtml}
+            </div>
+            <button class="add-item-btn" onclick="addItem(${colIndex}, ${secIndex})">
+              <i class="fas fa-plus"></i> Add Item
+            </button>
+          </div>
+        `;
+      }
+
+      // Render a single item
+      function renderItem(item, colIndex, secIndex, itemIndex, isDark) {
+        const isFirst = itemIndex === 0;
+        const itemsCount = pageData.columns[colIndex].sections[secIndex].items.length;
+        const isLast = itemIndex === itemsCount - 1;
+        
+        return `
+          <div class="builder-item" data-col-index="${colIndex}" data-sec-index="${secIndex}" data-item-index="${itemIndex}">
+            <div class="item-reorder-btns">
+              <button class="reorder-btn ${isFirst ? 'disabled' : ''}" onclick="moveItemUp(${colIndex}, ${secIndex}, ${itemIndex})" title="Move Up" ${isFirst ? 'disabled' : ''}>
+                <i class="fas fa-chevron-up"></i>
+              </button>
+              <button class="reorder-btn ${isLast ? 'disabled' : ''}" onclick="moveItemDown(${colIndex}, ${secIndex}, ${itemIndex})" title="Move Down" ${isLast ? 'disabled' : ''}>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+            </div>
+            <div class="item-name">
+              <input type="text" value="${escapeHtml(item.name)}" 
+                     onchange="updateItemName(${colIndex}, ${secIndex}, ${itemIndex}, this.value)"
+                     placeholder="Service Name">
+            </div>
+            <div class="item-price">
+              <input type="text" value="${escapeHtml(item.price)}" 
+                     onchange="updateItemPrice(${colIndex}, ${secIndex}, ${itemIndex}, this.value)"
+                     placeholder="Price">
+            </div>
+            <div class="item-controls">
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteItem(${colIndex}, ${secIndex}, ${itemIndex})" title="Delete">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      // ==================== CRUD Operations ====================
+
+      // Save state for undo
+      function saveState() {
+        undoStack.push(JSON.stringify(pageData));
+        if (undoStack.length > 50) undoStack.shift();
+        redoStack = [];
+        hasUnsavedChanges = true;
+        updateSaveStatus('Unsaved changes...');
+      }
+
+      // Add a new column
+      window.addColumn = function(theme = 'light') {
+        saveState();
+        const newCol = {
+          id: 'col-' + Date.now(),
+          title: 'NEW COLUMN',
+          theme: theme,
+          sections: [{
+            id: 'sec-' + Date.now(),
+            name: 'NEW SECTION',
+            subtitle: '',
+            items: []
+          }],
+          footer: ''
+        };
+        pageData.columns.push(newCol);
+        renderPageBuilder();
+      };
+
+      // Delete column
+      window.deleteColumn = function(colIndex) {
+        if (!confirm('Delete this entire column and all its contents?')) return;
+        saveState();
+        pageData.columns.splice(colIndex, 1);
+        renderPageBuilder();
+      };
+
+      // Toggle column theme
+      window.toggleColumnTheme = function(colIndex) {
+        saveState();
+        pageData.columns[colIndex].theme = pageData.columns[colIndex].theme === 'dark' ? 'light' : 'dark';
+        renderPageBuilder();
+      };
+
+      // Update column title
+      window.updateColumnTitle = function(colIndex, value) {
+        saveState();
+        pageData.columns[colIndex].title = value;
+      };
+
+      // Add section to column
+      window.addSection = function(colIndex) {
+        saveState();
+        pageData.columns[colIndex].sections.push({
+          id: 'sec-' + Date.now(),
+          name: 'NEW SECTION',
+          subtitle: '',
+          items: []
+        });
+        renderPageBuilder();
+      };
+
+      // Delete section
+      window.deleteSection = function(colIndex, secIndex) {
+        if (!confirm('Delete this section and all its items?')) return;
+        saveState();
+        pageData.columns[colIndex].sections.splice(secIndex, 1);
+        renderPageBuilder();
+      };
+
+      // Update section name
+      window.updateSectionName = function(colIndex, secIndex, value) {
+        saveState();
+        pageData.columns[colIndex].sections[secIndex].name = value;
+      };
+
+      // Update section subtitle
+      window.updateSectionSubtitle = function(colIndex, secIndex, value) {
+        saveState();
+        pageData.columns[colIndex].sections[secIndex].subtitle = value;
+      };
+
+      // Add item to section
+      window.addItem = function(colIndex, secIndex) {
+        saveState();
+        pageData.columns[colIndex].sections[secIndex].items.push({
+          id: 'item-' + Date.now(),
+          name: 'New Service',
+          price: '$0.00'
+        });
+        renderPageBuilder();
+      };
+
+      // Delete item
+      window.deleteItem = function(colIndex, secIndex, itemIndex) {
+        const item = pageData.columns[colIndex].sections[secIndex].items[itemIndex];
+        if (!confirm(`Delete "${item.name}"?`)) return;
+        saveState();
+        pageData.columns[colIndex].sections[secIndex].items.splice(itemIndex, 1);
+        renderPageBuilder();
+      };
+
+      // Update item name
+      window.updateItemName = function(colIndex, secIndex, itemIndex, value) {
+        saveState();
+        pageData.columns[colIndex].sections[secIndex].items[itemIndex].name = value;
+      };
+
+      // Update item price
+      window.updateItemPrice = function(colIndex, secIndex, itemIndex, value) {
+        saveState();
+        pageData.columns[colIndex].sections[secIndex].items[itemIndex].price = value;
+      };
+
+      // Move item up in list
+      window.moveItemUp = function(colIndex, secIndex, itemIndex) {
+        if (itemIndex === 0) return;
+        saveState();
+        const items = pageData.columns[colIndex].sections[secIndex].items;
+        [items[itemIndex - 1], items[itemIndex]] = [items[itemIndex], items[itemIndex - 1]];
+        renderPageBuilder();
+      };
+
+      // Move item down in list
+      window.moveItemDown = function(colIndex, secIndex, itemIndex) {
+        const items = pageData.columns[colIndex].sections[secIndex].items;
+        if (itemIndex >= items.length - 1) return;
+        saveState();
+        [items[itemIndex], items[itemIndex + 1]] = [items[itemIndex + 1], items[itemIndex]];
+        renderPageBuilder();
+      };
+
+      // Move section up
+      window.moveSectionUp = function(colIndex, secIndex) {
+        if (secIndex === 0) return;
+        saveState();
+        const sections = pageData.columns[colIndex].sections;
+        [sections[secIndex - 1], sections[secIndex]] = [sections[secIndex], sections[secIndex - 1]];
+        renderPageBuilder();
+      };
+
+      // Move section down
+      window.moveSectionDown = function(colIndex, secIndex) {
+        const sections = pageData.columns[colIndex].sections;
+        if (secIndex >= sections.length - 1) return;
+        saveState();
+        [sections[secIndex], sections[secIndex + 1]] = [sections[secIndex + 1], sections[secIndex]];
+        renderPageBuilder();
+      };
+
+      // Move column left
+      window.moveColumnLeft = function(colIndex) {
+        if (colIndex === 0) return;
+        saveState();
+        [pageData.columns[colIndex - 1], pageData.columns[colIndex]] = [pageData.columns[colIndex], pageData.columns[colIndex - 1]];
+        renderPageBuilder();
+      };
+
+      // Move column right
+      window.moveColumnRight = function(colIndex) {
+        if (colIndex >= pageData.columns.length - 1) return;
+        saveState();
+        [pageData.columns[colIndex], pageData.columns[colIndex + 1]] = [pageData.columns[colIndex + 1], pageData.columns[colIndex]];
+        renderPageBuilder();
+      };
+
+      // ==================== Drag and Drop ====================
+
+      let draggedElement = null;
+      let dragType = null;
+      let dragData = null;
+
+      function setupDragAndDrop() {
+        // Column drag and drop
+        const columns = document.querySelectorAll('.builder-column');
+        const columnsContainer = document.getElementById('columns-container');
+        
+        columns.forEach(col => {
+          col.addEventListener('dragstart', handleColumnDragStart);
+          col.addEventListener('dragend', handleDragEnd);
+          col.addEventListener('dragover', handleColumnDragOver);
+          col.addEventListener('drop', handleColumnDrop);
+        });
+
+        // Item drag and drop - use the drag handle
+        const items = document.querySelectorAll('.builder-item');
+        
+        items.forEach(item => {
+          // Make the whole item draggable but only via the handle
+          const handle = item.querySelector('.item-drag-handle');
+          if (handle) {
+            handle.addEventListener('mousedown', () => {
+              item.setAttribute('draggable', 'true');
+            });
+            handle.addEventListener('mouseup', () => {
+              item.setAttribute('draggable', 'false');
+            });
+          }
+          
+          item.addEventListener('dragstart', handleItemDragStart);
+          item.addEventListener('dragend', handleDragEnd);
+          item.addEventListener('dragover', handleItemDragOver);
+          item.addEventListener('drop', handleItemDrop);
+        });
+        
+        // Allow dropping on item containers (for empty sections)
+        const itemContainers = document.querySelectorAll('.items-container');
+        itemContainers.forEach(container => {
+          container.addEventListener('dragover', handleContainerDragOver);
+          container.addEventListener('drop', handleContainerDrop);
+          container.addEventListener('dragleave', handleDragLeave);
+        });
+        
+        // Section drag and drop
+        const sections = document.querySelectorAll('.builder-section');
+        
+        sections.forEach(section => {
+          section.addEventListener('dragstart', handleSectionDragStart);
+          section.addEventListener('dragend', handleDragEnd);
+          section.addEventListener('dragover', handleSectionDragOver);
+          section.addEventListener('drop', handleSectionDrop);
+        });
+      }
+
+      // ===== COLUMN DRAG =====
+      function handleColumnDragStart(e) {
+        // Don't drag if clicking on child elements like inputs
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') {
+          e.preventDefault();
+          return;
+        }
+        draggedElement = this;
+        dragType = 'column';
+        dragData = {
+          colIndex: parseInt(this.dataset.colIndex)
+        };
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', 'column');
+      }
+
+      function handleColumnDragOver(e) {
+        if (dragType !== 'column') return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        const rect = this.getBoundingClientRect();
+        const midX = rect.left + rect.width / 2;
+        
+        // Show drop indicator
+        this.classList.remove('drop-left', 'drop-right');
+        if (e.clientX < midX) {
+          this.classList.add('drop-left');
+        } else {
+          this.classList.add('drop-right');
+        }
+      }
+
+      function handleColumnDrop(e) {
+        e.preventDefault();
+        if (dragType !== 'column') return;
+        
+        const targetColIndex = parseInt(this.dataset.colIndex);
+        const sourceColIndex = dragData.colIndex;
+        
+        if (sourceColIndex === targetColIndex) return;
+        
+        // Determine insert position based on mouse position
+        const rect = this.getBoundingClientRect();
+        const midX = rect.left + rect.width / 2;
+        let insertIndex = e.clientX < midX ? targetColIndex : targetColIndex + 1;
+        
+        // Adjust if moving from before to after
+        if (sourceColIndex < insertIndex) insertIndex--;
+        
+        saveState();
+        
+        // Remove and reinsert column
+        const [column] = pageData.columns.splice(sourceColIndex, 1);
+        pageData.columns.splice(insertIndex, 0, column);
+        
+        renderPageBuilder();
+      }
+
+      // ===== ITEM DRAG =====
+      function handleItemDragStart(e) {
+        e.stopPropagation(); // Prevent section/column drag
+        draggedElement = this;
+        dragType = 'item';
+        dragData = {
+          colIndex: parseInt(this.dataset.colIndex),
+          secIndex: parseInt(this.dataset.secIndex),
+          itemIndex: parseInt(this.dataset.itemIndex)
+        };
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', 'item');
+      }
+
+      function handleItemDragOver(e) {
+        if (dragType !== 'item') return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        
+        // Show drop indicator above or below
+        const rect = this.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        
+        this.classList.remove('drop-above', 'drop-below');
+        if (e.clientY < midY) {
+          this.classList.add('drop-above');
+        } else {
+          this.classList.add('drop-below');
+        }
+      }
+
+      function handleItemDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (dragType !== 'item') return;
+        
+        this.classList.remove('drop-above', 'drop-below');
+        
+        const targetColIndex = parseInt(this.dataset.colIndex);
+        const targetSecIndex = parseInt(this.dataset.secIndex);
+        const targetItemIndex = parseInt(this.dataset.itemIndex);
+        
+        const { colIndex: srcColIndex, secIndex: srcSecIndex, itemIndex: srcItemIndex } = dragData;
+        
+        // Determine insert position
+        const rect = this.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        let insertIndex = e.clientY < midY ? targetItemIndex : targetItemIndex + 1;
+        
+        // Same section reordering
+        if (srcColIndex === targetColIndex && srcSecIndex === targetSecIndex) {
+          if (srcItemIndex === insertIndex || srcItemIndex + 1 === insertIndex) return;
+          if (srcItemIndex < insertIndex) insertIndex--;
+        }
+        
+        saveState();
+        
+        // Remove from source
+        const [item] = pageData.columns[srcColIndex].sections[srcSecIndex].items.splice(srcItemIndex, 1);
+        
+        // Insert at target
+        pageData.columns[targetColIndex].sections[targetSecIndex].items.splice(insertIndex, 0, item);
+        
+        renderPageBuilder();
+      }
+
+      function handleContainerDragOver(e) {
+        if (dragType !== 'item') return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        this.classList.add('drag-over');
+      }
+
+      function handleContainerDrop(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        if (dragType !== 'item') return;
+        
+        // If dropped on container (not on an item), add to end
+        const targetColIndex = parseInt(this.dataset.colIndex);
+        const targetSecIndex = parseInt(this.dataset.secIndex);
+        
+        const { colIndex: srcColIndex, secIndex: srcSecIndex, itemIndex: srcItemIndex } = dragData;
+        
+        saveState();
+        
+        // Remove from source
+        const [item] = pageData.columns[srcColIndex].sections[srcSecIndex].items.splice(srcItemIndex, 1);
+        
+        // Add to end of target
+        pageData.columns[targetColIndex].sections[targetSecIndex].items.push(item);
+        
+        renderPageBuilder();
+      }
+
+      // ===== SECTION DRAG =====
+      function handleSectionDragStart(e) {
+        // Don't start if dragging from an item or input
+        if (e.target.closest('.builder-item') || e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') {
+          e.preventDefault();
+          return;
+        }
+        e.stopPropagation();
+        draggedElement = this;
+        dragType = 'section';
+        dragData = {
+          colIndex: parseInt(this.dataset.colIndex),
+          secIndex: parseInt(this.dataset.secIndex)
+        };
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', 'section');
+      }
+
+      function handleSectionDragOver(e) {
+        if (dragType !== 'section') return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        
+        const rect = this.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        
+        this.classList.remove('drop-above', 'drop-below');
+        if (e.clientY < midY) {
+          this.classList.add('drop-above');
+        } else {
+          this.classList.add('drop-below');
+        }
+      }
+
+      function handleSectionDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (dragType !== 'section') return;
+        
+        this.classList.remove('drop-above', 'drop-below');
+        
+        const targetColIndex = parseInt(this.dataset.colIndex);
+        const targetSecIndex = parseInt(this.dataset.secIndex);
+        
+        const { colIndex: srcColIndex, secIndex: srcSecIndex } = dragData;
+        
+        // Determine insert position
+        const rect = this.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        let insertIndex = e.clientY < midY ? targetSecIndex : targetSecIndex + 1;
+        
+        // Same column reordering
+        if (srcColIndex === targetColIndex) {
+          if (srcSecIndex === insertIndex || srcSecIndex + 1 === insertIndex) return;
+          if (srcSecIndex < insertIndex) insertIndex--;
+        }
+        
+        saveState();
+        
+        // Remove from source
+        const [section] = pageData.columns[srcColIndex].sections.splice(srcSecIndex, 1);
+        
+        // Insert at target
+        pageData.columns[targetColIndex].sections.splice(insertIndex, 0, section);
+        
+        renderPageBuilder();
+      }
+
+      // ===== COMMON HANDLERS =====
+      function handleDragEnd() {
+        this.classList.remove('dragging');
+        this.setAttribute('draggable', 'false');
+        document.querySelectorAll('.drag-over, .drop-above, .drop-below, .drop-left, .drop-right').forEach(el => {
+          el.classList.remove('drag-over', 'drop-above', 'drop-below', 'drop-left', 'drop-right');
+        });
+        draggedElement = null;
+        dragType = null;
+        dragData = null;
+      }
+
+      function handleDragLeave(e) {
+        this.classList.remove('drag-over', 'drop-above', 'drop-below');
+      }
+
+      // ==================== Undo/Redo ====================
+
+      window.undoChange = function() {
+        if (undoStack.length === 0) return;
+        redoStack.push(JSON.stringify(pageData));
+        pageData = JSON.parse(undoStack.pop());
+        renderPageBuilder();
+        updateSaveStatus('Unsaved changes...');
+      };
+
+      window.redoChange = function() {
+        if (redoStack.length === 0) return;
+        undoStack.push(JSON.stringify(pageData));
+        pageData = JSON.parse(redoStack.pop());
+        renderPageBuilder();
+        updateSaveStatus('Unsaved changes...');
+      };
+
+      // ==================== Preview Mode ====================
+
+      window.togglePreviewMode = function() {
+        isPreviewMode = !isPreviewMode;
+        const canvas = document.getElementById('builder-canvas');
+        const btn = document.getElementById('preview-toggle');
+        
+        if (isPreviewMode) {
+          canvas.classList.add('preview-mode');
+          btn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+          btn.classList.add('active');
+        } else {
+          canvas.classList.remove('preview-mode');
+          btn.innerHTML = '<i class="fas fa-eye"></i> Preview';
+          btn.classList.remove('active');
+        }
+      };
+
+      // ==================== Save to Firebase ====================
+
+      window.saveAllPrices = async function() {
+        try {
+          document.getElementById('loading-spinner').style.display = 'block';
+          updateSaveStatus('Saving...');
+          
+          // Update header from inputs
+          pageData.header.line1 = document.getElementById('header-line1').value;
+          pageData.header.line2 = document.getElementById('header-line2').value;
+          
+          // Save the page structure
+          await db.collection('pricing_page').doc('structure').set(pageData);
+          
+          // Also update the pricing_services collection for backward compatibility
+          const batch = db.batch();
+          
+          // Collect all items with their categories
+          const allItems = [];
+          pageData.columns.forEach(col => {
+            const category = col.title.includes('OIL') ? 'Oil' : 
+                           col.title.includes('BRAKE') ? 'Brakes' : 
+                           col.title.includes('TIRE') ? 'Tires' : 'General';
+            col.sections.forEach(sec => {
+              sec.items.forEach(item => {
+                allItems.push({
+                  id: item.id,
+                  name: item.name,
+                  price: item.price,
+                  category: category,
+                  sectionName: sec.name,
+                  sectionSubtitle: sec.subtitle
+                });
+              });
+            });
+          });
+          
+          // Update each item in pricing_services
+          for (const item of allItems) {
+            if (item.id && !item.id.startsWith('item-')) {
+              // Existing item - update
+              const ref = db.collection('pricing_services').doc(item.id);
+              batch.update(ref, {
+                name: item.name,
+                price: item.price,
+                category: item.category
+              });
+            } else {
+              // New item - create
+              const ref = db.collection('pricing_services').doc();
+              batch.set(ref, {
+                name: item.name,
+                price: item.price,
+                category: item.category
+              });
+              // Update local ID
+              item.id = ref.id;
+            }
+          }
+          
+          await batch.commit();
+          
+          hasUnsavedChanges = false;
+          updateSaveStatus('All changes saved!', true);
+          
+        } catch (error) {
+          console.error('Error saving:', error);
+          alert('Error saving: ' + error.message);
+          updateSaveStatus('Error saving!');
+        } finally {
+          document.getElementById('loading-spinner').style.display = 'none';
+        }
+      };
+
+      // Update save status
+      function updateSaveStatus(message, isSuccess = false) {
+        const statusEl = document.getElementById('save-status');
+        if (statusEl) {
+          statusEl.textContent = message;
+          statusEl.className = isSuccess ? 'text-success' : 'text-warning';
+        }
+      }
+
+      // Load on pricing tab show
+      function loadVisualPricing() {
+        initPageBuilder();
+      }
+
+      // Legacy load services (for table view)
+      function loadServices() {
+        loadVisualPricing();
       }
 
       function renderServicesTable(services) {
         const tbody = document.getElementById('services-table-body');
+        if (!tbody) return;
         tbody.innerHTML = '';
 
         services.sort((a, b) => a.name.localeCompare(b.name));
@@ -1357,31 +3282,41 @@
         });
       }
 
-      // Save Service
+      // Save Service (from modal)
       document.getElementById('save-service-btn').addEventListener('click', () => {
         const id = document.getElementById('service-id').value;
         const name = document.getElementById('service-name').value;
         const price = document.getElementById('service-price').value;
+        const category = document.getElementById('service-category').value;
 
-        const data = { name, price };
+        const data = { name, price, category };
 
         if (id) {
           db.collection('pricing_services').doc(id).update(data).then(() => {
             bootstrap.Modal.getInstance(document.getElementById('addServiceModal')).hide();
-            loadServices();
+            loadVisualPricing();
           });
         } else {
           db.collection('pricing_services').add(data).then(() => {
             bootstrap.Modal.getInstance(document.getElementById('addServiceModal')).hide();
-            loadServices();
+            loadVisualPricing();
           });
+        }
+      });
+
+      // Clear modal when opened for new service
+      document.getElementById('addServiceModal').addEventListener('show.bs.modal', function (event) {
+        if (!document.getElementById('service-id').value) {
+          document.getElementById('service-name').value = '';
+          document.getElementById('service-price').value = '';
+          document.getElementById('service-category').value = 'Oil';
         }
       });
 
       // Delete Service
       window.deleteService = (id) => {
         if (confirm('Are you sure you want to delete this service?')) {
-          db.collection('pricing_services').doc(id).delete().then(() => loadServices());
+          db.collection('pricing_services').doc(id).delete().then(() => loadVisualPricing());
         }
       };
 
@@ -1392,6 +3327,7 @@
           document.getElementById('service-id').value = id;
           document.getElementById('service-name').value = service.name;
           document.getElementById('service-price').value = service.price;
+          document.getElementById('service-category').value = service.category || 'General';
           new bootstrap.Modal(document.getElementById('addServiceModal')).show();
         }
       };
@@ -1408,7 +3344,7 @@
           return batch.commit();
         }).then(() => {
           alert('Database Cleared. Website will now use default static HTML.');
-          loadServices();
+          loadVisualPricing();
         }).catch((err) => {
           alert('Error: ' + err.message);
           document.getElementById('loading-spinner').style.display = 'none';
@@ -1428,27 +3364,29 @@
         }).then(() => importServices(true));
       };
 
-      // Import Services
+      // Import Services (with updated defaults matching the image)
       async function importServices(auto = false) {
         try {
           const defaultServices = [
-            { name: 'Mobil 1', price: '$96.99 10k/Mi', category: 'Oil' },
-            { name: 'MOBILE SYNTHETIC', price: '$74.99 7k/Mi', category: 'Oil' },
-            { name: 'DELVAC 1300', price: '$109.99 7K/Mi', category: 'Oil' },
-            { name: 'DELVAC 15w40', price: '$149.99 12K/Mi', category: 'Oil' },
-            { name: 'DELVAC 1 5w40', price: '$149.99 12K/Mi', category: 'Oil' },
-            { name: 'WIPER BLADES', price: '12.99/PC', category: 'Oil' },
-            { name: 'Cars/SUV', price: '$178.48*', category: 'Brakes' },
-            { name: 'Heavy Duty', price: '$232.52*', category: 'Brakes' },
-            { name: 'TIRE REPAIR', price: '$25.99', category: 'Tires' },
-            { name: 'TIRE ROTATION', price: '$19.99', category: 'Tires' },
-            { name: 'ROTATE & BALANCE', price: '$43.99', category: 'Tires' },
-            { name: '33+ TIRE ROTATION', price: '$34.99', category: 'Tires' },
-            { name: '33+ ROTATE & BALANCE', price: '$83.99', category: 'Tires' },
-            { name: 'MOUNT/BALANCE', price: '$24.99/TIRE', category: 'Tires' },
-            { name: 'OVERSIZED', price: '$34.99/Tire', category: 'Tires' },
-            { name: 'REVERSED MOUNT', price: '+15%', category: 'Tires' },
-            { name: 'TPMS SENSOR', price: '$42.99', category: 'Tires' },
+            // Oil Column
+            { name: 'MOBIL 1', price: '$123.97 10k/Mi', category: 'Oil' },
+            { name: 'MOBIL SUPER', price: '$104.02 7k/Mi', category: 'Oil' },
+            { name: 'DELVAC 1 5w40', price: '$188.40 10K/Mi', category: 'Oil' },
+            { name: 'ROTELLA', price: '$188.40 5K/Mi', category: 'Oil' },
+            { name: 'WIPER BLADES', price: '17.37/PC', category: 'Oil' },
+            // Brakes Column
+            { name: 'Cars/Suv', price: '$229.71*', category: 'Brakes' },
+            { name: 'Heavy Duty', price: '$297.82*', category: 'Brakes' },
+            // Tires Column
+            { name: 'TIRE REPAIR', price: '$19.90 - $64.32', category: 'Tires' },
+            { name: 'TIRE ROTATION / RELEARN', price: '$44.19', category: 'Tires' },
+            { name: 'ROTATE & BALANCE', price: '$58.82', category: 'Tires' },
+            { name: '33+TIRE ROTATION', price: '$48.61', category: 'Tires' },
+            { name: '33+ROTATE&BALANCE', price: '$99.44', category: 'Tires' },
+            { name: 'TPMS RELEARN', price: '$33.14', category: 'Tires' },
+            { name: 'MOUNT/BALANCE', price: '$38.66/Tire', category: 'Tires' },
+            { name: 'OVERSIZED', price: '$55.37/Tire', category: 'Tires' },
+            { name: 'TPMS SENSOR', price: '$77.33', category: 'Tires' },
           ];
 
           const batch = db.batch();
@@ -1459,12 +3397,20 @@
 
           await batch.commit();
           alert(`Successfully added ${defaultServices.length} default services!`);
-          loadServices();
+          loadVisualPricing();
         } catch (e) {
           console.error('Error importing:', e);
           alert('Error importing: ' + e.message);
         }
       }
+
+      // Warn before leaving with unsaved changes
+      window.addEventListener('beforeunload', (e) => {
+        if (hasUnsavedChanges) {
+          e.preventDefault();
+          e.returnValue = '';
+        }
+      });
 
       // ==================== UTILITY FUNCTIONS ====================
 
