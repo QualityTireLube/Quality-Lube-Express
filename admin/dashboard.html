@@ -518,6 +518,15 @@
       
       .builder-column.light-theme {
         background: white;
+        color: #000000;
+      }
+      
+      .builder-column.light-theme .column-content {
+        color: #000000;
+      }
+      
+      .builder-column.light-theme input {
+        color: #000000 !important;
       }
       
       .builder-column.dark-theme {
@@ -528,6 +537,10 @@
       .builder-column.dark-theme .column-content {
         background: rgba(0,0,0,0.75);
         color: white;
+      }
+      
+      .builder-column.dark-theme input {
+        color: white !important;
       }
       
       /* Column Header */
@@ -1056,7 +1069,34 @@
       
       /* Light theme text colors in preview mode */
       .builder-canvas.preview-mode .light-theme input {
-        color: #333 !important;
+        color: #000000 !important;
+      }
+      
+      .builder-canvas.preview-mode .light-theme .section-name input,
+      .builder-canvas.preview-mode .light-theme .section-subtitle input {
+        color: #000000 !important;
+      }
+      
+      .builder-canvas.preview-mode .light-theme .item-name input {
+        color: #000000 !important;
+      }
+      
+      .builder-canvas.preview-mode .light-theme .item-price input {
+        color: #000000 !important;
+      }
+      
+      .builder-canvas.preview-mode .light-theme .column-title input {
+        color: #000000 !important;
+      }
+      
+      /* Page header text colors in preview mode - BLACK like original */
+      .builder-canvas.preview-mode .page-header-text {
+        color: #000000 !important;
+      }
+      
+      .builder-canvas.preview-mode .builder-page-header h1,
+      .builder-canvas.preview-mode .builder-page-header h2 {
+        color: #000000 !important;
       }
       
       /* Hide reorder buttons in preview mode */
@@ -1571,11 +1611,11 @@
               
               <!-- Page Header (editable) -->
               <div class="builder-page-header">
-                <h2 style="margin: 0; font-style: italic; font-weight: 400; color: white;">
-                  <input type="text" class="editable-text" id="header-line1" value="WELCOME TO" style="font-style: italic; font-weight: 400; font-size: 1em;">
+                <h2 style="margin: 0; font-style: italic; font-weight: 400; color: #000000;">
+                  <input type="text" class="editable-text page-header-text" id="header-line1" value="WELCOME TO" style="font-style: italic; font-weight: 400; font-size: 1em; color: #000000;">
                 </h2>
-                <h1 style="margin: 0; font-weight: bold; color: white;">
-                  <input type="text" class="editable-text" id="header-line2" value="QUALITY LUBE EXPRESS" style="font-weight: bold; font-size: 2em;">
+                <h1 style="margin: 0; font-weight: bold; color: #000000;">
+                  <input type="text" class="editable-text page-header-text" id="header-line2" value="QUALITY LUBE EXPRESS" style="font-weight: bold; font-size: 2em; color: #000000;">
                 </h1>
               </div>
               
