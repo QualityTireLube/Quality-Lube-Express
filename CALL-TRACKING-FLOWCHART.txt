@@ -1,0 +1,419 @@
+================================================================================
+CALL TRACKING FLOW DIAGRAM
+Quality Tire & Lube Express - qualitytirelube.com
+================================================================================
+
+                        USER VISITS WEBSITE
+                               |
+                               v
+                    ┌──────────────────────┐
+                    │  Browser Requests    │
+                    │  qualitytirelube.com │
+                    └──────────┬───────────┘
+                               |
+                               v
+                    ┌──────────────────────┐
+                    │   Server Responds    │
+                    │   with HTML Page     │
+                    └──────────┬───────────┘
+                               |
+                               v
+                    ┌──────────────────────────────────────┐
+                    │  HTML Contains:                      │
+                    │  • Phone: (225) 658-9099            │
+                    │  • Schema: +1-225-658-9099          │
+                    │  • All links: tel:+12256589099      │
+                    │  • Script tag: call-tracking.js     │
+                    └──────────┬───────────────────────────┘
+                               |
+                               v
+                    ┌──────────────────────┐
+                    │   Page Renders       │
+                    │   (Shows Real #)     │
+                    └──────────┬───────────┘
+                               |
+                               v
+                    ┌──────────────────────┐
+                    │  JavaScript Loads    │
+                    │  call-tracking.js    │
+                    └──────────┬───────────┘
+                               |
+                               v
+                    ┌──────────────────────┐
+                    │   DOM Ready Event    │
+                    │   Triggers Script    │
+                    └──────────┬───────────┘
+                               |
+                               v
+                    ┌──────────────────────────────────────┐
+                    │   BOT DETECTION STARTS               │
+                    │                                      │
+                    │   Checks:                            │
+                    │   • User Agent String                │
+                    │   • navigator.webdriver              │
+                    │   • Phantom/Headless indicators      │
+                    │   • Browser properties               │
+                    └──────────┬───────────────────────────┘
+                               |
+                               v
+                    ┌──────────────────────┐
+                    │   Decision Point     │
+                    │   Bot or Human?      │
+                    └──────────┬───────────┘
+                               |
+                ┌──────────────┴──────────────┐
+                |                             |
+                v                             v
+    ┌─────────────────────┐      ┌─────────────────────┐
+    │   BOT DETECTED      │      │   HUMAN DETECTED    │
+    │   (Googlebot, etc)  │      │   (Real Visitor)    │
+    └─────────┬───────────┘      └─────────┬───────────┘
+              |                             |
+              v                             v
+    ┌─────────────────────┐      ┌─────────────────────┐
+    │  NO REPLACEMENT     │      │  PHONE REPLACEMENT  │
+    │                     │      │  STARTS             │
+    └─────────┬───────────┘      └─────────┬───────────┘
+              |                             |
+              v                             v
+    ┌─────────────────────┐      ┌─────────────────────────────────┐
+    │  Phone Stays:       │      │  Find All Phone Elements:       │
+    │  (225) 658-9099     │      │  • a[href*="2256589099"]       │
+    │                     │      │  • .phone-number                │
+    │  Links Stay:        │      │  • .w-text-value                │
+    │  tel:+12256589099   │      │  • Other selectors              │
+    └─────────┬───────────┘      └─────────┬───────────────────────┘
+              |                             |
+              v                             v
+    ┌─────────────────────┐      ┌─────────────────────────────────┐
+    │  Google Sees:       │      │  Replace Each Element:          │
+    │  • Real number      │      │  • href: tel:+12252695446      │
+    │  • Correct NAP      │      │  • text: (225) 269-5446        │
+    │  • Clean schema     │      │  • Add data attributes          │
+    └─────────┬───────────┘      └─────────┬───────────────────────┘
+              |                             |
+              v                             v
+    ┌─────────────────────┐      ┌─────────────────────────────────┐
+    │  SEO PRESERVED:     │      │  Visitor Sees:                  │
+    │  ✓ Rankings safe    │      │  (225) 269-5446                │
+    │  ✓ GBP consistent   │      │                                 │
+    │  ✓ Citations match  │      │  Links Dial:                    │
+    │  ✓ Schema clean     │      │  tel:+12252695446              │
+    └─────────┬───────────┘      └─────────┬───────────────────────┘
+              |                             |
+              v                             v
+    ┌─────────────────────┐      ┌─────────────────────────────────┐
+    │  Bot Indexes Page   │      │  Visitor Clicks Phone           │
+    │  with Real Number   │      │                                 │
+    └─────────────────────┘      └─────────┬───────────────────────┘
+                                            |
+                                            v
+                                 ┌─────────────────────────────────┐
+                                 │  Call Placed to:                │
+                                 │  (225) 269-5446                │
+                                 └─────────┬───────────────────────┘
+                                            |
+                                            v
+                                 ┌─────────────────────────────────┐
+                                 │  Call Tracking System:          │
+                                 │  • Records call                 │
+                                 │  • Logs source (website)        │
+                                 │  • Tracks duration              │
+                                 │  • Forwards to business         │
+                                 └─────────┬───────────────────────┘
+                                            |
+                                            v
+                                 ┌─────────────────────────────────┐
+                                 │  Call Routes to:                │
+                                 │  (225) 658-9099                │
+                                 │  (Real Business Line)           │
+                                 └─────────────────────────────────┘
+
+
+================================================================================
+MUTATION OBSERVER (DYNAMIC CONTENT)
+================================================================================
+
+                    ┌──────────────────────┐
+                    │  Page Fully Loaded   │
+                    │  Initial Replacement │
+                    │  Complete            │
+                    └──────────┬───────────┘
+                               |
+                               v
+                    ┌──────────────────────┐
+                    │  Mutation Observer   │
+                    │  Starts Watching     │
+                    └──────────┬───────────┘
+                               |
+                               v
+                    ┌──────────────────────┐
+                    │  Monitors DOM for:   │
+                    │  • New elements      │
+                    │  • AJAX content      │
+                    │  • Dynamic updates   │
+                    └──────────┬───────────┘
+                               |
+                               v
+                    ┌──────────────────────┐
+                    │  New Content Added?  │
+                    └──────────┬───────────┘
+                               |
+                    ┌──────────┴──────────┐
+                    |                     |
+                    v                     v
+            ┌──────────────┐      ┌──────────────┐
+            │  No Change   │      │  New Phone   │
+            │  Continue    │      │  Number      │
+            │  Watching    │      │  Detected    │
+            └──────────────┘      └──────┬───────┘
+                                         |
+                                         v
+                              ┌──────────────────────┐
+                              │  Check if Bot        │
+                              └──────────┬───────────┘
+                                         |
+                              ┌──────────┴──────────┐
+                              |                     |
+                              v                     v
+                      ┌──────────────┐      ┌──────────────┐
+                      │  Bot: Skip   │      │  Human:      │
+                      │  Replacement │      │  Replace     │
+                      └──────────────┘      └──────┬───────┘
+                                                   |
+                                                   v
+                                        ┌──────────────────────┐
+                                        │  New Numbers         │
+                                        │  Show Tracking #     │
+                                        └──────────────────────┘
+
+
+================================================================================
+VIEW SOURCE vs RENDERED PAGE
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         VIEW PAGE SOURCE                                │
+│                         (What's in HTML)                                │
+│                                                                         │
+│  <a href="tel:+12256589099">(225) 658-9099</a>                        │
+│                                                                         │
+│  <script type="application/ld+json">                                   │
+│  {                                                                      │
+│    "@type": "LocalBusiness",                                           │
+│    "telephone": "+1-225-658-9099"                                      │
+│  }                                                                      │
+│  </script>                                                             │
+│                                                                         │
+│  ✓ Real number only                                                    │
+│  ✓ SEO safe                                                            │
+│  ✓ Google indexes this                                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+
+                                    |
+                                    v
+                        [JavaScript Executes]
+                                    |
+                                    v
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         RENDERED PAGE                                   │
+│                         (What Humans See)                               │
+│                                                                         │
+│  <a href="tel:+12252695446" data-tracking-phone="+12252695446">       │
+│    (225) 269-5446                                                      │
+│  </a>                                                                   │
+│                                                                         │
+│  <script type="application/ld+json">                                   │
+│  {                                                                      │
+│    "@type": "LocalBusiness",                                           │
+│    "telephone": "+1-225-658-9099"  ← UNCHANGED                        │
+│  }                                                                      │
+│  </script>                                                             │
+│                                                                         │
+│  ✓ Tracking number visible                                             │
+│  ✓ Schema still has real number                                        │
+│  ✓ Calls are tracked                                                   │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+WHAT EACH PARTY SEES
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         GOOGLEBOT SEES                                  │
+│                                                                         │
+│  HTML Source:          (225) 658-9099                                  │
+│  Schema Markup:        +1-225-658-9099                                 │
+│  All Links:            tel:+12256589099                                │
+│  JavaScript:           Executes but replacement skipped                │
+│                                                                         │
+│  Result:                                                                │
+│  ✓ Indexes real number                                                 │
+│  ✓ NAP consistent with GBP                                             │
+│  ✓ Local SEO signals preserved                                         │
+│  ✓ Schema markup clean                                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         HUMAN VISITOR SEES                              │
+│                                                                         │
+│  Browser Display:      (225) 269-5446                                  │
+│  Clickable Links:      tel:+12252695446                                │
+│  All Interactions:     Tracking number                                 │
+│  JavaScript:           Executes and replaces numbers                   │
+│                                                                         │
+│  Result:                                                                │
+│  ✓ Clicks tracking number                                              │
+│  ✓ Call is tracked                                                     │
+│  ✓ Routes to business line                                             │
+│  ✓ Attribution accurate                                                │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    GOOGLE BUSINESS PROFILE                              │
+│                                                                         │
+│  Listed Number:        (225) 658-9099                                  │
+│  Never Changes:        Always real number                              │
+│  Matches:              Website HTML source                             │
+│                        Schema markup                                   │
+│                        Directory citations                             │
+│                                                                         │
+│  Result:                                                                │
+│  ✓ NAP consistency maintained                                          │
+│  ✓ Trust signals preserved                                             │
+│  ✓ Local pack rankings safe                                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+DATA FLOW
+================================================================================
+
+                    Website Visitor (Human)
+                            |
+                            v
+                    Sees: (225) 269-5446
+                            |
+                            v
+                    Clicks Phone Link
+                            |
+                            v
+                    Dials: +12252695446
+                            |
+                            v
+                    Call Tracking System
+                            |
+                    ┌───────┴───────┐
+                    |               |
+                    v               v
+            Records Call      Forwards Call
+            • Source: Web          |
+            • Time: Now            v
+            • Duration          Business Line
+            • Page URL          (225) 658-9099
+                    |               |
+                    v               v
+            Analytics         Customer Answers
+            Dashboard         
+                    |
+                    v
+            ROI Tracking
+            Attribution
+
+
+                    Search Engine Bot (Google)
+                            |
+                            v
+                    Crawls: qualitytirelube.com
+                            |
+                            v
+                    Reads HTML Source
+                            |
+                            v
+                    Finds: (225) 658-9099
+                            |
+                            v
+                    Extracts Schema Markup
+                            |
+                            v
+                    Telephone: +1-225-658-9099
+                            |
+                            v
+                    Compares with GBP
+                            |
+                            v
+                    Match: ✓ Consistent
+                            |
+                            v
+                    Maintains/Improves Rankings
+
+
+================================================================================
+IMPLEMENTATION TIMELINE
+================================================================================
+
+T=0: User visits page
+     └─> HTML loads with real number (658-9099)
+
+T+50ms: DOM starts rendering
+        └─> Real number visible
+
+T+100ms: Page rendered
+         └─> User sees real number (briefly)
+
+T+150ms: JavaScript starts loading
+         └─> call-tracking.js begins execution
+
+T+200ms: Bot detection runs
+         └─> Determines: Human visitor
+
+T+250ms: Phone replacement executes
+         └─> Numbers change to tracking number (269-5446)
+
+T+300ms: Mutation observer starts
+         └─> Watches for dynamic content
+
+T+∞: Ongoing monitoring
+     └─> Replaces any new phone numbers added dynamically
+
+
+================================================================================
+VERIFICATION POINTS
+================================================================================
+
+✓ BEFORE JAVASCRIPT:
+  • HTML has real number
+  • Schema has real number
+  • All links have real number
+  • Source code pristine
+
+✓ AFTER JAVASCRIPT (Human):
+  • Display shows tracking number
+  • Links dial tracking number
+  • Schema still has real number (protected)
+  • Source code unchanged (view source)
+
+✓ AFTER JAVASCRIPT (Bot):
+  • Display shows real number (no change)
+  • Links dial real number (no change)
+  • Schema has real number (protected)
+  • Source code unchanged
+
+✓ GOOGLE SEARCH CONSOLE:
+  • Crawled page shows real number
+  • Rendered page shows real number (bot view)
+  • Schema extracted correctly
+  • No errors or warnings
+
+✓ RICH RESULTS TEST:
+  • LocalBusiness detected
+  • Telephone shows real number
+  • All properties valid
+  • No schema errors
+
+
+================================================================================
+END OF FLOWCHART
+================================================================================
