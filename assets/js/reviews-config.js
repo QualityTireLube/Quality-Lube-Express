@@ -7,7 +7,7 @@
 const GOOGLE_REVIEWS_CONFIG = {
     // Your Google Places API Key
     // Get one at: https://console.cloud.google.com/apis/credentials
-    apiKey: 'YOUR_GOOGLE_PLACES_API_KEY',
+    apiKey: 'AIzaSyCFtj9ZNk_H62RhuStR8hcQybIIvX-e_0w',
     
     // Your Google Business Profile Place ID
     // Current Place ID for Quality Lube Express
