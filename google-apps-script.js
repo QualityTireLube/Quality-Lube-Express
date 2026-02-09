@@ -58,8 +58,19 @@ function doPost(e) {
       zip: "Zip Code",
       resume: "Resume",
     };
+    
     // Also map any wpforms keys to human titles
+    // We check for multiple possible IDs since WPForms IDs can vary
     const wpMap = {
+      // Common Mapping Set 1 (ID 0=Name, 1=Email, 2=Message, 3=Phone)
+      "wpforms[fields][0][first]": "First Name",
+      "wpforms[fields][0][last]": "Last Name",
+      "wpforms[fields][1]": "Email", 
+      "wpforms[fields][2]": formType === "careers" ? "About Yourself" : "Message",
+      "wpforms[fields][3]": "Phone", 
+      "wpforms[fields][4]": "Address Line 1",
+
+      // Common Mapping Set 2 (ID 1=Name, 2=Address, 3=Phone, 4=Email, 5=Message)
       "wpforms[fields][1][first]": "First Name",
       "wpforms[fields][1][last]": "Last Name",
       "wpforms[fields][2][address1]": "Address Line 1",
@@ -67,19 +78,29 @@ function doPost(e) {
       "wpforms[fields][2][city]": "City",
       "wpforms[fields][2][state]": "State",
       "wpforms[fields][2][postal]": "Zip Code",
-      "wpforms[fields][3]": "Phone",
+      // "wpforms[fields][3]" is Phone in both sets usually, handled above
       "wpforms[fields][4]": "Email",
-      "wpforms[fields][5]":
-        formType === "careers" ? "About Yourself" : "Message",
-      resume: "Resume",
+      "wpforms[fields][5]": formType === "careers" ? "About Yourself" : "Message",
+      
+      "resume": "Resume",
     };
+    
     // Merge wpMap into postData for easier access
     Object.keys(postData).forEach((key) => {
+      // Check for exact match in wpMap
       if (wpMap[key]) {
-        postData[wpMap[key]] = postData[key];
-        if (wpMap[key] !== key) delete postData[key];
+         const niceName = wpMap[key];
+         if (niceName === "First Name") postData["_first_name"] = postData[key];
+         else if (niceName === "Last Name") postData["_last_name"] = postData[key];
+         else if (!postData[niceName]) postData[niceName] = postData[key]; // Don't overwrite if already exists
       }
     });
+
+    // Synthesize "Name" if we have parts but not the whole
+    if (!postData["Name"] && (postData["_first_name"] || postData["_last_name"])) {
+        postData["Name"] = ((postData["_first_name"] || "") + " " + (postData["_last_name"] || "")).trim();
+    }
+    
     // 1. Prepare Attachments
     const emailAttachments = [];
     if (postData.attachments && Array.isArray(postData.attachments)) {
@@ -143,24 +164,26 @@ function doPost(e) {
       }
     });
     // Add any other fields not in the order
+    // Exclude internal fields, captcha fields, and unmapped wpforms keys
+    const ignoredKeys = [
+          "site", "site_domain", "form_type", "timestamp", "page_url", "attachments", "raw_data",
+          "captcha_token", "g-recaptcha-response", "h-captcha-response", "spam_check",
+          "wpforms[id]", "wpforms[post_id]", "page_id", "url_referer", "page_title",
+          "_first_name", "_last_name", "undefined"
+    ];
+    
     Object.keys(postData).forEach((key) => {
-      if (
-        !order.includes(key) &&
-        ![
-          "site",
-          "site_domain",
-          "form_type",
-          "timestamp",
-          "page_url",
-          "attachments",
-          "raw_data",
-        ].includes(key)
-      ) {
-        let label =
-          fieldTitles[key] ||
-          key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-        htmlBody += `<tr><td style="padding: 10px 8px; font-weight: bold; color: #333; width: 38%;">${label}</td><td style="padding: 10px 8px; color: #444;">${postData[key]}</td></tr>`;
-      }
+      // Skip if in ordered list
+      if (order.includes(key)) return;
+      
+      // Skip if in ignored list
+      if (ignoredKeys.includes(key)) return;
+      
+      // Skip raw wpforms keys that look like wpforms[fields]...
+      if (key.startsWith("wpforms[")) return;
+
+      let label = fieldTitles[key] || key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+      htmlBody += `<tr><td style="padding: 10px 8px; font-weight: bold; color: #333; width: 38%;">${label}</td><td style="padding: 10px 8px; color: #444;">${postData[key]}</td></tr>`;
     });
     htmlBody += `</table>
           <div style="margin-top: 25px; font-size: 13px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">
