@@ -2349,27 +2349,86 @@
         // Mark as read
         markAsRead(id);
 
-        const content = document.getElementById('details-content');
-        content.innerHTML = `
+        // Keys to hide from details view
+        const hiddenKeys = new Set([
+          'id', 'read', 'archived', 'site', 'form_id', 'form_name', 'spam_check',
+          'captcha_token', 'h-captcha-response', 'g-recaptcha-response',
+          'page_id', 'page_title', 'url_referer', 'fields', 'raw_data',
+          'timestamp', 'date', 'submitted_at', 'createdAt'
+        ]);
+
+        // Extract clean display fields
+        const displayFields = {};
+        const f = sub.fields || {};
+
+        // Pull from nested fields first
+        for (const [key, value] of Object.entries(f)) {
+          if (hiddenKeys.has(key)) continue;
+          const val = String(value || '');
+          if (val.length > 200 && (val.startsWith('eyJ') || val.startsWith('P1_'))) continue;
+          if (['page_url', 'page_id', 'page_title', 'url_referer', 'h-captcha-response', 'g-recaptcha-response'].includes(key)) continue;
+          displayFields[key] = val;
+        }
+
+        // Pull from top-level for flat-format submissions
+        for (const [key, value] of Object.entries(sub)) {
+          if (hiddenKeys.has(key) || typeof value === 'object') continue;
+          const val = String(value || '');
+          if (val.length > 200 && (val.startsWith('eyJ') || val.startsWith('P1_'))) continue;
+          if (['page_url', 'page_id', 'page_title', 'url_referer'].includes(key)) continue;
+          const labelKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          if (!displayFields[key] && !displayFields[labelKey]) {
+            displayFields[labelKey] = val;
+          }
+        }
+
+        // Build readable name
+        const name = displayFields['Name'] || displayFields['First Name'] || displayFields['First'] || sub.name || '';
+
+        // Date
+        const subDate = getSubmissionDate(sub);
+        const dateStr = subDate ? subDate.toLocaleDateString('en-US', {
+          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+          hour: 'numeric', minute: '2-digit'
+        }) : 'Unknown';
+
+        // Build HTML
+        let html = `
+          <div class="mb-3 p-3" style="background:#f0f7ff;border-radius:8px;border-left:4px solid #007bff;">
+            <h5 style="margin:0;color:#007bff;">${escapeHtml(name || 'Submission')}</h5>
+            <small class="text-muted">${escapeHtml(sub.form_name || 'Form Submission')} &bull; ${dateStr}</small>
+          </div>
           <table class="table table-bordered">
             <tbody>
-              ${Object.entries(sub).map(([key, value]) => {
-                if (key === 'id') return '';
-                let displayValue = value;
-                if (typeof value === 'object') {
-                  displayValue = '<pre style="margin:0;font-size:12px;white-space:pre-wrap;">' + JSON.stringify(value, null, 2) + '</pre>';
-                }
-                return `
-                  <tr>
-                    <th style="width:200px;background:#f9f9f9;">${escapeHtml(key)}</th>
-                    <td>${displayValue}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
         `;
 
+        let isAlt = false;
+        for (const [key, value] of Object.entries(displayFields)) {
+          if (!value || value === 'undefined') continue;
+          const bg = isAlt ? '#f9f9f9' : '#ffffff';
+          html += `
+            <tr style="background:${bg}">
+              <th style="width:180px;background:#f4f4f4;font-weight:600;">${escapeHtml(key)}</th>
+              <td style="white-space:pre-wrap;">${escapeHtml(value)}</td>
+            </tr>
+          `;
+          isAlt = !isAlt;
+        }
+
+        // Add page URL at bottom as metadata
+        const pageUrl = sub.page_url || (f && f.page_url) || '';
+        if (pageUrl) {
+          html += `
+            <tr style="background:#fafafa">
+              <th style="width:180px;background:#f4f4f4;font-weight:600;">Page</th>
+              <td><a href="${escapeHtml(pageUrl)}" target="_blank">${escapeHtml(pageUrl)}</a></td>
+            </tr>
+          `;
+        }
+
+        html += '</tbody></table>';
+
+        document.getElementById('details-content').innerHTML = html;
         new bootstrap.Modal(document.getElementById('viewDetailsModal')).show();
       }
 
