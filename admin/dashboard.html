@@ -1542,6 +1542,19 @@
               </div>
             </div>
           </div>
+
+          <!-- Archived Submissions -->
+          <div id="archived-section" style="display: none; margin-top: 24px;">
+            <div class="card">
+              <div class="card-header" style="cursor: pointer; user-select: none;" onclick="toggleArchivedSection()">
+                <h6 class="mb-0 d-flex align-items-center justify-content-between">
+                  <span><i class="fas fa-archive me-2"></i>Archived Submissions <span id="archived-count" class="badge bg-secondary ms-2">0</span></span>
+                  <i id="archived-chevron" class="fas fa-chevron-down"></i>
+                </h6>
+              </div>
+              <div id="archived-list" class="card-body" style="display: none; padding: 12px;"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Pricing Tab -->
@@ -1925,13 +1938,15 @@
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         
-        const total = allSubmissions.length;
-        const unread = allSubmissions.filter(s => !s.read).length;
-        const todayCount = allSubmissions.filter(s => {
+        // Exclude archived submissions from stats
+        const activeSubs = allSubmissions.filter(s => !s.archived);
+        const total = activeSubs.length;
+        const unread = activeSubs.filter(s => !s.read).length;
+        const todayCount = activeSubs.filter(s => {
           const subDate = getSubmissionDate(s);
           return subDate && subDate >= today;
         }).length;
-        const appointments = allSubmissions.filter(s => 
+        const appointments = activeSubs.filter(s => 
           s.form_type === 'appointment' || s.appointment_request
         ).length;
 
@@ -1950,12 +1965,41 @@
         }
       }
 
+      // Toggle archived section visibility
+      function toggleArchivedSection() {
+        const list = document.getElementById('archived-list');
+        const chevron = document.getElementById('archived-chevron');
+        if (list.style.display === 'none') {
+          list.style.display = 'block';
+          chevron.className = 'fas fa-chevron-up';
+        } else {
+          list.style.display = 'none';
+          chevron.className = 'fas fa-chevron-down';
+        }
+      }
+
       // Render submissions with filters
       function renderSubmissions() {
         const container = document.getElementById('submissions-list');
         
-        // Apply filters
-        let filtered = [...allSubmissions];
+        // Separate archived from active
+        const activeSubmissions = allSubmissions.filter(s => !s.archived);
+        const archivedSubmissions = allSubmissions.filter(s => s.archived);
+
+        // Render archived section
+        const archivedSection = document.getElementById('archived-section');
+        const archivedList = document.getElementById('archived-list');
+        const archivedCount = document.getElementById('archived-count');
+        if (archivedSubmissions.length > 0) {
+          archivedSection.style.display = 'block';
+          archivedCount.textContent = archivedSubmissions.length;
+          archivedList.innerHTML = archivedSubmissions.map(sub => renderArchivedCard(sub)).join('');
+        } else {
+          archivedSection.style.display = 'none';
+        }
+
+        // Apply filters to active submissions only
+        let filtered = [...activeSubmissions];
         
         const typeFilter = document.getElementById('filter-type').value;
         const statusFilter = document.getElementById('filter-status').value;
@@ -2232,7 +2276,37 @@
                   <i class="fas fa-undo me-1"></i>Mark Unread
                 </button>
               `}
-              <button class="btn btn-sm btn-outline-danger" onclick="deleteSubmission('${sub.id}')">
+              <button class="btn btn-sm btn-outline-secondary" onclick="archiveSubmission('${sub.id}')">
+                <i class="fas fa-archive me-1"></i>Archive
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      // Render archived submission card (compact, with unarchive/delete)
+      function renderArchivedCard(sub) {
+        const f = sub.fields || {};
+        const firstName = sub.name || sub.first_name || sub['wpforms[fields][1][first]'] || '';
+        const lastName = sub.last_name || sub['wpforms[fields][1][last]'] || '';
+        const name = sub.Name || (firstName + (lastName ? ' ' + lastName : '')).trim() || 'Unknown';
+        const email = sub.Email || sub.email || sub['wpforms[fields][4]'] || '';
+        const date = getSubmissionDate(sub);
+        const dateStr = date ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+        const formType = getFormType(sub);
+
+        return `
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #eee; gap: 12px;">
+            <div style="flex: 1; min-width: 0;">
+              <strong style="font-size: 14px;">${escapeHtml(name)}</strong>
+              ${email ? `<span style="color: #666; font-size: 13px; margin-left: 8px;">${escapeHtml(email)}</span>` : ''}
+              ${dateStr ? `<span style="color: #999; font-size: 12px; margin-left: 8px;">${dateStr}</span>` : ''}
+            </div>
+            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+              <button class="btn btn-sm btn-outline-primary" onclick="unarchiveSubmission('${sub.id}')" title="Unarchive">
+                <i class="fas fa-undo me-1"></i>Unarchive
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="permanentlyDelete('${sub.id}')" title="Permanently Delete">
                 <i class="fas fa-trash me-1"></i>Delete
               </button>
             </div>
@@ -2250,9 +2324,19 @@
         db.collection('form_submissions').doc(id).update({ read: false });
       }
 
-      // Delete submission
-      function deleteSubmission(id) {
-        if (confirm('Are you sure you want to delete this submission?')) {
+      // Archive submission (soft delete)
+      function archiveSubmission(id) {
+        db.collection('form_submissions').doc(id).update({ archived: true });
+      }
+
+      // Unarchive submission
+      function unarchiveSubmission(id) {
+        db.collection('form_submissions').doc(id).update({ archived: false });
+      }
+
+      // Permanently delete submission
+      function permanentlyDelete(id) {
+        if (confirm('Are you sure you want to permanently delete this submission? This cannot be undone.')) {
           db.collection('form_submissions').doc(id).delete();
         }
       }
