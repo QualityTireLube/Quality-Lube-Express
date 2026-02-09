@@ -9,7 +9,7 @@
 
   // Google Apps Script Web App URL
   const GOOGLE_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbwxlDZg38Hp2LO46GQgOAS2ch1SX3OjNko9nfxCQJDGsvkx1ML_HlKQTpeQwZQhHeGVKg/exec";
+    "https://script.google.com/macros/s/AKfycbyIeJeyhmlm2vXXky816sQ5hnn9kRuXqOKpFRx-8ihYXInXJeR9MBOJA_L0sGEaJDWe/exec";
   const SITE_DOMAIN = "qualitytirelube.com";
 
   function init() {
