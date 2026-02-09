@@ -1,0 +1,246 @@
+type ContactSubmission {
+  id: ID!
+  name: String!
+  email: String!
+  phone: String
+  message: String
+  domain: String
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime!
+}
+
+input ModelStringInput {
+  ne: String
+  eq: String
+  le: String
+  lt: String
+  ge: String
+  gt: String
+  contains: String
+  notContains: String
+  between: [String]
+  beginsWith: String
+  attributeExists: Boolean
+  attributeType: ModelAttributeTypes
+  size: ModelSizeInput
+}
+
+input ModelIntInput {
+  ne: Int
+  eq: Int
+  le: Int
+  lt: Int
+  ge: Int
+  gt: Int
+  between: [Int]
+  attributeExists: Boolean
+  attributeType: ModelAttributeTypes
+}
+
+input ModelFloatInput {
+  ne: Float
+  eq: Float
+  le: Float
+  lt: Float
+  ge: Float
+  gt: Float
+  between: [Float]
+  attributeExists: Boolean
+  attributeType: ModelAttributeTypes
+}
+
+input ModelBooleanInput {
+  ne: Boolean
+  eq: Boolean
+  attributeExists: Boolean
+  attributeType: ModelAttributeTypes
+}
+
+input ModelIDInput {
+  ne: ID
+  eq: ID
+  le: ID
+  lt: ID
+  ge: ID
+  gt: ID
+  contains: ID
+  notContains: ID
+  between: [ID]
+  beginsWith: ID
+  attributeExists: Boolean
+  attributeType: ModelAttributeTypes
+  size: ModelSizeInput
+}
+
+input ModelSubscriptionStringInput {
+  ne: String
+  eq: String
+  le: String
+  lt: String
+  ge: String
+  gt: String
+  contains: String
+  notContains: String
+  between: [String]
+  beginsWith: String
+  in: [String]
+  notIn: [String]
+}
+
+input ModelSubscriptionIntInput {
+  ne: Int
+  eq: Int
+  le: Int
+  lt: Int
+  ge: Int
+  gt: Int
+  between: [Int]
+  in: [Int]
+  notIn: [Int]
+}
+
+input ModelSubscriptionFloatInput {
+  ne: Float
+  eq: Float
+  le: Float
+  lt: Float
+  ge: Float
+  gt: Float
+  between: [Float]
+  in: [Float]
+  notIn: [Float]
+}
+
+input ModelSubscriptionBooleanInput {
+  ne: Boolean
+  eq: Boolean
+}
+
+input ModelSubscriptionIDInput {
+  ne: ID
+  eq: ID
+  le: ID
+  lt: ID
+  ge: ID
+  gt: ID
+  contains: ID
+  notContains: ID
+  between: [ID]
+  beginsWith: ID
+  in: [ID]
+  notIn: [ID]
+}
+
+enum ModelAttributeTypes {
+  binary
+  binarySet
+  bool
+  list
+  map
+  number
+  numberSet
+  string
+  stringSet
+  _null
+}
+
+input ModelSizeInput {
+  ne: Int
+  eq: Int
+  le: Int
+  lt: Int
+  ge: Int
+  gt: Int
+  between: [Int]
+}
+
+enum ModelSortDirection {
+  ASC
+  DESC
+}
+
+type ModelContactSubmissionConnection {
+  items: [ContactSubmission]!
+  nextToken: String
+}
+
+input ModelContactSubmissionFilterInput {
+  id: ModelIDInput
+  name: ModelStringInput
+  email: ModelStringInput
+  phone: ModelStringInput
+  message: ModelStringInput
+  domain: ModelStringInput
+  createdAt: ModelStringInput
+  updatedAt: ModelStringInput
+  and: [ModelContactSubmissionFilterInput]
+  or: [ModelContactSubmissionFilterInput]
+  not: ModelContactSubmissionFilterInput
+}
+
+type Query {
+  getContactSubmission(id: ID!): ContactSubmission
+  listContactSubmissions(filter: ModelContactSubmissionFilterInput, limit: Int, nextToken: String): ModelContactSubmissionConnection
+}
+
+input ModelContactSubmissionConditionInput {
+  name: ModelStringInput
+  email: ModelStringInput
+  phone: ModelStringInput
+  message: ModelStringInput
+  domain: ModelStringInput
+  createdAt: ModelStringInput
+  and: [ModelContactSubmissionConditionInput]
+  or: [ModelContactSubmissionConditionInput]
+  not: ModelContactSubmissionConditionInput
+  updatedAt: ModelStringInput
+}
+
+input CreateContactSubmissionInput {
+  id: ID
+  name: String!
+  email: String!
+  phone: String
+  message: String
+  domain: String
+  createdAt: AWSDateTime
+}
+
+input UpdateContactSubmissionInput {
+  id: ID!
+  name: String
+  email: String
+  phone: String
+  message: String
+  domain: String
+  createdAt: AWSDateTime
+}
+
+input DeleteContactSubmissionInput {
+  id: ID!
+}
+
+type Mutation {
+  createContactSubmission(input: CreateContactSubmissionInput!, condition: ModelContactSubmissionConditionInput): ContactSubmission
+  updateContactSubmission(input: UpdateContactSubmissionInput!, condition: ModelContactSubmissionConditionInput): ContactSubmission
+  deleteContactSubmission(input: DeleteContactSubmissionInput!, condition: ModelContactSubmissionConditionInput): ContactSubmission
+}
+
+input ModelSubscriptionContactSubmissionFilterInput {
+  id: ModelSubscriptionIDInput
+  name: ModelSubscriptionStringInput
+  email: ModelSubscriptionStringInput
+  phone: ModelSubscriptionStringInput
+  message: ModelSubscriptionStringInput
+  domain: ModelSubscriptionStringInput
+  createdAt: ModelSubscriptionStringInput
+  updatedAt: ModelSubscriptionStringInput
+  and: [ModelSubscriptionContactSubmissionFilterInput]
+  or: [ModelSubscriptionContactSubmissionFilterInput]
+}
+
+type Subscription {
+  onCreateContactSubmission(filter: ModelSubscriptionContactSubmissionFilterInput): ContactSubmission @aws_subscribe(mutations: ["createContactSubmission"])
+  onUpdateContactSubmission(filter: ModelSubscriptionContactSubmissionFilterInput): ContactSubmission @aws_subscribe(mutations: ["updateContactSubmission"])
+  onDeleteContactSubmission(filter: ModelSubscriptionContactSubmissionFilterInput): ContactSubmission @aws_subscribe(mutations: ["deleteContactSubmission"])
+}

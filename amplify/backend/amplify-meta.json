@@ -1,0 +1,40 @@
+{
+  "providers": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-qltest-dev-1958a-authRole",
+      "UnauthRoleArn": "arn:aws:iam::232839844092:role/amplify-qltest-dev-1958a-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::232839844092:role/amplify-qltest-dev-1958a-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-qltest-dev-1958a-deployment",
+      "UnauthRoleName": "amplify-qltest-dev-1958a-unauthRole",
+      "StackName": "amplify-qltest-dev-1958a",
+      "StackId": "arn:aws:cloudformation:us-east-1:232839844092:stack/amplify-qltest-dev-1958a/a66eebd0-fb09-11f0-b448-0affdf9fd313",
+      "AmplifyAppId": "d2nnp2h2ejba68"
+    }
+  },
+  "api": {
+    "qltest": {
+      "service": "AppSync",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "output": {
+        "authConfig": {
+          "defaultAuthentication": {
+            "authenticationType": "API_KEY",
+            "apiKeyConfig": {
+              "apiKeyExpirationDays": 365,
+              "apiKeyExpirationDate": "2027-01-26T22:53:47.509Z",
+              "description": "contact form"
+            }
+          },
+          "additionalAuthenticationProviders": []
+        }
+      },
+      "providerMetadata": {
+        "s3TemplateURL": "https://s3.amazonaws.com/amplify-qltest-dev-1958a-deployment/amplify-cfn-templates/api/cloudformation-template.json",
+        "logicalId": "apiqltest"
+      },
+      "lastPushTimeStamp": "2026-01-26T22:55:39.168Z"
+    }
+  }
+}

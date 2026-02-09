@@ -1,0 +1,7 @@
+{
+    "AppSyncApiName": "qltest",
+    "DynamoDBBillingMode": "PAY_PER_REQUEST",
+    "DynamoDBEnableServerSideEncryption": false,
+    "S3DeploymentBucket": "amplify-qltest-dev-1958a-deployment",
+    "S3DeploymentRootKey": "amplify-appsync-files/c4a4cb90d6cecf9f1a5fbeef2d804627c4a3a768"
+}
