@@ -100,6 +100,24 @@ function doPost(e) {
     if (!postData["Name"] && (postData["_first_name"] || postData["_last_name"])) {
         postData["Name"] = ((postData["_first_name"] || "") + " " + (postData["_last_name"] || "")).trim();
     }
+
+    // Normalize lowercase field names to match display labels
+    const fieldCaseMap = {
+      name: "Name",
+      email: "Email",
+      phone: "Phone",
+      message: formType === "careers" ? "About Yourself" : "Message",
+      address1: "Address Line 1",
+      address2: "Address Line 2",
+      city: "City",
+      state: "State",
+      zip: "Zip Code",
+    };
+    Object.keys(fieldCaseMap).forEach((key) => {
+      if (postData[key] && !postData[fieldCaseMap[key]]) {
+        postData[fieldCaseMap[key]] = postData[key];
+      }
+    });
     
     // 1. Prepare Attachments
     const emailAttachments = [];
@@ -169,7 +187,11 @@ function doPost(e) {
           "site", "site_domain", "form_type", "timestamp", "page_url", "attachments", "raw_data",
           "captcha_token", "g-recaptcha-response", "h-captcha-response", "spam_check",
           "wpforms[id]", "wpforms[post_id]", "page_id", "url_referer", "page_title",
-          "_first_name", "_last_name", "undefined"
+          "_first_name", "_last_name", "undefined",
+          // Lowercase variants (already normalized to capitalized versions above)
+          "name", "email", "phone", "message", "address1", "address2", "city", "state", "zip",
+          "Captcha Token", "Name", "Email", "Phone", "Message", "About Yourself",
+          "Address Line 1", "Address Line 2", "City", "State", "Zip Code",
     ];
     
     Object.keys(postData).forEach((key) => {
@@ -199,23 +221,13 @@ function doPost(e) {
       if (postData[label]) textBody += `${label}: ${postData[label]}\n`;
     });
     Object.keys(postData).forEach((key) => {
-      if (
-        !order.includes(key) &&
-        ![
-          "site",
-          "site_domain",
-          "form_type",
-          "timestamp",
-          "page_url",
-          "attachments",
-          "raw_data",
-        ].includes(key)
-      ) {
-        let label =
-          fieldTitles[key] ||
-          key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-        textBody += `${label}: ${postData[key]}\n`;
-      }
+      if (order.includes(key)) return;
+      if (ignoredKeys.includes(key)) return;
+      if (key.startsWith("wpforms[")) return;
+      let label =
+        fieldTitles[key] ||
+        key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+      textBody += `${label}: ${postData[key]}\n`;
     });
     textBody += `\n----------------------------------------\nPage: ${postData.page_url || "Unknown"}`;
     // Send Email

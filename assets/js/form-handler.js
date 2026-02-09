@@ -186,22 +186,36 @@
 
       const k = key.toLowerCase();
 
-      // Heuristic Mapping
-      if (k.includes("first") && k.includes("name")) data.first_name = value;
-      else if (k.includes("last") && k.includes("name")) data.last_name = value;
+      // Heuristic Mapping (covers both semantic names and WPForms bracket keys)
+      if (k.includes("[first]") || (k.includes("first") && k.includes("name"))) data.first_name = value;
+      else if (k.includes("[last]") || (k.includes("last") && k.includes("name"))) data.last_name = value;
       else if (k.includes("email")) data.email = value;
       else if (k.includes("phone") || k.includes("tel")) data.phone = value;
-      else if (k.includes("address1")) data.address1 = value;
-      else if (k.includes("address2")) data.address2 = value;
-      else if (k.includes("city")) data.city = value;
-      else if (k.includes("state")) data.state = value;
-      else if (k.includes("postal") || k.includes("zip")) data.zip = value;
+      else if (k.includes("address1") || k.includes("[address1]")) data.address1 = value;
+      else if (k.includes("address2") || k.includes("[address2]")) data.address2 = value;
+      else if (k.includes("city") || k.includes("[city]")) data.city = value;
+      else if (k.includes("state") || k.includes("[state]")) data.state = value;
+      else if (k.includes("postal") || k.includes("zip") || k.includes("[postal]")) data.zip = value;
       else if (
         k.includes("message") ||
         k.includes("comment") ||
         k.includes("[5]")
       )
-        data.message = value; // Fallback for ID 5 (textarea)
+        data.message = value;
+    }
+
+    // Fallback: detect unmapped fields by input type if heuristics missed them
+    if (!data.email) {
+      const emailInput = form.querySelector('input[type="email"]');
+      if (emailInput && emailInput.value) data.email = emailInput.value;
+    }
+    if (!data.phone) {
+      const phoneInput = form.querySelector('input[type="tel"]');
+      if (phoneInput && phoneInput.value) data.phone = phoneInput.value;
+    }
+    if (!data.message) {
+      const textarea = form.querySelector('textarea');
+      if (textarea && textarea.value) data.message = textarea.value;
     }
 
     // Wait for all files to be read
@@ -232,27 +246,20 @@
       name: data.name || "Unknown",
       email: data.email || "no-reply@qualitytirelube.com",
       phone: data.phone || "",
-      message: data.message || data.raw_data || "",
+      message: data.message || "",
       site_domain: SITE_DOMAIN,
       form_type: data.form_type,
-      captcha_token: data.captcha_token, // Pass captcha token
-      // Pass attachments directly; Google Script must parse them
+      page_url: data.page_url || window.location.href,
+      captcha_token: data.captcha_token,
       attachments: data.attachments,
     };
 
-    // Add extended address info to message if present
-    if (data.address1) {
-      const addressFunc = [
-        data.address1,
-        data.address2,
-        data.city,
-        data.state,
-        data.zip,
-      ]
-        .filter(Boolean)
-        .join(", ");
-      payload.message = `Applicant Address: ${addressFunc}\n\nNotes:\n${payload.message}`;
-    }
+    // Add address fields individually (for careers form)
+    if (data.address1) payload.address1 = data.address1;
+    if (data.address2) payload.address2 = data.address2;
+    if (data.city) payload.city = data.city;
+    if (data.state) payload.state = data.state;
+    if (data.zip) payload.zip = data.zip;
 
     console.log(
       "Sending Payload with " +
