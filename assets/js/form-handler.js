@@ -276,12 +276,25 @@
     ) {
       try {
         const db = firebase.firestore();
-        // Saving full data including attachments as requested
-        // Note: Firestore has a 1MB limit per document.
-        // Large files might fail or need Storage.
+        // Save clean submission data (no captcha tokens, no raw dumps)
+        const firestoreData = {
+          name: payload.name,
+          email: payload.email,
+          phone: payload.phone,
+          message: payload.message,
+          site_domain: SITE_DOMAIN,
+          form_type: data.form_type,
+          page_url: data.page_url || window.location.href,
+          submitted_at: new Date().toISOString(),
+        };
+        if (data.address1) firestoreData.address1 = data.address1;
+        if (data.address2) firestoreData.address2 = data.address2;
+        if (data.city) firestoreData.city = data.city;
+        if (data.state) firestoreData.state = data.state;
+        if (data.zip) firestoreData.zip = data.zip;
 
         db.collection("form_submissions")
-          .add(data)
+          .add(firestoreData)
           .then(() => console.log("Saved to Firestore"))
           .catch((err) => console.error("Firestore Error:", err));
       } catch (err) {
