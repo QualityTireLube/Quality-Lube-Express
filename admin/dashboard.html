@@ -2196,7 +2196,7 @@
       }
 
       // Render individual submission card
-      function renderSubmissionCard(sub) {
+      function renderSubmissionCard(sub, isArchived) {
         const date = getSubmissionDate(sub);
         const dateStr = date ? date.toLocaleDateString('en-US', { 
           month: 'short', day: 'numeric', year: 'numeric',
@@ -2276,44 +2276,26 @@
                   <i class="fas fa-undo me-1"></i>Mark Unread
                 </button>
               `}
-              <button class="btn btn-sm btn-outline-secondary" onclick="archiveSubmission('${sub.id}')">
-                <i class="fas fa-archive me-1"></i>Archive
-              </button>
+              ${isArchived ? `
+                <button class="btn btn-sm btn-outline-success" onclick="unarchiveSubmission('${sub.id}')">
+                  <i class="fas fa-undo me-1"></i>Unarchive
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="permanentlyDelete('${sub.id}')">
+                  <i class="fas fa-trash me-1"></i>Delete
+                </button>
+              ` : `
+                <button class="btn btn-sm btn-outline-secondary" onclick="archiveSubmission('${sub.id}')">
+                  <i class="fas fa-archive me-1"></i>Archive
+                </button>
+              `}
             </div>
           </div>
         `;
       }
 
-      // Render archived submission card (compact, with unarchive/delete)
+      // Render archived submission card (full card with unarchive/delete instead of archive)
       function renderArchivedCard(sub) {
-        const f = sub.fields || {};
-        const firstName = sub.name || sub.first_name || sub['wpforms[fields][1][first]'] || '';
-        const lastName = sub.last_name || sub['wpforms[fields][1][last]'] || '';
-        const name = sub.Name || (firstName + (lastName ? ' ' + lastName : '')).trim() || 'Unknown';
-        const email = sub.Email || sub.email || sub['wpforms[fields][4]'] || '';
-        const date = getSubmissionDate(sub);
-        const dateStr = date ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-        const formType = getFormType(sub);
-
-        return `
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #eee; gap: 12px;">
-            <div style="flex: 1; min-width: 0;">
-              <strong style="font-size: 14px;">${escapeHtml(name)}</strong>
-              ${email ? `<span style="color: #666; font-size: 13px; margin-left: 8px;">${escapeHtml(email)}</span>` : ''}
-              ${dateStr ? `<span style="color: #999; font-size: 12px; margin-left: 8px;">${dateStr}</span>` : ''}
-            </div>
-            <div style="display: flex; gap: 6px; flex-shrink: 0;">
-              <button class="btn btn-sm btn-outline-primary" onclick="unarchiveSubmission('${sub.id}')" title="Unarchive">
-                <i class="fas fa-undo me-1"></i>Unarchive
-              </button>
-              <button class="btn btn-sm btn-outline-danger" onclick="permanentlyDelete('${sub.id}')" title="Permanently Delete">
-                <i class="fas fa-trash me-1"></i>Delete
-              </button>
-            </div>
-          </div>
-        `;
-      }
-
+        return renderSubmissionCard(sub, true);
       // Mark as read
       function markAsRead(id) {
         db.collection('form_submissions').doc(id).update({ read: true });
