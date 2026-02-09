@@ -44,33 +44,110 @@ function doPost(e) {
     const site =
       postData.site_domain || postData.site || "Quality Lube Express";
     const formType = (postData.form_type || "").toLowerCase();
-    // --- FIELD TITLE MAPPING ---
-    // Map raw keys to human-friendly labels for the table
-    const fieldTitles = {
-      name: "Name",
-      email: "Email",
-      phone: "Phone",
-      message: formType === "careers" ? "About Yourself" : "Message",
-      address1: "Address Line 1",
-      address2: "Address Line 2",
-      city: "City",
-      state: "State",
-      zip: "Zip Code",
-      resume: "Resume",
-    };
-    
-    // Also map any wpforms keys to human titles
-    // We check for multiple possible IDs since WPForms IDs can vary
+
+    // ---------------------------------------------------------------
+    // STEP 1: Parse raw wpforms data out of the message field
+    // The old client dumps everything into message as "key: value\n"
+    // when field mapping fails. Detect and extract properly.
+    // ---------------------------------------------------------------
+    const messageVal = postData.message || "";
+    if (messageVal.indexOf("wpforms[fields]") !== -1) {
+      // Parse "key: value" lines from the raw dump
+      const lines = messageVal.split(/\n/);
+      const parsed = {};
+      lines.forEach(function(line) {
+        const idx = line.indexOf(": ");
+        if (idx > 0) {
+          const k = line.substring(0, idx).trim();
+          const v = line.substring(idx + 2).trim();
+          if (v) parsed[k] = v;
+        }
+      });
+
+      // Also handle space-separated format ("key: val key2: val2" on one line)
+      // by re-splitting on known wpforms/metadata key patterns
+      if (Object.keys(parsed).length <= 1) {
+        // Match wpforms[...] keys, and common metadata keys
+        const knownKeys = [
+          "wpforms\\[fields\\]\\[\\d+\\](?:\\[[^\\]]*\\])*",
+          "wpforms\\[id\\]",
+          "wpforms\\[post_id\\]",
+          "page_title",
+          "page_url",
+          "page_id",
+          "url_referer",
+          "g-recaptcha-response",
+          "h-captcha-response",
+        ];
+        const pattern = new RegExp("(" + knownKeys.join("|") + "):\\s*", "g");
+        const keys = [];
+        let m;
+        while ((m = pattern.exec(messageVal)) !== null) {
+          keys.push({ key: m[1].trim(), start: m.index, valueStart: m.index + m[0].length });
+        }
+        for (var i = 0; i < keys.length; i++) {
+          var end = i + 1 < keys.length ? keys[i + 1].start : messageVal.length;
+          var val = messageVal.substring(keys[i].valueStart, end).trim();
+          if (val) parsed[keys[i].key] = val;
+        }
+      }
+
+      // Map parsed wpforms keys to clean fields
+      const wpFieldMap = {
+        "wpforms[fields][0][first]": "_first_name",
+        "wpforms[fields][0][last]": "_last_name",
+        "wpforms[fields][1][first]": "_first_name",
+        "wpforms[fields][1][last]": "_last_name",
+        "wpforms[fields][1]": "email",
+        "wpforms[fields][2]": formType === "careers" ? "about" : "clean_message",
+        "wpforms[fields][3]": "phone",
+        "wpforms[fields][4]": "email",
+        "wpforms[fields][5]": formType === "careers" ? "about" : "clean_message",
+        "wpforms[fields][2][address1]": "address1",
+        "wpforms[fields][2][address2]": "address2",
+        "wpforms[fields][2][city]": "city",
+        "wpforms[fields][2][state]": "state",
+        "wpforms[fields][2][postal]": "zip",
+      };
+
+      Object.keys(parsed).forEach(function(k) {
+        if (wpFieldMap[k]) {
+          var target = wpFieldMap[k];
+          if (!postData["_parsed_" + target]) postData["_parsed_" + target] = parsed[k];
+        }
+      });
+
+      // Build name from parsed first/last
+      var pFirst = postData["_parsed__first_name"] || "";
+      var pLast = postData["_parsed__last_name"] || "";
+      if (pFirst || pLast) {
+        postData.name = (pFirst + " " + pLast).trim();
+      }
+      if (postData["_parsed_email"]) postData.email = postData["_parsed_email"];
+      if (postData["_parsed_phone"]) postData.phone = postData["_parsed_phone"];
+      if (postData["_parsed_clean_message"]) postData.message = postData["_parsed_clean_message"];
+      if (postData["_parsed_about"]) postData.message = postData["_parsed_about"];
+      if (postData["_parsed_address1"]) postData.address1 = postData["_parsed_address1"];
+      if (postData["_parsed_address2"]) postData.address2 = postData["_parsed_address2"];
+      if (postData["_parsed_city"]) postData.city = postData["_parsed_city"];
+      if (postData["_parsed_state"]) postData.state = postData["_parsed_state"];
+      if (postData["_parsed_zip"]) postData.zip = postData["_parsed_zip"];
+
+      // Extract page_url from parsed data if not already set
+      if (!postData.page_url && parsed["page_url"]) postData.page_url = parsed["page_url"];
+    }
+
+    // ---------------------------------------------------------------
+    // STEP 2: Map wpforms keys that came as direct postData properties
+    // (for the updated client that sends them as separate keys)
+    // ---------------------------------------------------------------
     const wpMap = {
-      // Common Mapping Set 1 (ID 0=Name, 1=Email, 2=Message, 3=Phone)
       "wpforms[fields][0][first]": "First Name",
       "wpforms[fields][0][last]": "Last Name",
       "wpforms[fields][1]": "Email", 
       "wpforms[fields][2]": formType === "careers" ? "About Yourself" : "Message",
       "wpforms[fields][3]": "Phone", 
       "wpforms[fields][4]": "Address Line 1",
-
-      // Common Mapping Set 2 (ID 1=Name, 2=Address, 3=Phone, 4=Email, 5=Message)
       "wpforms[fields][1][first]": "First Name",
       "wpforms[fields][1][last]": "Last Name",
       "wpforms[fields][2][address1]": "Address Line 1",
@@ -78,46 +155,65 @@ function doPost(e) {
       "wpforms[fields][2][city]": "City",
       "wpforms[fields][2][state]": "State",
       "wpforms[fields][2][postal]": "Zip Code",
-      // "wpforms[fields][3]" is Phone in both sets usually, handled above
       "wpforms[fields][4]": "Email",
       "wpforms[fields][5]": formType === "careers" ? "About Yourself" : "Message",
-      
-      "resume": "Resume",
     };
     
-    // Merge wpMap into postData for easier access
-    Object.keys(postData).forEach((key) => {
-      // Check for exact match in wpMap
+    Object.keys(postData).forEach(function(key) {
       if (wpMap[key]) {
-         const niceName = wpMap[key];
+         var niceName = wpMap[key];
          if (niceName === "First Name") postData["_first_name"] = postData[key];
          else if (niceName === "Last Name") postData["_last_name"] = postData[key];
-         else if (!postData[niceName]) postData[niceName] = postData[key]; // Don't overwrite if already exists
+         else if (!postData[niceName]) postData[niceName] = postData[key];
       }
     });
 
     // Synthesize "Name" if we have parts but not the whole
-    if (!postData["Name"] && (postData["_first_name"] || postData["_last_name"])) {
+    if ((!postData["Name"] || postData["Name"] === "Unknown") && (postData["_first_name"] || postData["_last_name"])) {
         postData["Name"] = ((postData["_first_name"] || "") + " " + (postData["_last_name"] || "")).trim();
     }
 
-    // Normalize lowercase field names to match display labels
-    const fieldCaseMap = {
+    // ---------------------------------------------------------------
+    // STEP 3: Normalize lowercase field names to display labels
+    // ---------------------------------------------------------------
+    var msgLabel = formType === "careers" ? "About Yourself" : "Message";
+    var fieldCaseMap = {
       name: "Name",
       email: "Email",
       phone: "Phone",
-      message: formType === "careers" ? "About Yourself" : "Message",
+      message: msgLabel,
       address1: "Address Line 1",
       address2: "Address Line 2",
       city: "City",
       state: "State",
       zip: "Zip Code",
     };
-    Object.keys(fieldCaseMap).forEach((key) => {
-      if (postData[key] && !postData[fieldCaseMap[key]]) {
-        postData[fieldCaseMap[key]] = postData[key];
+    Object.keys(fieldCaseMap).forEach(function(key) {
+      if (postData[key] && postData[key] !== "Unknown" && postData[key] !== "no-reply@qualitytirelube.com") {
+        // Only overwrite if the uppercase version is missing or is a placeholder
+        if (!postData[fieldCaseMap[key]] || postData[fieldCaseMap[key]] === "Unknown" || postData[fieldCaseMap[key]] === "no-reply@qualitytirelube.com") {
+          postData[fieldCaseMap[key]] = postData[key];
+        }
       }
     });
+
+    // Clean out placeholder values
+    if (postData["Name"] === "Unknown") delete postData["Name"];
+    if (postData["Email"] === "no-reply@qualitytirelube.com") delete postData["Email"];
+
+    // If Message still contains raw wpforms dump after parsing, clear it
+    // (all useful data was already extracted into proper fields)
+    if (postData["Message"] && postData["Message"].indexOf("wpforms[fields]") !== -1) {
+      delete postData["Message"];
+    }
+    if (postData[msgLabel] && postData[msgLabel].indexOf("wpforms[fields]") !== -1) {
+      delete postData[msgLabel];
+    }
+
+    // Field title mapping for any extra fields
+    var fieldTitles = {
+      resume: "Resume",
+    };
     
     // 1. Prepare Attachments
     const emailAttachments = [];
@@ -204,6 +300,9 @@ function doPost(e) {
       // Skip raw wpforms keys that look like wpforms[fields]...
       if (key.startsWith("wpforms[")) return;
 
+      // Skip internal parsed keys
+      if (key.startsWith("_parsed_")) return;
+
       let label = fieldTitles[key] || key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
       htmlBody += `<tr><td style="padding: 10px 8px; font-weight: bold; color: #333; width: 38%;">${label}</td><td style="padding: 10px 8px; color: #444;">${postData[key]}</td></tr>`;
     });
@@ -224,6 +323,7 @@ function doPost(e) {
       if (order.includes(key)) return;
       if (ignoredKeys.includes(key)) return;
       if (key.startsWith("wpforms[")) return;
+      if (key.startsWith("_parsed_")) return;
       let label =
         fieldTitles[key] ||
         key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
