@@ -2296,6 +2296,8 @@
       // Render archived submission card (full card with unarchive/delete instead of archive)
       function renderArchivedCard(sub) {
         return renderSubmissionCard(sub, true);
+      }
+
       // Mark as read
       function markAsRead(id) {
         db.collection('form_submissions').doc(id).update({ read: true });
