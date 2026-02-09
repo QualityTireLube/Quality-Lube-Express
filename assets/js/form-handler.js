@@ -285,7 +285,7 @@
           site_domain: SITE_DOMAIN,
           form_type: data.form_type,
           page_url: data.page_url || window.location.href,
-          submitted_at: new Date().toISOString(),
+          timestamp: new Date().toISOString(),
         };
         if (data.address1) firestoreData.address1 = data.address1;
         if (data.address2) firestoreData.address2 = data.address2;

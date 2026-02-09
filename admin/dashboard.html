@@ -1862,8 +1862,8 @@
             
             // Sort by timestamp/date descending (client-side)
             allSubmissions.sort((a, b) => {
-              const dateA = a.timestamp || a.date ? new Date(a.timestamp || a.date) : new Date(0);
-              const dateB = b.timestamp || b.date ? new Date(b.timestamp || b.date) : new Date(0);
+              const dateA = getSubmissionDate(a) || new Date(0);
+              const dateB = getSubmissionDate(b) || new Date(0);
               return dateB - dateA;
             });
             
@@ -1908,10 +1908,16 @@
         }
       }
 
-      // Get submission date (handles both 'timestamp' and 'date' fields)
+      // Get submission date (handles multiple date field names + Firestore Timestamps)
       function getSubmissionDate(sub) {
-        const dateStr = sub.timestamp || sub.date;
-        return dateStr ? new Date(dateStr) : null;
+        const raw = sub.timestamp || sub.date || sub.submitted_at || sub.createdAt;
+        if (!raw) return null;
+        // Handle Firestore Timestamp objects (have .toDate())
+        if (raw && typeof raw.toDate === 'function') return raw.toDate();
+        // Handle Firestore Timestamp-like objects with seconds
+        if (raw && typeof raw === 'object' && raw.seconds) return new Date(raw.seconds * 1000);
+        const d = new Date(raw);
+        return isNaN(d.getTime()) ? null : d;
       }
 
       // Update statistics
