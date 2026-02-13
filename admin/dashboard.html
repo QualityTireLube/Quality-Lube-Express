@@ -1438,20 +1438,30 @@
       <!-- Tab Navigation -->
       <ul class="nav nav-tabs mb-4" id="dashboardTabs">
         <li class="nav-item">
-          <a class="nav-link active" data-bs-toggle="tab" href="#submissions-tab">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#submissions-tab">
             <i class="fas fa-inbox me-2"></i>Form Submissions
             <span class="badge bg-danger ms-2" id="unread-count" style="display:none;">0</span>
-          </a>
+          </button>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#pricing-tab">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#customer-index-tab">
+            <i class="fas fa-users me-2"></i>Customer Index
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#calendar-tab">
+            <i class="fas fa-calendar-alt me-2"></i>Calendar
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pricing-tab">
             <i class="fas fa-dollar-sign me-2"></i>Pricing Management
-          </a>
+          </button>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#settings-tab">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#settings-tab">
             <i class="fas fa-cog me-2"></i>Settings
-          </a>
+          </button>
         </li>
       </ul>
 
@@ -1555,6 +1565,93 @@
               <div id="archived-list" class="card-body" style="display: none; padding: 12px;"></div>
             </div>
           </div>
+        </div>
+
+
+        <!-- Customer Index Tab -->
+        <div class="tab-pane fade" id="customer-index-tab">
+          <div class="card mb-4" style="border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+              <h5 class="mb-0 text-primary"><i class="fas fa-users me-2"></i>Customer Database</h5>
+              <div class="d-flex gap-2">
+                 <button class="btn btn-outline-secondary btn-sm" onclick="exportCustomersCSV()">
+                    <i class="fas fa-file-csv me-1"></i> Export CSV
+                 </button>
+                 <div class="input-group input-group-sm w-auto">
+                    <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="customer-search" placeholder="Search name, email, phone...">
+                 </div>
+              </div>
+            </div>
+            <div class="card-body p-0">
+               <div class="table-responsive">
+                  <table class="table table-hover align-middle mb-0" id="customer-table">
+                    <thead class="table-light">
+                      <tr>
+                        <th style="width: 25%;">Name</th>
+                        <th style="width: 30%;">Contact Info</th>
+                        <th style="width: 15%;">Last Activity</th>
+                        <th style="width: 10%;">Count</th>
+                        <th style="width: 20%;" class="text-end">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="customer-list-body">
+                      <tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading customers...</td></tr>
+                    </tbody>
+                  </table>
+               </div>
+            </div>
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                <small class="text-muted" id="customer-count-display">Showing 0 customers</small>
+                <nav aria-label="Customer pagination">
+                  <ul class="pagination pagination-sm mb-0" id="customer-pagination">
+                    <!-- Pagination populated by JS -->
+                  </ul>
+                </nav>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Tab -->
+        <div class="tab-pane fade" id="calendar-tab">
+           <div class="card" style="border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+             <div class="card-header bg-white py-3">
+               <div class="d-flex justify-content-between align-items-center">
+                 <h5 class="mb-0 text-primary"><i class="fas fa-calendar-check me-2"></i>Appointment Schedule</h5>
+                 <div class="d-flex align-items-center gap-3">
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="changeCalendarMonth(-1)"><i class="fas fa-chevron-left"></i></button>
+                        <button class="btn btn-outline-secondary btn-sm active" style="min-width: 150px; font-weight: 600;" id="calendar-month-year">Running...</button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="changeCalendarMonth(1)"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="renderCalendar()"><i class="fas fa-sync-alt"></i></button>
+                 </div>
+               </div>
+             </div>
+             <div class="card-body p-0">
+                <!-- Days Header -->
+                <div class="d-flex border-bottom bg-light text-secondary fw-bold text-center" style="font-size: 0.85rem;">
+                    <div class="flex-fill py-2">Mon</div>
+                    <div class="flex-fill py-2">Tue</div>
+                    <div class="flex-fill py-2">Wed</div>
+                    <div class="flex-fill py-2">Thu</div>
+                    <div class="flex-fill py-2">Fri</div>
+                    <div class="flex-fill py-2 text-danger">Sat</div>
+                    <div class="flex-fill py-2 text-danger">Sun</div>
+                </div>
+                <!-- Calendar Grid -->
+                <div id="calendar-grid" class="calendar-grid">
+                    <div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i></div>
+                </div>
+             </div>
+           </div>
+           
+           <div class="mt-4 card p-3" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+              <h6 class="text-muted mb-3 border-bottom pb-2">Upcoming Appointments List</h6>
+              <div id="upcoming-appointments-list" class="list-group list-group-flush">
+                 <!-- Populated by JS -->
+              </div>
+           </div>
         </div>
 
         <!-- Pricing Tab -->
@@ -1888,6 +1985,8 @@
             
             updateStats();
             renderSubmissions();
+            if (typeof updateCustomerIndex === 'function') updateCustomerIndex();
+            if (typeof renderCalendar === 'function') renderCalendar();
           }, (error) => {
             console.error('Error listening to submissions:', error);
             document.getElementById('submissions-list').innerHTML = `
@@ -3883,6 +3982,31 @@
           </html>
         `);
       }
+    </script>
+    <script src="../assets/js/admin-features.js"></script>
+    <script>
+      // Initialize after page load
+      document.addEventListener('DOMContentLoaded', () => {
+        // Initialize active tab if hash present
+        const hash = window.location.hash;
+        if (hash) {
+            const tabEl = document.querySelector(`.nav-link[data-bs-target="${hash}"]`);
+            if (tabEl) {
+                const tab = new bootstrap.Tab(tabEl);
+                tab.show();
+            }
+        }
+        
+        // Tab show event listeners to refresh calendar if needed
+        const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabEls.forEach(el => {
+            el.addEventListener('shown.bs.tab', (event) => {
+                if (event.target.getAttribute('data-bs-target') === '#calendar-tab') {
+                    if (typeof renderCalendar === 'function') renderCalendar();
+                }
+            });
+        });
+      });
     </script>
   </body>
 </html>

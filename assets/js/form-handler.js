@@ -71,6 +71,42 @@
     });
   }
 
+  // --- FIRESTORE HELPER ---
+  
+  async function submitData(formData) {
+    if (typeof firebase !== 'undefined' && firebase.apps.length) {
+      try {
+        const db = firebase.firestore();
+        
+        // Extract fields from the flat formData object for cleaner storage
+        const knownKeys = ['site', 'form_type', 'timestamp', 'page_url', 'attachments', 'captcha_token', 'form_name', 'form_id'];
+        const fields = {};
+        for (const key in formData) {
+            if (!knownKeys.includes(key) && typeof formData[key] !== 'function') {
+                fields[key] = formData[key];
+            }
+        }
+
+        const cleanData = {
+          site: formData.site,
+          form_id: formData.form_id || 'unknown',
+          form_name: formData.form_name || formData.form_type,
+          form_type: formData.form_type || 'contact',
+          timestamp: formData.timestamp,
+          page_url: formData.page_url,
+          fields: fields,
+        };
+        
+        await db.collection("form_submissions").add(cleanData);
+        console.log("Successfully saved to Firestore.");
+      } catch (e) {
+        console.error("Firestore save failed:", e);
+      }
+    } else {
+      console.warn("Firebase not initialized; skipping Firestore save.");
+    }
+  }
+
   // --- FORM VALIDATION ---
   
   function validateForm(form) {
@@ -145,6 +181,9 @@
       // Await the extraction of data (files take time to read)
       const formData = await extractFormData(form);
       formData.captcha_token = captchaResponse; // Add token to payload
+
+      // Save to Firestore (async, don't block email sending for long, but better to await to ensure save)
+      await submitData(formData);
 
       sendToGoogleScript(formData, form, submitBtn, spinner);
     } catch (error) {
