@@ -38,7 +38,19 @@ function extractCustomerName(sub) {
             if (key.toLowerCase().includes('name')) {
                 const val = sub.fields[key];
                 if (typeof val === 'string' && val.length < 50 && val.toLowerCase() !== 'unknown') return val.trim();
+                // Found a name key with object value
                 if (typeof val === 'object' && (val.first || val.last)) {
+                     return `${val.first || ''} ${val.last || ''}`.trim();
+                }
+            }
+        }
+
+        // 4. DEEP FALLBACK: Scan values for name-like objects regardless of key
+        // This catches WPForms where keys are just IDs like '0', '1', etc.
+        for (const key in sub.fields) {
+            const val = sub.fields[key];
+            if (val && typeof val === 'object') {
+                if ('first' in val && 'last' in val) {
                      return `${val.first || ''} ${val.last || ''}`.trim();
                 }
             }
