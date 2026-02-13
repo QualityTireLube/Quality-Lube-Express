@@ -6,25 +6,43 @@ let currentCalendarDate = new Date();
 // --- Customer Index Logic ---
 
 function extractCustomerName(sub) {
-    if (sub.name && sub.name !== 'Unknown') return sub.name.trim();
-    if (sub.first_name) {
-        let name = sub.first_name;
-        if (sub.last_name) name += ' ' + sub.last_name;
-        return name.trim();
+    // 1. Root level name
+    if (sub.name && sub.name !== 'Unknown' && sub.name.trim()) return sub.name.trim();
+    if (sub.first_name || sub.last_name) {
+        let n = `${sub.first_name || ''} ${sub.last_name || ''}`.trim();
+        if (n) return n;
     }
     
-    // Check 'fields' object
+    // 2. Fields object lookup
     if (sub.fields) {
-        if (sub.fields.Name) return sub.fields.Name;
-        if (sub.fields.name) return sub.fields.name;
-        if (sub.fields['First Name']) {
-            let n = sub.fields['First Name'];
-            if (sub.fields['Last Name']) n += ' ' + sub.fields['Last Name'];
-            return n.trim();
+        // Priority keys
+        const candidates = ['Name', 'name', 'First Name', 'Your Name', 'Full Name'];
+        for (const key of candidates) {
+            if (sub.fields[key]) {
+                const val = sub.fields[key];
+                if (typeof val === 'string' && val.trim()) return val.trim();
+                // Handle object-based name fields (common in WPForms)
+                if (typeof val === 'object') {
+                     if (val.first || val.last) return `${val.first || ''} ${val.last || ''}`.trim();
+                }
+            }
         }
-        // Fallback: search for any key containing "name"
-        const nameKey = Object.keys(sub.fields).find(k => k.toLowerCase().includes('name'));
-        if (nameKey && typeof sub.fields[nameKey] === 'string') return sub.fields[nameKey];
+        
+        // Compound keys (First Name + Last Name)
+        if (sub.fields['First Name'] || sub.fields['Last Name']) {
+             return `${sub.fields['First Name'] || ''} ${sub.fields['Last Name'] || ''}`.trim();
+        }
+        
+        // 3. Scan all keys for "name" (case-insensitive)
+        for (const key in sub.fields) {
+            if (key.toLowerCase().includes('name')) {
+                const val = sub.fields[key];
+                if (typeof val === 'string' && val.length < 50 && val.toLowerCase() !== 'unknown') return val.trim();
+                if (typeof val === 'object' && (val.first || val.last)) {
+                     return `${val.first || ''} ${val.last || ''}`.trim();
+                }
+            }
+        }
     }
     
     return 'Unknown';
