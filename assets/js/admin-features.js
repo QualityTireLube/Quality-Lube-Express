@@ -55,10 +55,101 @@ function extractCustomerName(sub) {
                 }
             }
         }
+        
+        // 5. LAST RESORT: Check for just "First" or "Last" keys in case they are standalone
+        for (const key in sub.fields) {
+            const val = sub.fields[key];
+            if (val && typeof val === 'object') {
+                 // Sometimes it's { "first": "Name" } without last
+                 if (val.first && !val.last) return val.first.trim();
+            }
+        }
     }
     
     return 'Unknown';
 }
+
+// Helper to view generic submission details (for non-inspection forms)
+window.viewGenericSubmission = function(id) {
+    const sub = customerData.flatMap(c => c.submissions).find(s => s.id === id) || 
+                (typeof allSubmissions !== 'undefined' ? allSubmissions.find(s => s.id === id) : null);
+    
+    if (!sub) return;
+    
+    // Create Modal HTML directly in body if not exists
+    let modalEl = document.getElementById('genericSubmissionModal');
+    if (!modalEl) {
+        modalEl = document.createElement('div');
+        modalEl.id = 'genericSubmissionModal';
+        modalEl.className = 'modal fade';
+        modalEl.setAttribute('tabindex', '-1');
+        modalEl.setAttribute('style', 'z-index: 1060;'); // Higher than customer modal (typically 1055)
+        modalEl.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-light">
+                        <h5 class="modal-title"><i class="fas fa-file-alt me-2"></i>Submission Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Form Type:</strong> <span id="gen-sub-type"></span>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <span class="text-muted" id="gen-sub-date"></span>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 30%;">Field</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gen-sub-fields"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalEl);
+    }
+    
+    // Populate
+    document.getElementById('gen-sub-type').textContent = sub.form_type || 'General Submission';
+    let d = sub.timestamp || sub.date;
+    if (d && typeof d.toDate === 'function') d = d.toDate();
+    else if (d) d = new Date(d);
+    document.getElementById('gen-sub-date').textContent = d ? d.toLocaleString() : 'N/A';
+    
+    const tbody = document.getElementById('gen-sub-fields');
+    let html = '';
+    
+    // Flatten fields
+    const f = sub.fields || {};
+    for (const [key, val] of Object.entries(f)) {
+        let displayVal = val;
+        if (typeof val === 'object') {
+            displayVal = JSON.stringify(val).replace(/"/g, '').replace(/{/g, '').replace(/}/g, '').replace(/,/g, ', ');
+        }
+        html += `<tr><td class="fw-bold">${key}</td><td>${displayVal}</td></tr>`;
+    }
+    
+    // Add implicit fields if not in 'fields'
+    if (!f.email && sub.email) html += `<tr><td class="fw-bold">Email</td><td>${sub.email}</td></tr>`;
+    if (!f.phone && sub.phone) html += `<tr><td class="fw-bold">Phone</td><td>${sub.phone}</td></tr>`;
+    
+    tbody.innerHTML = html;
+    
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+};
 
 function updateCustomerIndex() {
     if (typeof allSubmissions === 'undefined' || !allSubmissions.length) {
@@ -348,6 +439,7 @@ function viewCustomerDetails(customerId) {
         const dateStr = d ? d.toLocaleString() : 'Date Unknown';
         const type = s.form_type || 'Form Submission';
         const vehicle = s.fields?.Vehicle || s.fields?.vehicle || s.vehicle || '';
+        const viewAction = s.items ? `viewInspectionResults('${s.id}')` : `viewGenericSubmission('${s.id}')`;
         
         historyHtml += `
             <div class="list-group-item px-0">
@@ -359,7 +451,7 @@ function viewCustomerDetails(customerId) {
                 <small class="text-muted">Form ID: ${s.form_id || 'N/A'}</small>
                 ${s.items ? `<div class="mt-1"><span class="badge bg-info text-dark">Inspection Report Available</span></div>` : ''}
                 <div class="mt-2">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="viewInspectionResults('${s.id}')">View Details</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="${viewAction}">View Details</button>
                     ${s.pdf_url ? `<a href="${s.pdf_url}" target="_blank" class="btn btn-sm btn-outline-danger ms-1"><i class="fas fa-file-pdf"></i> PDF</a>` : ''}
                 </div>
             </div>
@@ -593,6 +685,9 @@ function viewDayAppointments(year, month, day) {
         appointments.sort((a,b) => (a.time || 'ZZ').localeCompare(b.time || 'ZZ'));
         
         appointments.forEach(app => {
+            const isInspection = app.type.toLowerCase().includes('inspection');
+            const viewAction = `bootstrap.Modal.getInstance(document.getElementById('dayDetailsModal')).hide(); ${isInspection ? `viewInspectionResults('${app.id}')` : `viewGenericSubmission('${app.id}')`}`;
+            
             html += `
                 <div class="list-group-item">
                     <div class="d-flex justify-content-between align-items-center mb-1">
@@ -601,7 +696,7 @@ function viewDayAppointments(year, month, day) {
                     </div>
                     <h6 class="mb-1">${app.name}</h6>
                     <div class="mt-2 text-end">
-                         <button class="btn btn-sm btn-outline-primary" onclick="bootstrap.Modal.getInstance(document.getElementById('dayDetailsModal')).hide(); viewInspectionResults('${app.id}')">View Form</button>
+                         <button class="btn btn-sm btn-outline-primary" onclick="${viewAction}">View Form</button>
                     </div>
                 </div>
             `;
