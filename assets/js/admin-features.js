@@ -32,6 +32,11 @@ function extractCustomerName(sub) {
         if (sub.fields['First Name'] || sub.fields['Last Name']) {
              return `${sub.fields['First Name'] || ''} ${sub.fields['Last Name'] || ''}`.trim();
         }
+
+        // Expanded Compound keys (First + Last, which appears in your specific case)
+        if (sub.fields['First'] || sub.fields['Last']) {
+             return `${sub.fields['First'] || ''} ${sub.fields['Last'] || ''}`.trim();
+        }
         
         // 3. Scan all keys for "name" (case-insensitive)
         for (const key in sub.fields) {
