@@ -5,6 +5,31 @@ let currentCalendarDate = new Date();
 
 // --- Customer Index Logic ---
 
+function extractCustomerName(sub) {
+    if (sub.name && sub.name !== 'Unknown') return sub.name.trim();
+    if (sub.first_name) {
+        let name = sub.first_name;
+        if (sub.last_name) name += ' ' + sub.last_name;
+        return name.trim();
+    }
+    
+    // Check 'fields' object
+    if (sub.fields) {
+        if (sub.fields.Name) return sub.fields.Name;
+        if (sub.fields.name) return sub.fields.name;
+        if (sub.fields['First Name']) {
+            let n = sub.fields['First Name'];
+            if (sub.fields['Last Name']) n += ' ' + sub.fields['Last Name'];
+            return n.trim();
+        }
+        // Fallback: search for any key containing "name"
+        const nameKey = Object.keys(sub.fields).find(k => k.toLowerCase().includes('name'));
+        if (nameKey && typeof sub.fields[nameKey] === 'string') return sub.fields[nameKey];
+    }
+    
+    return 'Unknown';
+}
+
 function updateCustomerIndex() {
     if (typeof allSubmissions === 'undefined' || !allSubmissions.length) {
         document.getElementById('customer-list-body').innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">No customer data found.</td></tr>';
@@ -44,7 +69,7 @@ function updateCustomerIndex() {
         if (!distinctCustomers.has(key)) {
             distinctCustomers.set(key, {
                 id: key, 
-                name: (sub.name || sub.first_name || sub.fields?.name || sub.fields?.Name || sub.fields?.["First Name"] || 'Unknown').trim(),
+                name: extractCustomerName(sub),
                 emails: new Set(email ? [email] : []),
                 phones: new Set(phone ? [phoneRaw] : []), 
                 submissions: [],
@@ -60,8 +85,10 @@ function updateCustomerIndex() {
         if (phoneRaw) customer.phones.add(phoneRaw);
         
         // Update name if current is 'Unknown' or shorter/less complete
-        const subName = (sub.name || sub.first_name || sub.fields?.name || sub.fields?.Name || sub.fields?.["First Name"] || '').trim();
-        if (customer.name === 'Unknown' && subName) customer.name = subName;
+        const subName = extractCustomerName(sub);
+        if ((customer.name === 'Unknown' || customer.name.length < subName.length) && subName !== 'Unknown') {
+             customer.name = subName;
+        }
         
         customer.submissions.push(sub);
         customer.submissionCount++;
@@ -211,18 +238,108 @@ function viewCustomerDetails(customerId) {
     const customer = customerData.find(c => c.id === customerId);
     if (!customer) return;
     
-    // Use the inspectionResultsModal or a new modal to show history
-    // For now, let's just log it or alert - ideally we'd show a modal with all their submissions
-    // Re-using inspection results modal would be tricky as it expects one submission.
-    // Let's create a simple alert for now or drill down.
+    // Create Modal HTML directly in body if not exists
+    let modalEl = document.getElementById('customerDetailsModal');
+    if (!modalEl) {
+        modalEl = document.createElement('div');
+        modalEl.id = 'customerDetailsModal';
+        modalEl.className = 'modal fade';
+        modalEl.setAttribute('tabindex', '-1');
+        modalEl.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fas fa-user-circle me-2"></i>Customer Profile</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-4">
+                             <div class="col-md-6 border-end">
+                                 <h4 class="mb-1" id="cust-modal-name"></h4>
+                                 <div class="text-muted mb-2">Customer since <span id="cust-modal-since"></span></div>
+                                 
+                                 <div class="mb-2"><i class="fas fa-envelope text-secondary me-2"></i> <span id="cust-modal-email"></span></div>
+                                 <div class="mb-2"><i class="fas fa-phone text-secondary me-2"></i> <span id="cust-modal-phone"></span></div>
+                             </div>
+                             <div class="col-md-6 ps-md-4">
+                                 <div class="d-flex justify-content-between align-items-center mb-2">
+                                     <span class="fw-bold">Total Interactions</span>
+                                     <span class="badge bg-primary rounded-pill" id="cust-modal-count">0</span>
+                                 </div>
+                                 <div class="d-flex justify-content-between align-items-center mb-2">
+                                     <span class="fw-bold">Last Activity</span>
+                                     <span id="cust-modal-last"></span>
+                                 </div>
+                             </div>
+                        </div>
+                        
+                        <h6 class="border-bottom pb-2 mb-3">Submission History</h6>
+                        <div class="list-group list-group-flush" id="cust-modal-history">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalEl);
+    }
     
-    let info = `Customer: ${customer.name}\n`;
-    info += `History:\n`;
+    // Populate Data
+    document.getElementById('cust-modal-name').textContent = customer.name;
+    document.getElementById('cust-modal-email').textContent = Array.from(customer.emails).join(', ') || 'No email';
+    document.getElementById('cust-modal-phone').textContent = Array.from(customer.phones).join(', ') || 'No phone';
+    document.getElementById('cust-modal-count').textContent = customer.submissionCount;
+    document.getElementById('cust-modal-last').textContent = customer.lastActivity ? customer.lastActivity.toLocaleDateString() : 'N/A';
+    
+    // Find earliest submission for "since"
+    let earliest = customer.lastActivity;
     customer.submissions.forEach(s => {
-        const d = getSubmissionDate(s);
-        info += `- ${d ? d.toLocaleDateString() : 'N/A'}: ${s.form_type || 'Form'} (${s.form_name || ''})\n`;
+         const d = (typeof getSubmissionDate === 'function') ? getSubmissionDate(s) : new Date(s.timestamp || 0);
+         if (d && (!earliest || d < earliest)) earliest = d;
     });
-    alert(info);
+    document.getElementById('cust-modal-since').textContent = earliest ? earliest.toLocaleDateString() : 'Unknown';
+    
+    // History List
+    const historyContainer = document.getElementById('cust-modal-history');
+    let historyHtml = '';
+    
+    // Sort submissions new -> old
+    const sortedSubs = [...customer.submissions].sort((a,b) => {
+         const dA = (typeof getSubmissionDate === 'function') ? getSubmissionDate(a) : new Date(a.timestamp || 0);
+         const dB = (typeof getSubmissionDate === 'function') ? getSubmissionDate(b) : new Date(b.timestamp || 0);
+         return dB - dA;
+    });
+    
+    sortedSubs.forEach(s => {
+        const d = (typeof getSubmissionDate === 'function') ? getSubmissionDate(s) : new Date(s.timestamp || 0);
+        const dateStr = d ? d.toLocaleString() : 'Date Unknown';
+        const type = s.form_type || 'Form Submission';
+        const vehicle = s.fields?.Vehicle || s.fields?.vehicle || s.vehicle || '';
+        
+        historyHtml += `
+            <div class="list-group-item px-0">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1 text-primary">${type}</h6>
+                    <small>${dateStr}</small>
+                </div>
+                ${vehicle ? `<p class="mb-1 small text-dark"><i class="fas fa-car me-1"></i> ${vehicle}</p>` : ''}
+                <small class="text-muted">Form ID: ${s.form_id || 'N/A'}</small>
+                ${s.items ? `<div class="mt-1"><span class="badge bg-info text-dark">Inspection Report Available</span></div>` : ''}
+                <div class="mt-2">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="viewInspectionResults('${s.id}')">View Details</button>
+                    ${s.pdf_url ? `<a href="${s.pdf_url}" target="_blank" class="btn btn-sm btn-outline-danger ms-1"><i class="fas fa-file-pdf"></i> PDF</a>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    historyContainer.innerHTML = historyHtml;
+    
+    // Show Modal
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
 }
 
 
@@ -331,11 +448,30 @@ function isSameDate(d1, d2) {
 }
 
 function renderAppointmentDots(apps) {
-    return apps.map(app => `
-        <div class="text-truncate text-primary mb-1">
-            <i class="fas fa-circle px-1" style="font-size: 6px;"></i>${app.name}
+    // Limit to 3 to prevent overflow, show +N if more
+    const maxShow = 3;
+    const displayApps = apps.slice(0, maxShow);
+    const moreCount = apps.length - maxShow;
+    
+    let html = displayApps.map(app => {
+        let colorClass = 'text-primary';
+        if (app.type.toLowerCase().includes('inspection')) colorClass = 'text-info';
+        else if (app.type.toLowerCase().includes('emergency') || app.type.toLowerCase().includes('urgent')) colorClass = 'text-danger';
+        
+        // Truncate name to 12 chars
+        const shortName = app.name.length > 12 ? app.name.substring(0, 10) + '..' : app.name;
+        
+        return `
+        <div class="text-truncate ${colorClass} mb-1" style="font-size: 11px; line-height: 1.2;">
+            <i class="fas fa-circle px-1" style="font-size: 5px; vertical-align: middle;"></i>${shortName}
         </div>
-    `).join('');
+        `;
+    }).join('');
+    
+    if (moreCount > 0) {
+        html += `<div class="text-muted ps-2" style="font-size: 10px;">+${moreCount} more</div>`;
+    }
+    return html;
 }
 
 function changeCalendarMonth(delta) {
@@ -388,11 +524,61 @@ function updateUpcomingList() {
 function viewDayAppointments(year, month, day) {
     const date = new Date(year, month, day);
     const appointments = getAppointmentsForDate(date);
-    if (appointments.length === 0) return;
     
-    let msg = `Appointments for ${date.toLocaleDateString()}:\n\n`;
-    appointments.forEach(app => {
-        msg += `- ${app.time || 'Time N/A'}: ${app.name} (${app.type})\n`;
-    });
-    alert(msg);
+    // Create Modal HTML directly in body if not exists
+    let modalEl = document.getElementById('dayDetailsModal');
+    if (!modalEl) {
+        modalEl = document.createElement('div');
+        modalEl.id = 'dayDetailsModal';
+        modalEl.className = 'modal fade';
+        modalEl.setAttribute('tabindex', '-1');
+        modalEl.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="day-modal-title"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="list-group list-group-flush" id="day-modal-list"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalEl);
+    }
+    
+    document.getElementById('day-modal-title').innerHTML = `<i class="far fa-calendar-alt me-2"></i> ${date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+    
+    const listEl = document.getElementById('day-modal-list');
+    
+    if (appointments.length === 0) {
+        listEl.innerHTML = `<div class="text-center text-muted py-4">No appointments scheduled for this day.</div>`;
+    } else {
+        let html = '';
+        // Sort by time if available
+        appointments.sort((a,b) => (a.time || 'ZZ').localeCompare(b.time || 'ZZ'));
+        
+        appointments.forEach(app => {
+            html += `
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="badge bg-primary rounded-pill">${app.time || 'Time TBD'}</span>
+                        <small class="text-muted">${app.type}</small>
+                    </div>
+                    <h6 class="mb-1">${app.name}</h6>
+                    <div class="mt-2 text-end">
+                         <button class="btn btn-sm btn-outline-primary" onclick="bootstrap.Modal.getInstance(document.getElementById('dayDetailsModal')).hide(); viewInspectionResults('${app.id}')">View Form</button>
+                    </div>
+                </div>
+            `;
+        });
+        listEl.innerHTML = html;
+    }
+    
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
 }
