@@ -31,6 +31,13 @@
         try {
             const db = firebase.firestore();
             let path = window.location.pathname;
+            
+            // Exclude Admin Dashboard from analytics
+            if (path.includes('/admin/') || path.includes('dashboard.html')) {
+                console.log("Analytics: Admin dashboard skipped.");
+                return;
+            }
+
             if (path.endsWith('/') || path === '') path += 'index.html';
             
             // 1. Page Stats (Aggregate)

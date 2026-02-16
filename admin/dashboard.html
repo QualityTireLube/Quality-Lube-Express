@@ -1811,35 +1811,59 @@
 
            <div class="row mb-4">
              <div class="col-md-3">
-               <div class="stat-card border-bottom border-primary border-3 shadow-sm h-100">
-                 <div class="stat-title text-uppercase font-weight-bold text-muted small">Total Visitors</div>
-                 <div class="stat-value display-6 fw-bold my-2" id="analytics-total-visitors">0</div>
-                 <div class="stat-icon opacity-25" style="font-size: 2rem;"><i class="fas fa-users"></i></div>
-                 <div class="small text-muted mt-2"><i class="fas fa-arrow-up text-success"></i> All time sessions</div>
+               <div class="stat-card border-bottom border-primary border-3 shadow bg-white rounded p-3 h-100">
+                 <div class="d-flex justify-content-between align-items-start">
+                   <div>
+                     <div class="text-uppercase font-weight-bold text-primary small mb-1">Total Visitors</div>
+                     <div class="display-5 fw-bold text-dark" id="analytics-total-visitors">0</div>
+                   </div>
+                   <div class="bg-primary bg-opacity-10 rounded p-2 text-primary">
+                     <i class="fas fa-users fa-2x"></i>
+                   </div>
+                 </div>
+                 <div class="small text-muted mt-3"><i class="fas fa-arrow-up text-success me-1"></i> All time sessions</div>
                </div>
              </div>
              <div class="col-md-3">
-               <div class="stat-card border-bottom border-info border-3 shadow-sm h-100">
-                 <div class="stat-title text-uppercase font-weight-bold text-muted small">Mobile Traffic</div>
-                 <div class="stat-value display-6 fw-bold my-2" id="analytics-mobile-percent">0%</div>
-                 <div class="stat-icon opacity-25" style="font-size: 2rem;"><i class="fas fa-mobile-alt"></i></div>
-                 <div class="small text-muted mt-2">Percent of total users</div>
+               <div class="stat-card border-bottom border-info border-3 shadow bg-white rounded p-3 h-100">
+                 <div class="d-flex justify-content-between align-items-start">
+                   <div>
+                     <div class="text-uppercase font-weight-bold text-info small mb-1">Mobile Traffic</div>
+                     <div class="display-5 fw-bold text-dark" id="analytics-mobile-percent">0%</div>
+                   </div>
+                   <div class="bg-info bg-opacity-10 rounded p-2 text-info">
+                     <i class="fas fa-mobile-alt fa-2x"></i>
+                   </div>
+                 </div>
+                 <div class="small text-muted mt-3">Percent of total users</div>
                </div>
              </div>
              <div class="col-md-3">
-               <div class="stat-card border-bottom border-success border-3 shadow-sm h-100">
-                 <div class="stat-title text-uppercase font-weight-bold text-muted small">Top Location</div>
-                 <div class="stat-value display-6 fw-bold my-2 text-truncate" id="analytics-top-city" style="font-size: 1.5rem; line-height: 1.5;">-</div>
-                 <div class="stat-icon opacity-25" style="font-size: 2rem;"><i class="fas fa-map-marker-alt"></i></div>
-                 <div class="small text-muted mt-2">Most frequent city</div>
+               <div class="stat-card border-bottom border-success border-3 shadow bg-white rounded p-3 h-100">
+                 <div class="d-flex justify-content-between align-items-start">
+                   <div style="min-width: 0;"> <!-- Fix for flexbox truncation -->
+                     <div class="text-uppercase font-weight-bold text-success small mb-1">Top Location</div>
+                     <div class="display-6 fw-bold text-dark text-truncate" id="analytics-top-city" style="line-height: 1.2;">-</div>
+                   </div>
+                   <div class="bg-success bg-opacity-10 rounded p-2 text-success ms-2">
+                     <i class="fas fa-map-marker-alt fa-2x"></i>
+                   </div>
+                 </div>
+                 <div class="small text-muted mt-3">Most frequent city</div>
                </div>
              </div>
              <div class="col-md-3">
-               <div class="stat-card border-bottom border-warning border-3 shadow-sm h-100">
-                 <div class="stat-title text-uppercase font-weight-bold text-muted small">Platform</div>
-                 <div class="stat-value display-6 fw-bold my-2 text-truncate" id="analytics-platform-stat" style="font-size: 1.5rem; line-height: 1.5;">-</div>
-                 <div class="stat-icon opacity-25" style="font-size: 2rem;"><i class="fas fa-desktop"></i></div>
-                 <div class="small text-muted mt-2">Top OS detected</div>
+               <div class="stat-card border-bottom border-warning border-3 shadow bg-white rounded p-3 h-100">
+                 <div class="d-flex justify-content-between align-items-start">
+                   <div style="min-width: 0;">
+                     <div class="text-uppercase font-weight-bold text-warning small mb-1">Platform</div>
+                     <div class="display-6 fw-bold text-dark text-truncate" id="analytics-platform-stat" style="line-height: 1.2;">-</div>
+                   </div>
+                   <div class="bg-warning bg-opacity-10 rounded p-2 text-warning ms-2">
+                     <i class="fas fa-desktop fa-2x"></i>
+                   </div>
+                 </div>
+                 <div class="small text-muted mt-3">Top OS detected</div>
                </div>
              </div>
            </div>
@@ -2144,7 +2168,7 @@
           
           pageStatsUnsubscribe = db.collection('page_stats')
             .orderBy('views', 'desc')
-            .limit(20)
+            .limit(50) // Fetch more to allow for filtering
             .onSnapshot((snapshot) => {
                const tbody = document.getElementById('analytics-pages-list');
                if (!tbody) return;
@@ -2155,8 +2179,20 @@
                }
                
                let html = '';
+               let visibleCount = 0;
+
                snapshot.forEach(doc => {
+                   if (visibleCount >= 20) return; // Limit display to 20
+
                    const data = doc.data();
+                   
+                   // Filter out admin pages
+                   if (data.path && (data.path.includes('/admin/') || data.path.includes('dashboard.html'))) {
+                       return;
+                   }
+
+                   visibleCount++;
+
                    const lastVisit = data.last_updated ? (data.last_updated.toDate ? data.last_updated.toDate().toLocaleString() : new Date(data.last_updated).toLocaleString()) : 'N/A';
                    
                    html += `
@@ -2168,7 +2204,7 @@
                       </tr>
                    `;
                });
-               tbody.innerHTML = html;
+               tbody.innerHTML = html || '<tr><td colspan="4" class="text-center py-3">No public page views yet.</td></tr>';
             }, (error) => {
                 console.error("Error fetching page stats:", error);
             });
