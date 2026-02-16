@@ -2,7 +2,6 @@
 (function() {
     'use strict';
 
-    // Helper: Generate UUID for Session
     function generateUUID() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -10,86 +9,76 @@
         });
     }
 
-    // Main Tracking Function
+    function getDeviceType() {
+        const ua = navigator.userAgent;
+        if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+            return "tablet";
+        }
+        if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)os|Opera M(obi|ini)/.test(ua)) {
+            return "mobile";
+        }
+        return "desktop";
+    }
+
     async function trackPageView() {
-        // Wait for Firebase to load
         if (typeof firebase === 'undefined' || !firebase.apps.length) {
-           console.warn('Firebase not loaded yet, retrying tracking...');
            setTimeout(trackPageView, 500);
            return;
         }
 
         const db = firebase.firestore();
-        
         let path = window.location.pathname;
-        // Fix path consistency
-        if (path.endsWith('/')) path += 'index.html';
+        if (path.endsWith('/') || path === '') path += 'index.html';
         
-        // Create a document ID that is safe
+        // 1. Page Stats (Aggregate)
         const docId = path.split('/').pop().replace(/\.html$/, '') || 'home';
-        
-        // Session Management
+        db.collection('page_stats').doc(docId).set({
+            path: path,
+            views: firebase.firestore.FieldValue.increment(1),
+            last_updated: firebase.firestore.FieldValue.serverTimestamp(),
+            title: document.title
+        }, { merge: true }).catch(e => console.error("Stats error", e));
+
+        // 2. Session Tracking (Individual)
         let sessionId = sessionStorage.getItem('analytics_session_id');
-        let isNewSession = false;
         if (!sessionId) {
             sessionId = generateUUID();
             sessionStorage.setItem('analytics_session_id', sessionId);
-            isNewSession = true;
         }
 
-        const timestamp = firebase.firestore.FieldValue.serverTimestamp();
-
-        // 1. Increment Page View Counter
-        const statsRef = db.collection('page_stats').doc(docId);
+        const sessionRef = db.collection('visitor_sessions').doc(sessionId);
         
+        // Get IP data if not cached
+        let ipData = {};
         try {
-            await statsRef.set({
-                path: path,
-                views: firebase.firestore.FieldValue.increment(1),
-                last_updated: timestamp,
-                title: document.title
-            }, { merge: true });
-        } catch (e) {
-            console.error('Error tracking view:', e);
-        }
-
-        // 2. Track Session Start
-        if (isNewSession) {
-             let ipData = {};
-             try {
-                const cachedIP = localStorage.getItem('analytics_ip_data');
-                if (cachedIP) {
-                    ipData = JSON.parse(cachedIP);
-                } else {
-                    const res = await fetch('https://ipapi.co/json/');
-                    if (res.ok) {
-                        ipData = await res.json();
-                        localStorage.setItem('analytics_ip_data', JSON.stringify(ipData));
-                    }
+            const cachedIP = localStorage.getItem('analytics_ip_data');
+            if (cachedIP) {
+                ipData = JSON.parse(cachedIP);
+            } else {
+                const res = await fetch('https://ipapi.co/json/');
+                if (res.ok) {
+                    ipData = await res.json();
+                    localStorage.setItem('analytics_ip_data', JSON.stringify(ipData));
                 }
-             } catch (e) {
-                 console.warn('IP fetch failed', e);
-             }
+            }
+        } catch (e) { console.warn('IP fetch failed'); }
 
-             const analyticsData = {
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                screen: {
-                    width: window.screen.width,
-                    height: window.screen.height
-                },
-                ip: ipData.ip || 'unknown',
-                city: ipData.city || 'unknown',
-                region: ipData.region || 'unknown',
-                country: ipData.country_name || 'unknown',
-                session_start: timestamp
-             };
-
-             db.collection('visitor_sessions').add(analyticsData);
-        }
+        // Update Session
+        sessionRef.set({
+            lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
+            deviceType: getDeviceType(),
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            screen: { width: window.screen.width, height: window.screen.height },
+            ip: ipData.ip || 'unknown',
+            city: ipData.city || 'unknown',
+            region: ipData.region || 'unknown',
+            country: ipData.country_name || 'unknown',
+            lastPath: path,
+            visits: firebase.firestore.FieldValue.increment(1)
+        }, { merge: true });
     }
 
-    // Start
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', trackPageView);
     } else {

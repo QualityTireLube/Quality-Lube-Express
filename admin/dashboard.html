@@ -1779,55 +1779,80 @@
 
     <!-- Analytics Tab -->
     <div class="tab-pane fade" id="analytics-tab" role="tabpanel">
+           
+           <!-- Analytics Header with Controls -->
+           <div class="d-flex justify-content-between align-items-center mb-4">
+             <div>
+               <h4 class="mb-1"><i class="fas fa-chart-line text-primary me-2"></i>Live Analytics</h4>
+               <p class="text-muted mb-0 small">Real-time data from site visitors</p>
+             </div>
+             <div class="d-flex align-items-center gap-3">
+               <span class="badge bg-light text-dark border px-3 py-2">
+                 <i class="fas fa-clock me-1"></i> Updated: <span id="analytics-last-updated">Just now</span>
+               </span>
+               <button class="btn btn-outline-primary btn-sm" id="refresh-analytics-btn">
+                 <i class="fas fa-sync-alt me-1"></i> Refresh Data
+               </button>
+             </div>
+           </div>
+
            <div class="row mb-4">
              <div class="col-md-3">
-               <div class="stat-card">
-                 <div class="stat-title">Total Visitors (Tracking)</div>
-                 <div class="stat-value" id="analytics-total-visitors">0</div>
-                 <div class="stat-icon"><i class="fas fa-users"></i></div>
+               <div class="stat-card border-bottom border-primary border-3 shadow-sm h-100">
+                 <div class="stat-title text-uppercase font-weight-bold text-muted small">Total Visitors</div>
+                 <div class="stat-value display-6 fw-bold my-2" id="analytics-total-visitors">0</div>
+                 <div class="stat-icon opacity-25" style="font-size: 2rem;"><i class="fas fa-users"></i></div>
+                 <div class="small text-muted mt-2"><i class="fas fa-arrow-up text-success"></i> All time sessions</div>
                </div>
              </div>
              <div class="col-md-3">
-               <div class="stat-card">
-                 <div class="stat-title">From Mobile</div>
-                 <div class="stat-value" id="analytics-mobile-percent">0%</div>
-                 <div class="stat-icon"><i class="fas fa-mobile-alt"></i></div>
+               <div class="stat-card border-bottom border-info border-3 shadow-sm h-100">
+                 <div class="stat-title text-uppercase font-weight-bold text-muted small">Mobile Traffic</div>
+                 <div class="stat-value display-6 fw-bold my-2" id="analytics-mobile-percent">0%</div>
+                 <div class="stat-icon opacity-25" style="font-size: 2rem;"><i class="fas fa-mobile-alt"></i></div>
+                 <div class="small text-muted mt-2">Percent of total users</div>
                </div>
              </div>
              <div class="col-md-3">
-               <div class="stat-card">
-                 <div class="stat-title">Top City</div>
-                 <div class="stat-value" id="analytics-top-city">-</div>
-                 <div class="stat-icon"><i class="fas fa-map-marker-alt"></i></div>
+               <div class="stat-card border-bottom border-success border-3 shadow-sm h-100">
+                 <div class="stat-title text-uppercase font-weight-bold text-muted small">Top Location</div>
+                 <div class="stat-value display-6 fw-bold my-2 text-truncate" id="analytics-top-city" style="font-size: 1.5rem; line-height: 1.5;">-</div>
+                 <div class="stat-icon opacity-25" style="font-size: 2rem;"><i class="fas fa-map-marker-alt"></i></div>
+                 <div class="small text-muted mt-2">Most frequent city</div>
                </div>
              </div>
              <div class="col-md-3">
-               <div class="stat-card">
-                 <div class="stat-title">Avg Screen Width</div>
-                 <div class="stat-value" id="analytics-avg-screen">0px</div>
-                 <div class="stat-icon"><i class="fas fa-desktop"></i></div>
+               <div class="stat-card border-bottom border-warning border-3 shadow-sm h-100">
+                 <div class="stat-title text-uppercase font-weight-bold text-muted small">Platform</div>
+                 <div class="stat-value display-6 fw-bold my-2 text-truncate" id="analytics-platform-stat" style="font-size: 1.5rem; line-height: 1.5;">-</div>
+                 <div class="stat-icon opacity-25" style="font-size: 2rem;"><i class="fas fa-desktop"></i></div>
+                 <div class="small text-muted mt-2">Top OS detected</div>
                </div>
              </div>
            </div>
 
            <div class="row">
              <div class="col-md-6 mb-4">
-               <div class="card h-100">
-                 <div class="card-header">
-                   <h5 class="mb-0">Device Types</h5>
+               <div class="card h-100 shadow-sm border-0">
+                 <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                   <h5 class="mb-0 fw-bold">Device Breakdown</h5>
                  </div>
-                 <div class="card-body">
-                   <canvas id="deviceChart"></canvas>
+                 <div class="card-body px-4 pb-4">
+                   <div style="height: 250px; position: relative;">
+                     <canvas id="deviceChart"></canvas>
+                   </div>
                  </div>
                </div>
              </div>
              <div class="col-md-6 mb-4">
-               <div class="card h-100">
-                 <div class="card-header">
-                   <h5 class="mb-0">Top Locations</h5>
+               <div class="card h-100 shadow-sm border-0">
+                 <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                   <h5 class="mb-0 fw-bold">Top Locations</h5>
                  </div>
-                 <div class="card-body">
-                   <canvas id="locationChart"></canvas>
+                 <div class="card-body px-4 pb-4">
+                   <div style="height: 250px; position: relative;">
+                     <canvas id="locationChart"></canvas>
+                   </div>
                  </div>
                </div>
              </div>
@@ -1835,23 +1860,26 @@
            
            <div class="row">
             <div class="col-12 mb-4">
-              <div class="card">
-                <div class="card-header">
-                  <h5 class="mb-0">Most Visited Pages</h5>
+              <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">Most Visited Pages</h5>
+                    <span class="badge bg-primary rounded-pill">Real-time</span>
+                  </div>
                 </div>
                 <div class="card-body p-0">
                   <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                      <thead class="table-light">
+                      <thead class="bg-light text-secondary">
                         <tr>
-                          <th>Page Title</th>
-                          <th>Path</th>
-                          <th class="text-end">Views</th>
-                          <th class="text-end">Last Visit</th>
+                          <th class="border-0 ps-4">Page Title</th>
+                          <th class="border-0">Path</th>
+                          <th class="border-0 text-end">Views</th>
+                          <th class="border-0 text-end pe-4">Last Visit</th>
                         </tr>
                       </thead>
                       <tbody id="analytics-pages-list">
-                        <tr><td colspan="4" class="text-center py-3">Loading page data...</td></tr>
+                        <tr><td colspan="4" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Loading live data...</td></tr>
                       </tbody>
                     </table>
                   </div>
@@ -2027,7 +2055,7 @@
         } else {
           initLiveSubmissions();
           loadServices();
-          if (typeof initLiveAnalytics === 'function') initLiveAnalytics();
+          if (typeof initRealAnalytics === 'function') initRealAnalytics();
           requestNotificationPermission();
         }
       });
@@ -2048,22 +2076,108 @@
         }
       }
 
-      // ==================== ANALYTICS RENDERING ====================
-      function renderAnalytics() {
-        if (!allSubmissions || !allSubmissions.length) return;
-        
+      // ==================== ANALYTICS RENDERING (REAL-TIME) ====================
+      
+      let analyticsUnsubscribe = null;
+      let pageStatsUnsubscribe = null;
+      let deviceChartInstance = null;
+      let locationChartInstance = null;
+
+      function initRealAnalytics() {
+          if (!db) return;
+          console.log("Initializing Real Analytics...");
+
+          const startLiveSessionListener = () => {
+              if (analyticsUnsubscribe) analyticsUnsubscribe();
+              
+              analyticsUnsubscribe = db.collection('visitor_sessions')
+                  .orderBy('session_start', 'desc')
+                  .limit(500)
+                  .onSnapshot((snapshot) => {
+                      const sessions = [];
+                      snapshot.forEach(doc => sessions.push(doc.data()));
+                      
+                      updateAnalyticsUI(sessions);
+                      
+                      const now = new Date();
+                      const timeString = now.toLocaleTimeString();
+                      const updateEl = document.getElementById('analytics-last-updated');
+                      if(updateEl) updateEl.textContent = timeString;
+                      
+                      // Stop spinner if refresh button was clicked
+                      const refreshBtn = document.getElementById('refresh-analytics-btn');
+                      if(refreshBtn && refreshBtn.innerHTML.includes('fa-spin')) {
+                           refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Refresh Data';
+                      }
+                  }, (error) => {
+                      console.error("Error fetching visitor data:", error);
+                  });
+          };
+
+          // 1. Refresh Button Listener
+          const refreshBtn = document.getElementById('refresh-analytics-btn');
+          if (refreshBtn) {
+              refreshBtn.addEventListener('click', () => {
+                  refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Refreshing...';
+                  startLiveSessionListener();
+              });
+          }
+
+          // 2. Start Live Listener
+          startLiveSessionListener();
+
+          // 3. Live Page Stats Listener
+          if (pageStatsUnsubscribe) pageStatsUnsubscribe();
+          
+          pageStatsUnsubscribe = db.collection('page_stats')
+            .orderBy('views', 'desc')
+            .limit(20)
+            .onSnapshot((snapshot) => {
+               const tbody = document.getElementById('analytics-pages-list');
+               if (!tbody) return;
+               
+               if (snapshot.empty) {
+                   tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3">No page view data yet.</td></tr>';
+                   return;
+               }
+               
+               let html = '';
+               snapshot.forEach(doc => {
+                   const data = doc.data();
+                   const lastVisit = data.last_updated ? (data.last_updated.toDate ? data.last_updated.toDate().toLocaleString() : new Date(data.last_updated).toLocaleString()) : 'N/A';
+                   
+                   html += `
+                      <tr>
+                          <td class="fw-bold text-primary">${data.title || 'Untitled Page'}</td>
+                          <td><a href="${data.path}" target="_blank" class="text-decoration-none text-muted small">${data.path}</a></td>
+                          <td class="text-end"><span class="badge bg-primary rounded-pill">${data.views || 0}</span></td>
+                          <td class="text-end small text-muted">${lastVisit}</td>
+                      </tr>
+                   `;
+               });
+               tbody.innerHTML = html;
+            }, (error) => {
+                console.error("Error fetching page stats:", error);
+            });
+      }
+
+
+
+      function updateAnalyticsUI(data) {
+        if (!data) return;
+
         // 1. Calculate Stats
-        const total = allSubmissions.length;
-        const withAnalytics = allSubmissions.filter(s => s.analytics);
-        const mobile = withAnalytics.filter(s => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(s.analytics.userAgent || '')).length;
+        const total = data.length;
+        const mobile = data.filter(s => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(s.userAgent || '')).length;
         
         // Top City
         const cities = {};
-        withAnalytics.forEach(s => {
-            if (s.analytics.city && s.analytics.city !== 'unknown') {
-                cities[s.analytics.city] = (cities[s.analytics.city] || 0) + 1;
+        data.forEach(s => {
+            if (s.city && s.city !== 'unknown') {
+                cities[s.city] = (cities[s.city] || 0) + 1;
             }
         });
+        
         let topCity = '-';
         let maxCount = 0;
         for (const [city, count] of Object.entries(cities)) {
@@ -2073,30 +2187,46 @@
             }
         }
         
-        // Avg Screen Width
-        let totalWidth = 0;
-        let widthCount = 0;
-        withAnalytics.forEach(s => {
-            if (s.analytics.screen && s.analytics.screen.width) {
-                totalWidth += s.analytics.screen.width;
-                widthCount++;
-            }
+        // Top Platform (OS)
+        const platforms = {};
+        data.forEach(s => {
+            let plat = 'Unknown';
+            const ua = s.userAgent || '';
+            if (/Win/i.test(ua)) plat = 'Windows';
+            else if (/Mac/i.test(ua)) plat = 'MacOS';
+            else if (/Linux/i.test(ua)) plat = 'Linux';
+            else if (/Android/i.test(ua)) plat = 'Android';
+            else if (/iPhone|iPad/i.test(ua)) plat = 'iOS';
+            
+            platforms[plat] = (platforms[plat] || 0) + 1;
         });
-        const avgWidth = widthCount ? Math.round(totalWidth / widthCount) : 0;
+        
+        let topPlatform = '-';
+        let maxPlatCount = 0;
+        for (const [p, c] of Object.entries(platforms)) {
+             if (c > maxPlatCount) {
+                 maxPlatCount = c;
+                 topPlatform = p;
+             }
+        }
 
         // Update DOM
-        document.getElementById('analytics-total-visitors').textContent = withAnalytics.length; // Count only tracked
-        document.getElementById('analytics-mobile-percent').textContent = withAnalytics.length ? Math.round((mobile / withAnalytics.length) * 100) + '%' : '0%';
-        document.getElementById('analytics-top-city').textContent = topCity;
-        document.getElementById('analytics-avg-screen').textContent = avgWidth + 'px';
+        const totalEl = document.getElementById('analytics-total-visitors');
+        if(totalEl) totalEl.textContent = total + (total === 500 ? '+' : ''); 
+        
+        const mobileEl = document.getElementById('analytics-mobile-percent');
+        if(mobileEl) mobileEl.textContent = total ? Math.round((mobile / total) * 100) + '%' : '0%';
+        
+        const cityEl = document.getElementById('analytics-top-city');
+        if(cityEl) cityEl.textContent = topCity;
+        
+        const platformEl = document.getElementById('analytics-platform-stat'); // Renamed from avg-screen
+        if(platformEl) platformEl.textContent = topPlatform;
 
         // 2. Render Charts
-        renderDeviceChart(withAnalytics);
-        renderLocationChart(withAnalytics);
+        renderDeviceChart(data);
+        renderLocationChart(data);
       }
-
-      let deviceChartInstance = null;
-      let locationChartInstance = null;
 
       function renderDeviceChart(data) {
         const ctx = document.getElementById('deviceChart');
@@ -2105,7 +2235,7 @@
         // Process Data
         const deviceTypes = { 'Desktop': 0, 'Mobile': 0, 'Tablet': 0 };
         data.forEach(s => {
-            const ua = s.analytics.userAgent || '';
+            const ua = s.userAgent || '';
             if (/iPad|Tablet/i.test(ua)) deviceTypes['Tablet']++;
             else if (/Mobile/i.test(ua)) deviceTypes['Mobile']++;
             else deviceTypes['Desktop']++;
@@ -2118,8 +2248,16 @@
                 labels: Object.keys(deviceTypes),
                 datasets: [{
                     data: Object.values(deviceTypes),
-                    backgroundColor: ['#36a2eb', '#ff6384', '#ffcd56']
+                    backgroundColor: ['#36a2eb', '#ff6384', '#ffcd56'],
+                    borderWidth: 0
                 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
             }
         });
       }
@@ -2131,7 +2269,7 @@
         // Process Data (Top 5 Cities)
         const cityCounts = {};
         data.forEach(s => {
-            const city = s.analytics.city || 'Unknown';
+            const city = s.city || 'Unknown';
             cityCounts[city] = (cityCounts[city] || 0) + 1;
         });
 
@@ -2145,18 +2283,31 @@
             data: {
                 labels: sortedCities.map(i => i[0]),
                 datasets: [{
-                    label: 'Submissions',
+                    label: 'Unique Sessions',
                     data: sortedCities.map(i => i[1]),
-                    backgroundColor: '#4bc0c0'
+                    backgroundColor: '#4bc0c0',
+                    borderRadius: 4
                 }]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
-                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { borderDash: [2, 2] } },
+                    x: { grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false }
                 }
             }
         });
       }
+
+      // Stub to prevent errors if called from legacy
+      function renderAnalytics() {
+          console.log("Legacy renderAnalytics called - ignoring");
+      }
+
 
       // ==================== FORM SUBMISSIONS ====================
 
@@ -4158,40 +4309,9 @@
         return html;
       }
 
-      // ==================== PAGE VIEW TRACKING ====================
+      // ==================== PAGE VIEW TRACKING (LEGACY - NOW INTEGRATED) ====================
       function initLiveAnalytics() {
-        if (!db) return;
-        
-        db.collection('page_stats')
-          .orderBy('views', 'desc')
-          .limit(20)
-          .onSnapshot((snapshot) => {
-             const tbody = document.getElementById('analytics-pages-list');
-             if (!tbody) return;
-             
-             if (snapshot.empty) {
-                 tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3">No page view data yet.</td></tr>';
-                 return;
-             }
-             
-             let html = '';
-             snapshot.forEach(doc => {
-                 const data = doc.data();
-                 const lastVisit = data.last_updated ? (data.last_updated.toDate ? data.last_updated.toDate().toLocaleString() : new Date(data.last_updated).toLocaleString()) : 'N/A';
-                 
-                 html += `
-                    <tr>
-                        <td class="fw-bold">${data.title || 'Untitled Page'}</td>
-                        <td><a href="${data.path}" target="_blank" class="text-decoration-none">${data.path}</a></td>
-                        <td class="text-end"><span class="badge bg-info rounded-pill">${data.views || 0}</span></td>
-                        <td class="text-end small text-muted">${lastVisit}</td>
-                    </tr>
-                 `;
-             });
-             tbody.innerHTML = html;
-          }, (error) => {
-              console.error("Error fetching page stats:", error);
-          });
+        console.log("initLiveAnalytics is deprecated, use initRealAnalytics instead.");
       }
 
       // Print inspection results
