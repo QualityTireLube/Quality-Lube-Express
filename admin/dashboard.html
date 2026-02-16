@@ -2103,8 +2103,8 @@
               if (analyticsUnsubscribe) analyticsUnsubscribe();
               
               analyticsUnsubscribe = db.collection('visitor_sessions')
-                  .orderBy('firstSeen', 'desc')
-                  .limit(500)
+                  .orderBy('lastActivity', 'desc')
+                  .limit(100)
                   .onSnapshot((snapshot) => {
                       const sessions = [];
                       snapshot.forEach(doc => sessions.push(doc.data()));
