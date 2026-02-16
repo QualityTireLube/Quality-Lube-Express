@@ -44,13 +44,19 @@
       }
       .dashboard-container {
         max-width: 1400px;
-        width: 95%;
+        width: 1400px;
         margin: 40px auto;
         padding: 20px;
         background: white;
-        border-radius: 4px;
-        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
-        overflow-x: hidden; /* Prevent horizontal scroll */
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow-x: hidden; 
+      }
+
+      @media (max-width: 1450px) {
+        .dashboard-container {
+            width: 95%;
+        }
       }
       
       .stat-card {
@@ -1794,18 +1800,41 @@
     <div class="tab-pane fade" id="analytics-tab" role="tabpanel">
            
            <!-- Analytics Header with Controls -->
-           <div class="d-flex justify-content-between align-items-center mb-4">
-             <div>
+           <div class="d-block d-xl-flex justify-content-between align-items-center mb-4">
+             <div class="mb-3 mb-xl-0">
                <h4 class="mb-1"><i class="fas fa-chart-line text-primary me-2"></i>Live Analytics</h4>
                <p class="text-muted mb-0 small">Real-time data from site visitors</p>
              </div>
-             <div class="d-flex align-items-center gap-3">
-               <span class="badge bg-light text-dark border px-3 py-2">
-                 <i class="fas fa-clock me-1"></i> Updated: <span id="analytics-last-updated">Just now</span>
-               </span>
-               <button class="btn btn-outline-primary btn-sm" id="refresh-analytics-btn">
-                 <i class="fas fa-sync-alt me-1"></i> Refresh Data
-               </button>
+             
+             <div class="d-flex flex-wrap align-items-center gap-2">
+               <!-- Date Filters -->
+               <div class="btn-group btn-group-sm" role="group" aria-label="Timeframe" id="analytics-time-filters">
+                  <button type="button" class="btn btn-outline-secondary active" data-range="all">All Time</button>
+                  <button type="button" class="btn btn-outline-secondary" data-range="1">Today</button>
+                  <button type="button" class="btn btn-outline-secondary" data-range="3">3 Days</button>
+                  <button type="button" class="btn btn-outline-secondary" data-range="7">7 Days</button>
+                  <button type="button" class="btn btn-outline-secondary" data-range="30">30 Days</button>
+                  <button type="button" class="btn btn-outline-secondary" data-range="90">3 Months</button>
+                  <button type="button" class="btn btn-outline-secondary" id="custom-range-btn">Custom</button>
+               </div>
+
+               <!-- Custom Date Picker (Hidden by default) -->
+               <div class="d-none align-items-center gap-1 bg-light p-1 rounded border" id="custom-date-container">
+                   <input type="date" class="form-control form-control-sm" id="analytics-start-date" style="max-width: 130px;">
+                   <span class="text-muted small">to</span>
+                   <input type="date" class="form-control form-control-sm" id="analytics-end-date" style="max-width: 130px;">
+                   <button class="btn btn-sm btn-primary" id="apply-custom-date" title="Apply Filter"><i class="fas fa-check"></i></button>
+                   <button class="btn btn-sm btn-outline-secondary" id="cancel-custom-date" title="Cancel"><i class="fas fa-times"></i></button>
+               </div>
+
+               <div class="d-flex align-items-center gap-2 ms-xl-2">
+                   <span class="badge bg-light text-dark border px-3 py-2">
+                     <i class="fas fa-clock me-1"></i> <span id="analytics-last-updated">Just now</span>
+                   </span>
+                   <button class="btn btn-outline-primary btn-sm" id="refresh-analytics-btn" title="Refresh Data">
+                     <i class="fas fa-sync-alt"></i>
+                   </button>
+               </div>
              </div>
            </div>
 
@@ -1842,37 +1871,39 @@
                <div class="stat-card border-bottom border-success border-3 shadow bg-white rounded p-3 h-100">
                  <div class="d-flex justify-content-between align-items-start">
                    <div style="min-width: 0;"> <!-- Fix for flexbox truncation -->
-                     <div class="text-uppercase font-weight-bold text-success small mb-1">Top Location</div>
-                     <div class="display-6 fw-bold text-dark text-truncate" id="analytics-top-city" style="line-height: 1.2;">-</div>
+                     <div class="text-uppercase font-weight-bold text-success small mb-1">Avg Duration</div>
+                     <div class="display-6 fw-bold text-dark text-truncate" id="analytics-avg-duration" style="line-height: 1.2;">-</div>
                    </div>
                    <div class="bg-success bg-opacity-10 rounded p-2 text-success ms-2">
-                     <i class="fas fa-map-marker-alt fa-2x"></i>
+                     <i class="fas fa-stopwatch fa-2x"></i>
                    </div>
                  </div>
-                 <div class="small text-muted mt-3">Most frequent city</div>
+                 <div class="small text-muted mt-3">Time on site per session</div>
                </div>
              </div>
              <div class="col-md-3">
                <div class="stat-card border-bottom border-warning border-3 shadow bg-white rounded p-3 h-100">
                  <div class="d-flex justify-content-between align-items-start">
                    <div style="min-width: 0;">
-                     <div class="text-uppercase font-weight-bold text-warning small mb-1">Platform</div>
-                     <div class="display-6 fw-bold text-dark text-truncate" id="analytics-platform-stat" style="line-height: 1.2;">-</div>
+                     <div class="text-uppercase font-weight-bold text-warning small mb-1">Bounce Rate</div>
+                     <div class="display-6 fw-bold text-dark text-truncate" id="analytics-bounce-rate" style="line-height: 1.2;">-</div>
                    </div>
                    <div class="bg-warning bg-opacity-10 rounded p-2 text-warning ms-2">
-                     <i class="fas fa-desktop fa-2x"></i>
+                     <i class="fas fa-sign-out-alt fa-2x"></i>
                    </div>
                  </div>
-                 <div class="small text-muted mt-3">Top OS detected</div>
+                 <div class="small text-muted mt-3">Single page visits</div>
                </div>
              </div>
            </div>
 
+           <!-- Charts & Tables Row -->
            <div class="row">
-             <div class="col-md-6 mb-4">
+             <div class="col-lg-4 mb-4">
                <div class="card h-100 shadow-sm border-0">
-                 <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                 <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
                    <h5 class="mb-0 fw-bold">Device Breakdown</h5>
+                   <i class="fas fa-chart-pie text-muted opacity-50"></i>
                  </div>
                  <div class="card-body px-4 pb-4">
                    <div style="height: 250px; position: relative;">
@@ -1881,14 +1912,27 @@
                  </div>
                </div>
              </div>
-             <div class="col-md-6 mb-4">
+             <div class="col-lg-8 mb-4">
                <div class="card h-100 shadow-sm border-0">
-                 <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                 <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
                    <h5 class="mb-0 fw-bold">Top Locations</h5>
+                   <i class="fas fa-globe-americas text-muted opacity-50"></i>
                  </div>
-                 <div class="card-body px-4 pb-4">
-                   <div style="height: 250px; position: relative;">
-                     <canvas id="locationChart"></canvas>
+                 <div class="card-body px-0">
+                   <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                       <table class="table table-hover align-middle mb-0">
+                           <thead class="bg-light sticky-top" style="z-index: 1;">
+                               <tr>
+                                   <th class="ps-4 border-0">City</th>
+                                   <th class="border-0">Region</th>
+                                   <th class="border-0">Country</th>
+                                   <th class="text-end pe-4 border-0">Sessions</th>
+                               </tr>
+                           </thead>
+                           <tbody id="analytics-locations-body">
+                               <tr><td colspan="4" class="text-center text-muted py-4">No location data available</td></tr>
+                           </tbody>
+                       </table>
                    </div>
                  </div>
                </div>
@@ -2118,57 +2162,22 @@
       let analyticsUnsubscribe = null;
       let pageStatsUnsubscribe = null;
       let deviceChartInstance = null;
-      let locationChartInstance = null;
+      let activeTimeFilter = 'all';
 
       function initRealAnalytics() {
           if (!db) return;
           console.log("Initializing Real Analytics...");
 
-          const startLiveSessionListener = () => {
-              if (analyticsUnsubscribe) analyticsUnsubscribe();
-              
-              analyticsUnsubscribe = db.collection('visitor_sessions')
-                  .orderBy('lastActivity', 'desc')
-                  .limit(100)
-                  .onSnapshot((snapshot) => {
-                      const sessions = [];
-                      snapshot.forEach(doc => sessions.push(doc.data()));
-                      
-                      updateAnalyticsUI(sessions);
-                      
-                      const now = new Date();
-                      const timeString = now.toLocaleTimeString();
-                      const updateEl = document.getElementById('analytics-last-updated');
-                      if(updateEl) updateEl.textContent = timeString;
-                      
-                      // Stop spinner if refresh button was clicked
-                      const refreshBtn = document.getElementById('refresh-analytics-btn');
-                      if(refreshBtn && refreshBtn.innerHTML.includes('fa-spin')) {
-                           refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Refresh Data';
-                      }
-                  }, (error) => {
-                      console.error("Error fetching visitor data:", error);
-                  });
-          };
+          initAnalyticsFilters();
 
-          // 1. Refresh Button Listener
-          const refreshBtn = document.getElementById('refresh-analytics-btn');
-          if (refreshBtn) {
-              refreshBtn.addEventListener('click', () => {
-                  refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Refreshing...';
-                  startLiveSessionListener();
-              });
-          }
-
-          // 2. Start Live Listener
-          startLiveSessionListener();
-
-          // 3. Live Page Stats Listener
+          loadAnalyticsData(); // Initial Load
+          
+          // Page Stats Listener (Keep separate as it's aggregate)
           if (pageStatsUnsubscribe) pageStatsUnsubscribe();
           
           pageStatsUnsubscribe = db.collection('page_stats')
             .orderBy('views', 'desc')
-            .limit(50) // Fetch more to allow for filtering
+            .limit(50) 
             .onSnapshot((snapshot) => {
                const tbody = document.getElementById('analytics-pages-list');
                if (!tbody) return;
@@ -2182,17 +2191,12 @@
                let visibleCount = 0;
 
                snapshot.forEach(doc => {
-                   if (visibleCount >= 20) return; // Limit display to 20
+                   if (visibleCount >= 20) return; 
 
                    const data = doc.data();
-                   
-                   // Filter out admin pages
-                   if (data.path && (data.path.includes('/admin/') || data.path.includes('dashboard.html'))) {
-                       return;
-                   }
+                   if (data.path && (data.path.includes('/admin/') || data.path.includes('dashboard.html'))) return;
 
                    visibleCount++;
-
                    const lastVisit = data.last_updated ? (data.last_updated.toDate ? data.last_updated.toDate().toLocaleString() : new Date(data.last_updated).toLocaleString()) : 'N/A';
                    
                    html += `
@@ -2205,76 +2209,161 @@
                    `;
                });
                tbody.innerHTML = html || '<tr><td colspan="4" class="text-center py-3">No public page views yet.</td></tr>';
-            }, (error) => {
-                console.error("Error fetching page stats:", error);
-            });
+            }, (error) => {});
       }
 
+      function initAnalyticsFilters() {
+          const filterButtons = document.querySelectorAll('#analytics-time-filters button:not(#custom-range-btn)');
+          const customBtn = document.getElementById('custom-range-btn');
+          const customContainer = document.getElementById('custom-date-container');
+          
+          // 1. Preset Range Buttons
+          filterButtons.forEach(btn => {
+              btn.addEventListener('click', (e) => {
+                  // UI Update
+                  document.querySelectorAll('#analytics-time-filters button').forEach(b => b.classList.remove('active'));
+                  e.target.classList.add('active');
+                  customContainer.classList.add('d-none');
+                  customContainer.classList.remove('d-flex');
+                  
+                  activeTimeFilter = e.target.getAttribute('data-range');
+                  loadAnalyticsData(activeTimeFilter);
+              });
+          });
 
+          // 2. Custom Range Logic
+          if (customBtn) {
+              customBtn.addEventListener('click', () => {
+                  document.querySelectorAll('#analytics-time-filters button').forEach(b => b.classList.remove('active'));
+                  customBtn.classList.add('active');
+                  customContainer.classList.remove('d-none');
+                  customContainer.classList.add('d-flex');
+              });
+          }
+
+          document.getElementById('apply-custom-date').addEventListener('click', () => {
+              const start = document.getElementById('analytics-start-date').value;
+              const end = document.getElementById('analytics-end-date').value;
+              if (start && end) {
+                  activeTimeFilter = 'custom';
+                  loadAnalyticsData('custom', new Date(start), new Date(end));
+              }
+          });
+          
+          document.getElementById('cancel-custom-date').addEventListener('click', () => {
+             customContainer.classList.add('d-none');
+             customContainer.classList.remove('d-flex');
+             // Reset to All
+             document.querySelector('[data-range="all"]').click();
+          });
+
+          // 3. Refresh Button
+          const refreshBtn = document.getElementById('refresh-analytics-btn');
+          if (refreshBtn) {
+              refreshBtn.addEventListener('click', () => {
+                  refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                  loadAnalyticsData(activeTimeFilter);
+              });
+          }
+      }
+
+      function loadAnalyticsData(range = 'all', customStart = null, customEnd = null) {
+          if (!db) return;
+          if (analyticsUnsubscribe) analyticsUnsubscribe(); // Unsubscribe legacy if exists
+          
+          let query = db.collection('visitor_sessions').orderBy('lastActivity', 'desc');
+
+          if (range !== 'all') {
+             let startDate = new Date();
+             if (range === 'custom' && customStart) {
+                 startDate = customStart;
+                 startDate.setHours(0,0,0,0);
+                 // Note: Custom end date filtering would require client-side filter or compound query if end date is also needed strictly
+             } else {
+                 const days = parseInt(range);
+                 startDate.setDate(startDate.getDate() - days);
+             }
+             query = query.where('lastActivity', '>=', startDate);
+          }
+
+          query.limit(500) // Increase limit for stats accuracy
+            .get().then((snapshot) => {
+               const sessions = [];
+               snapshot.forEach(doc => {
+                   const data = doc.data();
+                   // Client-side end-date filter for custom range
+                   if (range === 'custom' && customEnd) {
+                       const actDate = data.lastActivity ? data.lastActivity.toDate() : new Date();
+                       const endDate = new Date(customEnd);
+                       endDate.setHours(23,59,59,999);
+                       if (actDate > endDate) return; 
+                   }
+                   sessions.push(data);
+               });
+               
+               updateAnalyticsUI(sessions);
+               
+               const now = new Date();
+               const updateEl = document.getElementById('analytics-last-updated');
+               if(updateEl) updateEl.textContent = now.toLocaleTimeString();
+               
+               const refreshBtn = document.getElementById('refresh-analytics-btn');
+               if(refreshBtn) refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+               
+            }).catch(err => {
+                console.error("Analytics Load Error", err);
+            });
+      }
 
       function updateAnalyticsUI(data) {
         if (!data) return;
 
-        // 1. Calculate Stats
+        // 1. Basic Stats
         const total = data.length;
         const mobile = data.filter(s => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(s.userAgent || '')).length;
         
-        // Top City
-        const cities = {};
+        // 2. Advanced Stats (Bounce, Duration)
+        let totalDuration = 0;
+        let singlePageVisits = 0;
+        let activeSessions = 0; // Sessions with > 0 duration
+
         data.forEach(s => {
-            if (s.city && s.city !== 'unknown') {
-                cities[s.city] = (cities[s.city] || 0) + 1;
-            }
-        });
-        
-        let topCity = '-';
-        let maxCount = 0;
-        for (const [city, count] of Object.entries(cities)) {
-            if (count > maxCount) {
-                maxCount = count;
-                topCity = city;
-            }
-        }
-        
-        // Top Platform (OS)
-        const platforms = {};
-        data.forEach(s => {
-            let plat = 'Unknown';
-            const ua = s.userAgent || '';
-            if (/Win/i.test(ua)) plat = 'Windows';
-            else if (/Mac/i.test(ua)) plat = 'MacOS';
-            else if (/Linux/i.test(ua)) plat = 'Linux';
-            else if (/Android/i.test(ua)) plat = 'Android';
-            else if (/iPhone|iPad/i.test(ua)) plat = 'iOS';
-            
-            platforms[plat] = (platforms[plat] || 0) + 1;
-        });
-        
-        let topPlatform = '-';
-        let maxPlatCount = 0;
-        for (const [p, c] of Object.entries(platforms)) {
-             if (c > maxPlatCount) {
-                 maxPlatCount = c;
-                 topPlatform = p;
+             // Bounce Rate approx (visits = 1)
+             if (!s.visits || s.visits <= 1) singlePageVisits++;
+
+             // Duration
+             if (s.firstSeen && s.lastActivity) {
+                 const start = s.firstSeen.toDate ? s.firstSeen.toDate() : new Date(s.firstSeen);
+                 const end = s.lastActivity.toDate ? s.lastActivity.toDate() : new Date(s.lastActivity);
+                 const diff = (end - start) / 1000; // seconds
+                 if (diff > 0) {
+                     totalDuration += diff;
+                     activeSessions++;
+                 }
              }
-        }
+        });
+        
+        const avgDuration = activeSessions ? Math.round(totalDuration / activeSessions) : 0;
+        const bounceRate = total ? Math.round((singlePageVisits / total) * 100) : 0;
 
         // Update DOM
-        const totalEl = document.getElementById('analytics-total-visitors');
-        if(totalEl) totalEl.textContent = total + (total === 500 ? '+' : ''); 
+        setText('analytics-total-visitors', total);
+        setText('analytics-mobile-percent', total ? Math.round((mobile / total) * 100) + '%' : '0%');
+        setText('analytics-bounce-rate', bounceRate + '%');
         
-        const mobileEl = document.getElementById('analytics-mobile-percent');
-        if(mobileEl) mobileEl.textContent = total ? Math.round((mobile / total) * 100) + '%' : '0%';
-        
-        const cityEl = document.getElementById('analytics-top-city');
-        if(cityEl) cityEl.textContent = topCity;
-        
-        const platformEl = document.getElementById('analytics-platform-stat'); // Renamed from avg-screen
-        if(platformEl) platformEl.textContent = topPlatform;
+        // Format Duration
+        const minutes = Math.floor(avgDuration / 60);
+        const seconds = avgDuration % 60;
+        setText('analytics-avg-duration', `${minutes}m ${seconds}s`);
 
-        // 2. Render Charts
+        // 3. Render Charts & Tables content
         renderDeviceChart(data);
-        renderLocationChart(data);
+        renderLocationTable(data);
+      }
+      
+      function setText(id, text) {
+          const el = document.getElementById(id);
+          if (el) el.textContent = text;
       }
 
       function renderDeviceChart(data) {
@@ -2306,51 +2395,54 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'bottom' }
-                }
+                },
+                cutout: '60%'
             }
         });
       }
 
-      function renderLocationChart(data) {
-        const ctx = document.getElementById('locationChart');
-        if (!ctx) return;
-
-        // Process Data (Top 5 Cities)
-        const cityCounts = {};
+      function renderLocationTable(data) {
+        // Collect location data
+        const locations = {};
+        
         data.forEach(s => {
             const city = s.city || 'Unknown';
-            cityCounts[city] = (cityCounts[city] || 0) + 1;
-        });
-
-        const sortedCities = Object.entries(cityCounts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5);
-
-        if (locationChartInstance) locationChartInstance.destroy();
-        locationChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: sortedCities.map(i => i[0]),
-                datasets: [{
-                    label: 'Unique Sessions',
-                    data: sortedCities.map(i => i[1]),
-                    backgroundColor: '#4bc0c0',
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { borderDash: [2, 2] } },
-                    x: { grid: { display: false } }
-                },
-                plugins: {
-                    legend: { display: false }
-                }
+            const region = s.region || '-';
+            const country = s.country || '-';
+            const key = `${city}|${region}|${country}`;
+            
+            if (!locations[key]) {
+                locations[key] = { city, region, country, count: 0 };
             }
+            locations[key].count++;
         });
+
+        // Sort by count
+        const sorted = Object.values(locations).sort((a, b) => b.count - a.count);
+        
+        const tbody = document.getElementById('analytics-locations-body');
+        if (!tbody) return;
+
+        if (sorted.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No location data available yet.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        sorted.slice(0, 10).forEach(loc => { // Top 10
+            html += `
+                <tr>
+                   <td class="ps-4 fw-bold text-dark">${loc.city}</td>
+                   <td class="text-muted small">${loc.region}</td>
+                   <td class="text-muted small">${loc.country}</td>
+                   <td class="text-end pe-4 fw-bold text-primary">${loc.count}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
       }
+      
+      // Removed renderLocationChart/initLiveSessionListener references as they are replaced.
 
       // Stub to prevent errors if called from legacy
       function renderAnalytics() {
