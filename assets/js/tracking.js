@@ -31,7 +31,10 @@
         if (path.endsWith('/') || path === '') path += 'index.html';
         
         // 1. Page Stats (Aggregate)
-        const docId = path.split('/').pop().replace(/\.html$/, '') || 'home';
+        // Clean ID generation to handle folders
+        const cleanPath = path.replace(/^\//, '').replace(/\.html$/, '').replace(/\//g, '_');
+        const docId = cleanPath || 'home';
+        
         db.collection('page_stats').doc(docId).set({
             path: path,
             views: firebase.firestore.FieldValue.increment(1),
@@ -39,7 +42,7 @@
             title: document.title
         }, { merge: true }).catch(e => console.error("Stats error", e));
 
-        // 2. Session Tracking (Individual)
+        // 2. Session Tracking
         let sessionId = sessionStorage.getItem('analytics_session_id');
         if (!sessionId) {
             sessionId = generateUUID();
@@ -48,32 +51,41 @@
 
         const sessionRef = db.collection('visitor_sessions').doc(sessionId);
         
-        // Get IP data if not cached
-        let ipData = {};
-        try {
-            const cachedIP = localStorage.getItem('analytics_ip_data');
-            if (cachedIP) {
-                ipData = JSON.parse(cachedIP);
-            } else {
-                const res = await fetch('https://ipapi.co/json/');
-                if (res.ok) {
-                    ipData = await res.json();
-                    localStorage.setItem('analytics_ip_data', JSON.stringify(ipData));
+        if (!sessionStorage.getItem('analytics_session_init')) {
+            // New session initialization (only run once per session)
+            sessionStorage.setItem('analytics_session_init', 'true');
+            
+             // Get IP data if not cached
+            let ipData = {};
+            try {
+                const cachedIP = localStorage.getItem('analytics_ip_data');
+                if (cachedIP) {
+                    ipData = JSON.parse(cachedIP);
+                } else {
+                    const res = await fetch('https://ipapi.co/json/');
+                    if (res.ok) {
+                        ipData = await res.json();
+                        localStorage.setItem('analytics_ip_data', JSON.stringify(ipData));
+                    }
                 }
-            }
-        } catch (e) { console.warn('IP fetch failed'); }
+            } catch (e) { console.warn('IP fetch failed'); }
 
-        // Update Session
+            sessionRef.set({
+                firstSeen: firebase.firestore.FieldValue.serverTimestamp(),
+                deviceType: getDeviceType(),
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                screen: { width: window.screen.width, height: window.screen.height },
+                ip: ipData.ip || 'unknown',
+                city: ipData.city || 'unknown',
+                region: ipData.region || 'unknown',
+                country: ipData.country_name || 'unknown'
+            }, { merge: true });
+        }
+
+        // Update Activity on Every Page View
         sessionRef.set({
             lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
-            deviceType: getDeviceType(),
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            screen: { width: window.screen.width, height: window.screen.height },
-            ip: ipData.ip || 'unknown',
-            city: ipData.city || 'unknown',
-            region: ipData.region || 'unknown',
-            country: ipData.country_name || 'unknown',
             lastPath: path,
             visits: firebase.firestore.FieldValue.increment(1)
         }, { merge: true });
