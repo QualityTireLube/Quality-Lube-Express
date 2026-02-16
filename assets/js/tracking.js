@@ -89,7 +89,8 @@
                     ip: ipData.ip || 'unknown',
                     city: ipData.city || 'unknown',
                     region: ipData.region || 'unknown',
-                    country: ipData.country_name || 'unknown'
+                    country: ipData.country_name || 'unknown',
+                    referrer: document.referrer || 'direct'
                 }, { merge: true });
             }
 
@@ -105,6 +106,33 @@
             console.error("Analytics Error:", e);
         }
     }
+
+    // Event Tracking (Calls, Directions)
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (!link) return;
+        
+        const href = link.href;
+        let type = null;
+        
+        if (href.includes('tel:')) type = 'call';
+        else if (href.includes('maps.google') || href.includes('/maps')) type = 'directions';
+        
+        if (type) {
+            // Log event
+             if (typeof firebase !== 'undefined' && firebase.apps.length) {
+                const db = firebase.firestore();
+                db.collection('analytics_events').add({
+                    type: type, // 'call' or 'directions'
+                    url: href,
+                    path: window.location.pathname,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    sessionId: sessionStorage.getItem('analytics_session_id') || 'unknown'
+                }).catch(console.error);
+                console.log(`Tracked ${type} event`);
+             }
+        }
+    });
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', trackPageView);

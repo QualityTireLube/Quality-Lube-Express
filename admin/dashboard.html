@@ -1882,10 +1882,10 @@
                </div>
              </div>
              <div class="col-md-3">
-               <div class="stat-card border-bottom border-warning border-3 shadow bg-white rounded p-3 h-100">
+               <div class="stat-card border-bottom border-secondary border-3 shadow bg-white rounded p-3 h-100">
                  <div class="d-flex justify-content-between align-items-start">
                    <div style="min-width: 0;">
-                     <div class="text-uppercase font-weight-bold text-warning small mb-1">Bounce Rate</div>
+                     <div class="text-uppercase font-weight-bold text-secondary small mb-1">Bounce Rate</div>
                      <div class="display-6 fw-bold text-dark text-truncate" id="analytics-bounce-rate" style="line-height: 1.2;">-</div>
                    </div>
                    <div class="bg-warning bg-opacity-10 rounded p-2 text-warning ms-2">
@@ -1894,6 +1894,70 @@
                  </div>
                  <div class="small text-muted mt-3">Single page visits</div>
                </div>
+             </div>
+           </div>
+
+           <!-- Action Tracking Row -->
+           <div class="row mb-4">
+               <div class="col-md-6 mb-3 mb-md-0">
+                   <div class="card border-0 shadow-sm h-100">
+                       <div class="card-body d-flex align-items-center justify-content-between px-4">
+                           <div>
+                               <h6 class="text-uppercase text-muted small fw-bold mb-1">Phone Calls</h6>
+                               <div class="d-flex align-items-baseline">
+                                   <h2 class="mb-0 fw-bold text-primary" id="analytics-calls">0</h2>
+                                   <span class="ms-2 text-muted small">clicks</span>
+                               </div>
+                           </div>
+                           <div class="bg-primary bg-opacity-10 rounded-circle p-3 text-primary">
+                               <i class="fas fa-phone-alt fa-2x"></i>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+               <div class="col-md-6">
+                   <div class="card border-0 shadow-sm h-100">
+                       <div class="card-body d-flex align-items-center justify-content-between px-4">
+                           <div>
+                               <h6 class="text-uppercase text-muted small fw-bold mb-1">Direction Requests</h6>
+                               <div class="d-flex align-items-baseline">
+                                   <h2 class="mb-0 fw-bold text-success" id="analytics-directions">0</h2>
+                                   <span class="ms-2 text-muted small">clicks</span>
+                               </div>
+                           </div>
+                           <div class="bg-success bg-opacity-10 rounded-circle p-3 text-success">
+                               <i class="fas fa-map-marker-alt fa-2x"></i>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+           </div>
+
+           <!-- Charts Row 2: Sources & Peak Hours -->
+           <div class="row mb-4">
+             <div class="col-md-6 mb-4 mb-md-0">
+                 <div class="card h-100 shadow-sm border-0">
+                     <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                         <h5 class="mb-0 fw-bold">Traffic Sources</h5>
+                     </div>
+                     <div class="card-body">
+                         <div style="height: 250px;">
+                             <canvas id="sourceChart"></canvas>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+             <div class="col-md-6">
+                 <div class="card h-100 shadow-sm border-0">
+                     <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                         <h5 class="mb-0 fw-bold">Peak Viewing Hours</h5>
+                     </div>
+                     <div class="card-body">
+                         <div style="height: 250px;">
+                             <canvas id="peakHoursChart"></canvas>
+                         </div>
+                     </div>
+                 </div>
              </div>
            </div>
 
@@ -2269,40 +2333,59 @@
 
       function loadAnalyticsData(range = 'all', customStart = null, customEnd = null) {
           if (!db) return;
-          if (analyticsUnsubscribe) analyticsUnsubscribe(); // Unsubscribe legacy if exists
           
-          let query = db.collection('visitor_sessions').orderBy('lastActivity', 'desc');
+          let sessionQuery = db.collection('visitor_sessions').orderBy('lastActivity', 'desc');
+          let eventQuery = db.collection('analytics_events').orderBy('timestamp', 'desc');
+          
+          let startDate = new Date();
+          let endDate = null;
 
-          if (range !== 'all') {
-             let startDate = new Date();
+          if (range !== 'all') { // Apply filters
              if (range === 'custom' && customStart) {
-                 startDate = customStart;
+                 startDate = new Date(customStart);
                  startDate.setHours(0,0,0,0);
-                 // Note: Custom end date filtering would require client-side filter or compound query if end date is also needed strictly
+                 if (customEnd) {
+                     endDate = new Date(customEnd);
+                     endDate.setHours(23,59,59,999);
+                 }
              } else {
                  const days = parseInt(range);
                  startDate.setDate(startDate.getDate() - days);
              }
-             query = query.where('lastActivity', '>=', startDate);
+             sessionQuery = sessionQuery.where('lastActivity', '>=', startDate);
+             eventQuery = eventQuery.where('timestamp', '>=', startDate);
+          } else {
+              startDate = null; // No start filter for 'all'
           }
 
-          query.limit(500) // Increase limit for stats accuracy
-            .get().then((snapshot) => {
+          // Fetch both collections in parallel
+          Promise.all([
+              sessionQuery.limit(500).get(),
+              eventQuery.limit(500).get()
+          ]).then(([sessionSnap, eventSnap]) => {
                const sessions = [];
-               snapshot.forEach(doc => {
+               sessionSnap.forEach(doc => {
                    const data = doc.data();
-                   // Client-side end-date filter for custom range
-                   if (range === 'custom' && customEnd) {
-                       const actDate = data.lastActivity ? data.lastActivity.toDate() : new Date();
-                       const endDate = new Date(customEnd);
-                       endDate.setHours(23,59,59,999);
-                       if (actDate > endDate) return; 
+                   if (endDate) { // Manual end date filter
+                        const d = data.lastActivity.toDate();
+                        if (d > endDate) return;
                    }
                    sessions.push(data);
                });
                
-               updateAnalyticsUI(sessions);
+               const events = [];
+               eventSnap.forEach(doc => {
+                   const data = doc.data();
+                   if (endDate) {
+                       const d = data.timestamp.toDate();
+                       if (d > endDate) return;
+                   }
+                   events.push(data);
+               });
                
+               updateAnalyticsUI(sessions, events);
+               
+               // Update timestamps
                const now = new Date();
                const updateEl = document.getElementById('analytics-last-updated');
                if(updateEl) updateEl.textContent = now.toLocaleTimeString();
@@ -2312,53 +2395,95 @@
                
             }).catch(err => {
                 console.error("Analytics Load Error", err);
+                const refreshBtn = document.getElementById('refresh-analytics-btn');
+                if(refreshBtn) refreshBtn.innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i>';
             });
       }
 
-      function updateAnalyticsUI(data) {
-        if (!data) return;
+      function updateAnalyticsUI(sessions, events = []) {
+        if (!sessions) return;
 
         // 1. Basic Stats
-        const total = data.length;
-        const mobile = data.filter(s => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(s.userAgent || '')).length;
-        
-        // 2. Advanced Stats (Bounce, Duration)
+        const total = sessions.length;
+        let mobileCount = 0;
+        let tabletCount = 0;
+        let desktopCount = 0;
         let totalDuration = 0;
         let singlePageVisits = 0;
-        let activeSessions = 0; // Sessions with > 0 duration
+        let activeSessions = 0;
 
-        data.forEach(s => {
-             // Bounce Rate approx (visits = 1)
+        // Data processing for charts
+        const hoursCts = new Array(24).fill(0);
+        const sources = {};
+
+        sessions.forEach(s => {
+             // Device Stats
+             const ua = s.userAgent || '';
+             if (/iPad|Tablet/i.test(ua)) tabletCount++;
+             else if (/Mobile/i.test(ua)) mobileCount++;
+             else desktopCount++;
+
+             // Bounce Rate
              if (!s.visits || s.visits <= 1) singlePageVisits++;
 
              // Duration
              if (s.firstSeen && s.lastActivity) {
                  const start = s.firstSeen.toDate ? s.firstSeen.toDate() : new Date(s.firstSeen);
                  const end = s.lastActivity.toDate ? s.lastActivity.toDate() : new Date(s.lastActivity);
-                 const diff = (end - start) / 1000; // seconds
+                 const diff = (end - start) / 1000;
                  if (diff > 0) {
                      totalDuration += diff;
                      activeSessions++;
                  }
+                 
+                 // Peak Hours (uses local time of visitor if possible, else server time)
+                 const hour = start.getHours();
+                 hoursCts[hour]++;
              }
+             
+             // Traffic Sources
+             let ref = s.referrer || 'direct';
+             if (ref.includes('google')) ref = 'Google';
+             else if (ref.includes('facebook')) ref = 'Facebook';
+             else if (ref.includes('instagram')) ref = 'Instagram';
+             else if (ref.includes('bing')) ref = 'Bing';
+             else if (ref.includes('yelp')) ref = 'Yelp';
+             else if (ref === 'direct' || ref === '' || ref.includes(window.location.hostname)) ref = 'Direct';
+             else {
+                 try { ref = new URL(ref).hostname; } catch(e) { ref = 'Other'; }
+             }
+             sources[ref] = (sources[ref] || 0) + 1;
         });
         
+        // Calculate Metrics
         const avgDuration = activeSessions ? Math.round(totalDuration / activeSessions) : 0;
         const bounceRate = total ? Math.round((singlePageVisits / total) * 100) : 0;
+        const mobilePercent = total ? Math.round((mobileCount / total) * 100) : 0;
 
-        // Update DOM
+        // Update Text Stats
         setText('analytics-total-visitors', total);
-        setText('analytics-mobile-percent', total ? Math.round((mobile / total) * 100) + '%' : '0%');
+        setText('analytics-mobile-percent', mobilePercent + '%');
         setText('analytics-bounce-rate', bounceRate + '%');
         
-        // Format Duration
         const minutes = Math.floor(avgDuration / 60);
         const seconds = avgDuration % 60;
         setText('analytics-avg-duration', `${minutes}m ${seconds}s`);
 
-        // 3. Render Charts & Tables content
-        renderDeviceChart(data);
-        renderLocationTable(data);
+        // Update Action Stats
+        let callCount = 0;
+        let dirCount = 0;
+        events.forEach(e => {
+            if (e.type === 'call') callCount++;
+            if (e.type === 'directions') dirCount++;
+        });
+        setText('analytics-calls', callCount);
+        setText('analytics-directions', dirCount);
+
+        // Render All Charts
+        renderDeviceChart(mobileCount, tabletCount, desktopCount);
+        renderLocationTable(sessions);
+        renderSourceChart(sources);
+        renderPeakHoursChart(hoursCts);
       }
       
       function setText(id, text) {
@@ -2366,27 +2491,18 @@
           if (el) el.textContent = text;
       }
 
-      function renderDeviceChart(data) {
+      function renderDeviceChart(mobile, tablet, desktop) {
         const ctx = document.getElementById('deviceChart');
         if (!ctx) return;
         
-        // Process Data
-        const deviceTypes = { 'Desktop': 0, 'Mobile': 0, 'Tablet': 0 };
-        data.forEach(s => {
-            const ua = s.userAgent || '';
-            if (/iPad|Tablet/i.test(ua)) deviceTypes['Tablet']++;
-            else if (/Mobile/i.test(ua)) deviceTypes['Mobile']++;
-            else deviceTypes['Desktop']++;
-        });
-
         if (deviceChartInstance) deviceChartInstance.destroy();
         deviceChartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: Object.keys(deviceTypes),
+                labels: ['Mobile', 'Desktop', 'Tablet'],
                 datasets: [{
-                    data: Object.values(deviceTypes),
-                    backgroundColor: ['#36a2eb', '#ff6384', '#ffcd56'],
+                    data: [mobile, desktop, tablet],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
                     borderWidth: 0
                 }]
             },
@@ -2399,6 +2515,78 @@
                 cutout: '60%'
             }
         });
+      }
+
+      // -- Chart Functions --
+      
+      let sourceChartInstance = null;
+      function renderSourceChart(data) {
+          const ctx = document.getElementById('sourceChart');
+          if (!ctx) return;
+          
+          let labels = Object.keys(data);
+          let values = Object.values(data);
+          
+          if (labels.length === 0) {
+              labels = ['Direct'];
+              values = [1];
+          }
+          
+          if (sourceChartInstance) sourceChartInstance.destroy();
+          sourceChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: labels,
+              datasets: [{
+                data: values,
+                backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6'],
+                borderWidth: 0
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'right' }
+              },
+              cutout: '70%'
+            }
+          });
+      }
+      
+      let peakChartInstance = null;
+      function renderPeakHoursChart(hoursData) {
+          const ctx = document.getElementById('peakHoursChart');
+          if (!ctx) return;
+          
+          const labels = hoursData.map((_, i) => {
+              const h = i % 12 || 12;
+              const ampm = i < 12 ? 'AM' : 'PM';
+              return `${h}${ampm}`;
+          });
+          
+          if (peakChartInstance) peakChartInstance.destroy();
+          peakChartInstance = new Chart(ctx, {
+             type: 'bar',
+             data: {
+                 labels: labels,
+                 datasets: [{
+                     label: 'Visitors',
+                     data: hoursData,
+                     backgroundColor: '#3b82f6',
+                     borderRadius: 4
+                 }]
+             },
+             options: {
+                 responsive: true,
+                 maintainAspectRatio: false,
+                 scales: {
+                     y: { beginAtZero: true, grid: { display: false } },
+                     x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } }
+                 },
+                 plugins: { legend: { display: false } }
+             }
+          });
       }
 
       function renderLocationTable(data) {
