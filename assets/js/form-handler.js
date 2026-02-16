@@ -21,6 +21,7 @@
   }
 
   function setupForms() {
+    disableWPForms(); // Ensure WPForms is disabled
     const forms = document.querySelectorAll("form.wpforms-form");
     forms.forEach((form) => {
       // Remove WPForms classes that trigger their JS
@@ -50,9 +51,16 @@
     });
   }
 
-  // No longer needed - keeping it simple
+  // Disable WPForms specific handlers
   function disableWPForms() {
-    // Intentionally empty - we just handle submit event directly
+    if (window.wpforms_settings) {
+      window.wpforms_settings.ajaxurl = '';
+    }
+    if (window.wpforms) {
+      if (typeof window.wpforms.submit === 'function') {
+        window.wpforms.submit = function(e) { e.preventDefault(); return false; };
+      }
+    }
   }
 
   // --- FILE HANDLING HELPERS ---
@@ -215,6 +223,22 @@
       // Await the extraction of data (files take time to read)
       const formData = await extractFormData(form);
       formData.captcha_token = captchaResponse; // Add token to payload
+
+      // Add Analytics Data
+      try {
+          const ipData = await getPublicIP().catch(() => ({}));
+          formData.analytics = {
+              userAgent: navigator.userAgent,
+              platform: navigator.platform || 'Unknown',
+              language: navigator.language || 'Unknown',
+              screen: `${window.screen.width}x${window.screen.height}`,
+              ip: ipData.ip || 'Unknown',
+              city: ipData.city || 'Unknown',
+              region: ipData.region || 'Unknown',
+              country: ipData.country_name || 'Unknown',
+              org: ipData.org || 'Unknown' 
+          };
+      } catch (e) { console.warn('Analytics error:', e); }
 
       // Save to Firestore (async, don't block email sending for long, but better to await to ensure save)
       await submitData(formData);

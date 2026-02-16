@@ -299,6 +299,9 @@ function doPost(e) {
       
       // Skip raw wpforms keys that look like wpforms[fields]...
       if (key.startsWith("wpforms[")) return;
+      
+      // Skip analytics object (handled below)
+      if (key === "analytics") return;
 
       // Skip internal parsed keys
       if (key.startsWith("_parsed_")) return;
@@ -306,6 +309,28 @@ function doPost(e) {
       let label = fieldTitles[key] || key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
       htmlBody += `<tr><td style="padding: 10px 8px; font-weight: bold; color: #333; width: 38%;">${label}</td><td style="padding: 10px 8px; color: #444;">${postData[key]}</td></tr>`;
     });
+    
+    // Append Analytics if available
+    if (postData.analytics) {
+        let a = postData.analytics;
+        if (typeof a === 'string') { try { a = JSON.parse(a) } catch(e){} }
+        
+        htmlBody += `<tr><td colspan="2" style="background:#f4f4f4; padding:10px; font-weight:bold; border-bottom:1px solid #ddd;">User Details</td></tr>`;
+        
+        if (a.city && a.region && a.country) {
+            htmlBody += `<tr><td style="padding: 10px 8px; font-weight: bold; color: #333;">Location</td><td style="padding: 10px 8px; color: #444;">${a.city}, ${a.region}, ${a.country}</td></tr>`;
+        } else if (a.ip) {
+            htmlBody += `<tr><td style="padding: 10px 8px; font-weight: bold; color: #333;">IP Address</td><td style="padding: 10px 8px; color: #444;">${a.ip}</td></tr>`;
+        }
+        
+        if (a.userAgent) {
+             let device = "Desktop";
+             if (/mobile/i.test(a.userAgent)) device = "Mobile";
+             if (/tablet/i.test(a.userAgent)) device = "Tablet";
+             htmlBody += `<tr><td style="padding: 10px 8px; font-weight: bold; color: #333;">Device</td><td style="padding: 10px 8px; color: #444;">${device} (${a.platform || "Unknown"})</td></tr>`;
+        }
+    }
+    
     htmlBody += `</table>
           <div style="margin-top: 25px; font-size: 13px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">
             Submitted on ${new Date().toLocaleString()}<br>
