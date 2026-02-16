@@ -21,74 +21,82 @@
     }
 
     async function trackPageView() {
+        // Wait for Firebase to be initialized
         if (typeof firebase === 'undefined' || !firebase.apps.length) {
+           console.log("Waiting for Firebase..."); 
            setTimeout(trackPageView, 500);
            return;
         }
 
-        const db = firebase.firestore();
-        let path = window.location.pathname;
-        if (path.endsWith('/') || path === '') path += 'index.html';
-        
-        // 1. Page Stats (Aggregate)
-        // Clean ID generation to handle folders
-        const cleanPath = path.replace(/^\//, '').replace(/\.html$/, '').replace(/\//g, '_');
-        const docId = cleanPath || 'home';
-        
-        db.collection('page_stats').doc(docId).set({
-            path: path,
-            views: firebase.firestore.FieldValue.increment(1),
-            last_updated: firebase.firestore.FieldValue.serverTimestamp(),
-            title: document.title
-        }, { merge: true }).catch(e => console.error("Stats error", e));
-
-        // 2. Session Tracking
-        let sessionId = sessionStorage.getItem('analytics_session_id');
-        if (!sessionId) {
-            sessionId = generateUUID();
-            sessionStorage.setItem('analytics_session_id', sessionId);
-        }
-
-        const sessionRef = db.collection('visitor_sessions').doc(sessionId);
-        
-        if (!sessionStorage.getItem('analytics_session_init')) {
-            // New session initialization (only run once per session)
-            sessionStorage.setItem('analytics_session_init', 'true');
+        try {
+            const db = firebase.firestore();
+            let path = window.location.pathname;
+            if (path.endsWith('/') || path === '') path += 'index.html';
             
-             // Get IP data if not cached
-            let ipData = {};
-            try {
-                const cachedIP = localStorage.getItem('analytics_ip_data');
-                if (cachedIP) {
-                    ipData = JSON.parse(cachedIP);
-                } else {
-                    const res = await fetch('https://ipapi.co/json/');
-                    if (res.ok) {
-                        ipData = await res.json();
-                        localStorage.setItem('analytics_ip_data', JSON.stringify(ipData));
-                    }
-                }
-            } catch (e) { console.warn('IP fetch failed'); }
-
-            sessionRef.set({
-                firstSeen: firebase.firestore.FieldValue.serverTimestamp(),
-                deviceType: getDeviceType(),
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                screen: { width: window.screen.width, height: window.screen.height },
-                ip: ipData.ip || 'unknown',
-                city: ipData.city || 'unknown',
-                region: ipData.region || 'unknown',
-                country: ipData.country_name || 'unknown'
+            // 1. Page Stats (Aggregate)
+            // Clean ID generation to handle folders
+            const cleanPath = path.replace(/^\//, '').replace(/\.html$/, '').replace(/\//g, '_');
+            const docId = cleanPath || 'home';
+            
+            await db.collection('page_stats').doc(docId).set({
+                path: path,
+                views: firebase.firestore.FieldValue.increment(1),
+                last_updated: firebase.firestore.FieldValue.serverTimestamp(),
+                title: document.title
             }, { merge: true });
-        }
 
-        // Update Activity on Every Page View
-        sessionRef.set({
-            lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
-            lastPath: path,
-            visits: firebase.firestore.FieldValue.increment(1)
-        }, { merge: true });
+            // 2. Session Tracking
+            let sessionId = sessionStorage.getItem('analytics_session_id');
+            if (!sessionId) {
+                sessionId = generateUUID();
+                sessionStorage.setItem('analytics_session_id', sessionId);
+            }
+
+            const sessionRef = db.collection('visitor_sessions').doc(sessionId);
+            
+            // Get IP data if not cached
+            let ipData = {};
+            if (!sessionStorage.getItem('analytics_session_init')) {
+                // New session initialization (only run once per session)
+                sessionStorage.setItem('analytics_session_init', 'true');
+                
+                try {
+                    const cachedIP = localStorage.getItem('analytics_ip_data');
+                    if (cachedIP) {
+                        ipData = JSON.parse(cachedIP);
+                    } else {
+                        const res = await fetch('https://ipapi.co/json/');
+                        if (res.ok) {
+                            ipData = await res.json();
+                            localStorage.setItem('analytics_ip_data', JSON.stringify(ipData));
+                        }
+                    }
+                } catch (e) { console.warn('IP fetch failed', e); }
+
+                await sessionRef.set({
+                    firstSeen: firebase.firestore.FieldValue.serverTimestamp(),
+                    deviceType: getDeviceType(),
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    screen: { width: window.screen.width, height: window.screen.height },
+                    ip: ipData.ip || 'unknown',
+                    city: ipData.city || 'unknown',
+                    region: ipData.region || 'unknown',
+                    country: ipData.country_name || 'unknown'
+                }, { merge: true });
+            }
+
+            // Update Activity on Every Page View
+            await sessionRef.set({
+                lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
+                lastPath: path,
+                visits: firebase.firestore.FieldValue.increment(1)
+            }, { merge: true });
+            
+            console.log("Analytics verified: Logged view for " + path);
+        } catch (e) {
+            console.error("Analytics Error:", e);
+        }
     }
 
     if (document.readyState === 'loading') {
