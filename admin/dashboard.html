@@ -4486,21 +4486,38 @@
     <script>
       // Initialize after page load
       document.addEventListener('DOMContentLoaded', () => {
-        // Initialize active tab if hash present
+        // 1. Restore Tab State (LocalStorage > Hash)
+        const storedTab = localStorage.getItem('activeDashboardTab_QL'); // Unique key for this site
         const hash = window.location.hash;
-        if (hash) {
-            const tabEl = document.querySelector(`.nav-link[data-bs-target="${hash}"]`);
+        
+        let targetSelector = storedTab;
+        if (!targetSelector && hash) {
+            targetSelector = hash;
+        }
+        
+        if (targetSelector) {
+            const tabEl = document.querySelector(`.nav-link[data-bs-target="${targetSelector}"]`);
             if (tabEl) {
                 const tab = new bootstrap.Tab(tabEl);
                 tab.show();
             }
         }
         
-        // Tab show event listeners to refresh calendar if needed
+        // 2. Tab Event Listeners
         const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
         tabEls.forEach(el => {
             el.addEventListener('shown.bs.tab', (event) => {
-                if (event.target.getAttribute('data-bs-target') === '#calendar-tab') {
+                const targetId = event.target.getAttribute('data-bs-target');
+                
+                // Save to LocalStorage
+                if (targetId) {
+                    localStorage.setItem('activeDashboardTab_QL', targetId);
+                    // Optional: Update URL hash without scrolling
+                    history.replaceState(null, null, targetId);
+                }
+
+                // Specific Action Logic
+                if (targetId === '#calendar-tab') {
                     if (typeof renderCalendar === 'function') renderCalendar();
                 }
             });
