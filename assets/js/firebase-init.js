@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
               // Signed in
               const user = userCredential.user;
               console.log("Logged in:", user);
-              window.location.href = '/admin/dashboard.html'; 
+              window.location.href = 'admin/dashboard.html'; 
             })
             .catch((error) => {
               const errorCode = error.code;
