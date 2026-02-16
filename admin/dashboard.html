@@ -15,6 +15,8 @@
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
       body {
@@ -1463,6 +1465,11 @@
             <i class="fas fa-cog me-2"></i>Settings
           </button>
         </li>
+        <li class="nav-item">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics-tab">
+            <i class="fas fa-chart-line me-2"></i>Analytics
+          </button>
+        </li>
       </ul>
 
       <!-- Tab Content -->
@@ -1770,6 +1777,90 @@
       </div>
     </div>
 
+    <!-- Analytics Tab -->
+    <div class="tab-pane fade" id="analytics-tab" role="tabpanel">
+           <div class="row mb-4">
+             <div class="col-md-3">
+               <div class="stat-card">
+                 <div class="stat-title">Total Visitors (Tracking)</div>
+                 <div class="stat-value" id="analytics-total-visitors">0</div>
+                 <div class="stat-icon"><i class="fas fa-users"></i></div>
+               </div>
+             </div>
+             <div class="col-md-3">
+               <div class="stat-card">
+                 <div class="stat-title">From Mobile</div>
+                 <div class="stat-value" id="analytics-mobile-percent">0%</div>
+                 <div class="stat-icon"><i class="fas fa-mobile-alt"></i></div>
+               </div>
+             </div>
+             <div class="col-md-3">
+               <div class="stat-card">
+                 <div class="stat-title">Top City</div>
+                 <div class="stat-value" id="analytics-top-city">-</div>
+                 <div class="stat-icon"><i class="fas fa-map-marker-alt"></i></div>
+               </div>
+             </div>
+             <div class="col-md-3">
+               <div class="stat-card">
+                 <div class="stat-title">Avg Screen Width</div>
+                 <div class="stat-value" id="analytics-avg-screen">0px</div>
+                 <div class="stat-icon"><i class="fas fa-desktop"></i></div>
+               </div>
+             </div>
+           </div>
+
+           <div class="row">
+             <div class="col-md-6 mb-4">
+               <div class="card h-100">
+                 <div class="card-header">
+                   <h5 class="mb-0">Device Types</h5>
+                 </div>
+                 <div class="card-body">
+                   <canvas id="deviceChart"></canvas>
+                 </div>
+               </div>
+             </div>
+             <div class="col-md-6 mb-4">
+               <div class="card h-100">
+                 <div class="card-header">
+                   <h5 class="mb-0">Top Locations</h5>
+                 </div>
+                 <div class="card-body">
+                   <canvas id="locationChart"></canvas>
+                 </div>
+               </div>
+             </div>
+           </div>
+           
+           <div class="row">
+            <div class="col-12 mb-4">
+              <div class="card">
+                <div class="card-header">
+                  <h5 class="mb-0">Most Visited Pages</h5>
+                </div>
+                <div class="card-body p-0">
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Page Title</th>
+                          <th>Path</th>
+                          <th class="text-end">Views</th>
+                          <th class="text-end">Last Visit</th>
+                        </tr>
+                      </thead>
+                      <tbody id="analytics-pages-list">
+                        <tr><td colspan="4" class="text-center py-3">Loading page data...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+    </div>
+
     <!-- Quick Reply Modal -->
     <div class="modal fade" id="quickReplyModal" tabindex="-1">
       <div class="modal-dialog modal-lg">
@@ -1936,6 +2027,7 @@
         } else {
           initLiveSubmissions();
           loadServices();
+          if (typeof initLiveAnalytics === 'function') initLiveAnalytics();
           requestNotificationPermission();
         }
       });
@@ -1954,6 +2046,116 @@
             }
           });
         }
+      }
+
+      // ==================== ANALYTICS RENDERING ====================
+      function renderAnalytics() {
+        if (!allSubmissions || !allSubmissions.length) return;
+        
+        // 1. Calculate Stats
+        const total = allSubmissions.length;
+        const withAnalytics = allSubmissions.filter(s => s.analytics);
+        const mobile = withAnalytics.filter(s => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(s.analytics.userAgent || '')).length;
+        
+        // Top City
+        const cities = {};
+        withAnalytics.forEach(s => {
+            if (s.analytics.city && s.analytics.city !== 'unknown') {
+                cities[s.analytics.city] = (cities[s.analytics.city] || 0) + 1;
+            }
+        });
+        let topCity = '-';
+        let maxCount = 0;
+        for (const [city, count] of Object.entries(cities)) {
+            if (count > maxCount) {
+                maxCount = count;
+                topCity = city;
+            }
+        }
+        
+        // Avg Screen Width
+        let totalWidth = 0;
+        let widthCount = 0;
+        withAnalytics.forEach(s => {
+            if (s.analytics.screen && s.analytics.screen.width) {
+                totalWidth += s.analytics.screen.width;
+                widthCount++;
+            }
+        });
+        const avgWidth = widthCount ? Math.round(totalWidth / widthCount) : 0;
+
+        // Update DOM
+        document.getElementById('analytics-total-visitors').textContent = withAnalytics.length; // Count only tracked
+        document.getElementById('analytics-mobile-percent').textContent = withAnalytics.length ? Math.round((mobile / withAnalytics.length) * 100) + '%' : '0%';
+        document.getElementById('analytics-top-city').textContent = topCity;
+        document.getElementById('analytics-avg-screen').textContent = avgWidth + 'px';
+
+        // 2. Render Charts
+        renderDeviceChart(withAnalytics);
+        renderLocationChart(withAnalytics);
+      }
+
+      let deviceChartInstance = null;
+      let locationChartInstance = null;
+
+      function renderDeviceChart(data) {
+        const ctx = document.getElementById('deviceChart');
+        if (!ctx) return;
+        
+        // Process Data
+        const deviceTypes = { 'Desktop': 0, 'Mobile': 0, 'Tablet': 0 };
+        data.forEach(s => {
+            const ua = s.analytics.userAgent || '';
+            if (/iPad|Tablet/i.test(ua)) deviceTypes['Tablet']++;
+            else if (/Mobile/i.test(ua)) deviceTypes['Mobile']++;
+            else deviceTypes['Desktop']++;
+        });
+
+        if (deviceChartInstance) deviceChartInstance.destroy();
+        deviceChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(deviceTypes),
+                datasets: [{
+                    data: Object.values(deviceTypes),
+                    backgroundColor: ['#36a2eb', '#ff6384', '#ffcd56']
+                }]
+            }
+        });
+      }
+
+      function renderLocationChart(data) {
+        const ctx = document.getElementById('locationChart');
+        if (!ctx) return;
+
+        // Process Data (Top 5 Cities)
+        const cityCounts = {};
+        data.forEach(s => {
+            const city = s.analytics.city || 'Unknown';
+            cityCounts[city] = (cityCounts[city] || 0) + 1;
+        });
+
+        const sortedCities = Object.entries(cityCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+
+        if (locationChartInstance) locationChartInstance.destroy();
+        locationChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedCities.map(i => i[0]),
+                datasets: [{
+                    label: 'Submissions',
+                    data: sortedCities.map(i => i[1]),
+                    backgroundColor: '#4bc0c0'
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
       }
 
       // ==================== FORM SUBMISSIONS ====================
@@ -1984,6 +2186,7 @@
             }
             
             updateStats();
+            if (typeof renderAnalytics === 'function') renderAnalytics();
             renderSubmissions();
             if (typeof updateCustomerIndex === 'function') updateCustomerIndex();
             if (typeof renderCalendar === 'function') renderCalendar();
@@ -3953,6 +4156,42 @@
         html += '</div>';
         
         return html;
+      }
+
+      // ==================== PAGE VIEW TRACKING ====================
+      function initLiveAnalytics() {
+        if (!db) return;
+        
+        db.collection('page_stats')
+          .orderBy('views', 'desc')
+          .limit(20)
+          .onSnapshot((snapshot) => {
+             const tbody = document.getElementById('analytics-pages-list');
+             if (!tbody) return;
+             
+             if (snapshot.empty) {
+                 tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3">No page view data yet.</td></tr>';
+                 return;
+             }
+             
+             let html = '';
+             snapshot.forEach(doc => {
+                 const data = doc.data();
+                 const lastVisit = data.last_updated ? (data.last_updated.toDate ? data.last_updated.toDate().toLocaleString() : new Date(data.last_updated).toLocaleString()) : 'N/A';
+                 
+                 html += `
+                    <tr>
+                        <td class="fw-bold">${data.title || 'Untitled Page'}</td>
+                        <td><a href="${data.path}" target="_blank" class="text-decoration-none">${data.path}</a></td>
+                        <td class="text-end"><span class="badge bg-info rounded-pill">${data.views || 0}</span></td>
+                        <td class="text-end small text-muted">${lastVisit}</td>
+                    </tr>
+                 `;
+             });
+             tbody.innerHTML = html;
+          }, (error) => {
+              console.error("Error fetching page stats:", error);
+          });
       }
 
       // Print inspection results

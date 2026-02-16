@@ -71,12 +71,45 @@
     });
   }
 
+  // --- ANALYTICS HELPER ---
+  async function getPublicIP() {
+    try {
+        const response = await fetch('https://ipapi.co/json/');
+        if (!response.ok) throw new Error('IP fetch failed');
+        return await response.json();
+    } catch (e) {
+        console.warn('Could not fetch IP info:', e);
+        return {};
+    }
+  }
+
   // --- FIRESTORE HELPER ---
   
   async function submitData(formData) {
     if (typeof firebase !== 'undefined' && firebase.apps.length) {
       try {
         const db = firebase.firestore();
+        
+        // --- GATHER ANALYTICS DATA ---
+        let ipData = {};
+        try {
+            ipData = await getPublicIP(); // Fetch approximate location
+        } catch (e) { console.warn('IP lookup skipped', e); }
+
+        const analytics = {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            screen: {
+                width: window.screen.width,
+                height: window.screen.height
+            },
+            ip: ipData.ip || 'unknown',
+            city: ipData.city || 'unknown',
+            region: ipData.region || 'unknown',
+            country: ipData.country_name || 'unknown',
+            org: ipData.org || 'unknown' // ISP/Org
+        };
         
         // Extract fields from the flat formData object for cleaner storage
         const knownKeys = ['site', 'form_type', 'timestamp', 'page_url', 'attachments', 'captcha_token', 'form_name', 'form_id'];
@@ -95,6 +128,7 @@
           timestamp: formData.timestamp,
           page_url: formData.page_url,
           fields: fields,
+          analytics: analytics // Add analytics object here
         };
         
         await db.collection("form_submissions").add(cleanData);
