@@ -2119,25 +2119,86 @@
       }
 
       // Render Applicants with clean, standard Submission Card style + Status
+      // Includes filtering and grouping by status
+      
+      // Initialize global filter if needed
+      if (typeof window.currentApplicantFilter === 'undefined') {
+        window.currentApplicantFilter = 'All';
+      }
+
+      // Helper to set filter and refresh
+      window.setApplicantFilter = function(filter) {
+        window.currentApplicantFilter = filter;
+        // Re-render dashboard to apply changes
+        if (typeof renderDashboard === 'function') renderDashboard();
+        else if (typeof fetchSubmissions === 'function') fetchSubmissions(); // Fallback
+        else location.reload(); // Last resort
+      };
+
       function renderApplicants(applicants, container) {
-          if (applicants.length === 0) {
-              container.innerHTML = `
+          // Define Statuses and Colors
+          const statusConfig = {
+            'New': { class: 'bg-secondary', label: 'New' },
+            'Interviewing': { class: 'bg-warning text-dark', label: 'Interviewing' },
+            'Interested': { class: 'bg-success', label: 'Interested' },
+            'Hired': { class: 'bg-primary', label: 'Hired' },
+            'Not Interested': { class: 'bg-danger', label: 'Not Interested' }
+          };
+          const orderedStatuses = ['New', 'Interviewing', 'Interested', 'Hired', 'Not Interested'];
+
+          // 1. Render Filter Bar
+          let html = `
+            <div class="d-flex flex-wrap gap-2 mb-4 pb-3 border-bottom">
+              <button class="btn btn-sm ${window.currentApplicantFilter === 'All' ? 'btn-dark' : 'btn-outline-dark'}" 
+                      onclick="setApplicantFilter('All')">
+                All Applicants
+              </button>
+              ${orderedStatuses.map(status => `
+                <button class="btn btn-sm ${window.currentApplicantFilter === status ? 'btn-primary' : 'btn-outline-secondary'}" 
+                        onclick="setApplicantFilter('${status}')">
+                  ${status}
+                </button>
+              `).join('')}
+            </div>
+          `;
+
+          // 2. Filter Data
+          let filtered = applicants;
+          if (window.currentApplicantFilter !== 'All') {
+            filtered = applicants.filter(sub => (sub.applicantStatus || 'New') === window.currentApplicantFilter);
+          }
+
+          if (filtered.length === 0) {
+              container.innerHTML = html + `
                 <div class="empty-state">
                   <i class="fas fa-user-tie"></i>
                   <h5>No Applicants Found</h5>
-                  <p>No career applications match your filters.</p>
+                  <p>No applications match the "${window.currentApplicantFilter}" filter.</p>
                 </div>
               `;
               return;
           }
+
+          // 3. Group Data
+          const groups = {};
+          orderedStatuses.forEach(s => groups[s] = []);
           
-          container.innerHTML = applicants.map(sub => {
+          filtered.forEach(sub => {
+            const status = sub.applicantStatus || 'New';
+            if (groups[status]) {
+              groups[status].push(sub);
+            } else {
+              // Handle unknown statuses by putting them in New or a generic bin
+              if (!groups['New']) groups['New'] = []; // Should exist
+              groups['New'].push(sub);
+            }
+          });
+
+          // 4. Render Groups
+          const renderCard = (sub) => {
               const status = sub.applicantStatus || 'New';
-              let statusClass = 'bg-secondary';
-              if (status === 'Interested') statusClass = 'bg-success';
-              else if (status === 'Not Interested') statusClass = 'bg-danger';
-              else if (status === 'Interviewing') statusClass = 'bg-warning text-dark';
-              else if (status === 'Hired') statusClass = 'bg-primary';
+              const config = statusConfig[status] || statusConfig['New'];
+              const statusClass = config.class;
 
               const date = getSubmissionDate(sub);
               const dateStr = date ? date.toLocaleDateString('en-US', { 
@@ -2156,7 +2217,7 @@
               const hasResume = sub.attachments && sub.attachments.length > 0;
               
               return `
-              <div class="submission-card ${!sub.read ? 'unread' : 'read'}" data-id="${sub.id}">
+              <div class="submission-card ${!sub.read ? 'unread' : 'read'} mb-3" data-id="${sub.id}">
                 <div class="submission-header">
                   <div class="d-flex align-items-center">
                     <span class="submission-type careers">Applicant</span>
@@ -2194,17 +2255,14 @@
                 
                 <div class="submission-actions d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
                   <div>
-                      <!-- Status Dropdown -->
                       <div class="btn-group btn-group-sm">
                           <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             ${status}
                           </button>
                           <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" onclick="updateApplicantStatus('${sub.id}', 'New')">New</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="updateApplicantStatus('${sub.id}', 'Interviewing')">Interviewing</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="updateApplicantStatus('${sub.id}', 'Interested')">Interested</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="updateApplicantStatus('${sub.id}', 'Not Interested')">Not Interested</a></li>
-                            <li><a class="dropdown-item" href="#" onclick="updateApplicantStatus('${sub.id}', 'Hired')">Hired</a></li>
+                            ${orderedStatuses.map(s => `
+                              <li><a class="dropdown-item" href="#" onclick="updateApplicantStatus('${sub.id}', '${s}')">${s}</a></li>
+                            `).join('')}
                           </ul>
                       </div>
                   </div>
@@ -2240,7 +2298,26 @@
                 </div>
               </div>
               `;
-          }).join('');
+          };
+
+          orderedStatuses.forEach(status => {
+            const groupSubmissions = groups[status];
+            if (groupSubmissions && groupSubmissions.length > 0) {
+               // Only show separator/header if we are viewing All, or if we want to reinforce the context
+               const header = `
+                  <div class="d-flex align-items-center mt-4 mb-3">
+                    <h5 class="text-secondary m-0 me-2">${status}</h5>
+                    <span class="badge bg-light text-dark border">${groupSubmissions.length}</span>
+                    <div class="flex-grow-1 ms-3 border-bottom"></div>
+                  </div>
+               `;
+               
+               html += header;
+               html += groupSubmissions.map(renderCard).join('');
+            }
+          });
+          
+          container.innerHTML = html;
       }
 
       window.updateApplicantStatus = async function(id, status) {
