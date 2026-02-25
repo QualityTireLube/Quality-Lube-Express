@@ -2567,6 +2567,12 @@
                     </div>
                   ` : ''}
                 </div>
+
+                ${(() => { const di = parseDeviceInfo(sub); return di ? `
+                <div class="d-flex flex-wrap gap-2 mt-2" style="font-size: 12px;">
+                  <span class="badge bg-light text-dark border"><i class="${di.icon} me-1"></i>${escapeHtml(di.device)}</span>
+                  <span class="badge bg-light text-dark border"><i class="fas fa-globe me-1"></i>${escapeHtml(di.browser)}</span>
+                </div>` : ''; })()}
                 
                 ${message ? `<div class="submission-message">${escapeHtml(message.length > 200 ? message.substring(0, 200) + '...' : message)}</div>` : ''}
                 
@@ -2786,6 +2792,57 @@
         return typeNames[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       }
 
+      // Parse device type/model and browser from analytics data
+      function parseDeviceInfo(sub) {
+        const ua = sub.userAgent || '';
+        const platform = sub.platform || '';
+        if (!ua && !platform) return null;
+
+        // Detect browser
+        let browser = 'Unknown';
+        if (ua.includes('CriOS')) browser = 'Chrome (iOS)';
+        else if (ua.includes('FxiOS')) browser = 'Firefox (iOS)';
+        else if (ua.includes('EdgiOS') || ua.includes('Edg/') || ua.includes('Edge/')) browser = 'Edge';
+        else if (ua.includes('OPR/') || ua.includes('Opera')) browser = 'Opera';
+        else if (ua.includes('SamsungBrowser')) browser = 'Samsung Browser';
+        else if (ua.includes('Chrome') && !ua.includes('Edg')) browser = 'Chrome';
+        else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+        else if (ua.includes('Firefox')) browser = 'Firefox';
+
+        // Extract version
+        const verMap = [
+          ['CriOS/', 'CriOS/'], ['FxiOS/', 'FxiOS/'], ['Edg/', 'Edg/'], ['Edge/', 'Edge/'],
+          ['OPR/', 'OPR/'], ['SamsungBrowser/', 'SamsungBrowser/'],
+          ['Chrome/', 'Chrome/'], ['Version/', 'Version/'], ['Firefox/', 'Firefox/']
+        ];
+        for (const [key, prefix] of verMap) {
+          const idx = ua.indexOf(prefix);
+          if (idx !== -1) {
+            const verStr = ua.substring(idx + prefix.length).split(/[\s;)]/)[0];
+            const major = verStr.split('.')[0];
+            if (major) { browser += ' ' + major; break; }
+          }
+        }
+
+        // Detect device
+        let device = platform || 'Unknown';
+        if (ua.includes('iPhone')) device = 'iPhone';
+        else if (ua.includes('iPad')) device = 'iPad';
+        else if (ua.includes('Android')) {
+          const m = ua.match(/Android[^;]*;\s*([^)]+)/);
+          device = m ? m[1].trim().split(' Build')[0] : 'Android';
+        } else if (ua.includes('Windows')) device = 'Windows PC';
+        else if (ua.includes('Macintosh')) device = 'Mac';
+        else if (ua.includes('Linux')) device = 'Linux';
+
+        // Device type icon
+        let icon = 'fas fa-desktop';
+        if (/iPhone|Android|Mobile/i.test(ua)) icon = 'fas fa-mobile-alt';
+        else if (/iPad|Tablet/i.test(ua)) icon = 'fas fa-tablet-alt';
+
+        return { device, browser, icon };
+      }
+
       // Render individual submission card
       function renderSubmissionCard(sub) {
         const date = getSubmissionDate(sub);
@@ -2841,6 +2898,12 @@
                 </div>
               ` : ''}
             </div>
+
+            ${(() => { const di = parseDeviceInfo(sub); return di ? `
+            <div class="d-flex flex-wrap gap-2 mt-2" style="font-size: 12px;">
+              <span class="badge bg-light text-dark border"><i class="${di.icon} me-1"></i>${escapeHtml(di.device)}</span>
+              <span class="badge bg-light text-dark border"><i class="fas fa-globe me-1"></i>${escapeHtml(di.browser)}</span>
+            </div>` : ''; })()}
             
             ${message ? `<div class="submission-message">${escapeHtml(message.length > 200 ? message.substring(0, 200) + '...' : message)}</div>` : ''}
             
