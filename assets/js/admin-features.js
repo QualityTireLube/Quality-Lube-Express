@@ -142,7 +142,8 @@ window.viewGenericSubmission = function(id) {
         '_token', '_wp_http_referer', 'action', 'nonce',
         'userAgent', 'user_agent', 'ip', 'org', 'screen', 'language',
         'country', 'city', 'region', 'platform', 'timezone',
-        'deviceType', 'device_type',
+        'deviceType', 'device_type', 'vendor',
+        'screenResolution', 'windowSize', 'referrer',
         'sessionId', 'visitorId', 'fingerprintId', 'id', 'read', 'archived'
     ]);
     function isTokenVal(v) {
@@ -176,12 +177,14 @@ window.viewGenericSubmission = function(id) {
     if (!f.phone && sub.phone) html += `<tr><td class="fw-bold">Phone</td><td>${sub.phone}</td></tr>`;
     if (sub.message && !f.Message && !f['Your Message']) html += `<tr><td class="fw-bold">Message</td><td>${sub.message}</td></tr>`;
     
-    // Add device/browser if analytics exist
+    // Add device/browser/OS if analytics exist
     if (typeof parseDeviceInfo === 'function') {
         const di = parseDeviceInfo(sub);
         if (di) {
-            if (di.device && di.device !== 'Unknown') html += `<tr><td class="fw-bold">Device</td><td><i class="${di.icon} me-1"></i>${di.device}</td></tr>`;
-            if (di.browser && di.browser !== 'Unknown') html += `<tr><td class="fw-bold">Browser</td><td><i class="fas fa-globe me-1"></i>${di.browser}</td></tr>`;
+            if (di.device) html += `<tr><td class="fw-bold">Device</td><td><i class="${di.icon} me-1"></i>${di.device}</td></tr>`;
+            if (di.os) html += `<tr><td class="fw-bold">Operating System</td><td><i class="fas fa-microchip me-1"></i>${di.os}</td></tr>`;
+            if (di.browser) html += `<tr><td class="fw-bold">Browser</td><td><i class="fas fa-globe me-1"></i>${di.browser}</td></tr>`;
+            if (di.screen) html += `<tr><td class="fw-bold">Screen</td><td><i class="fas fa-tv me-1"></i>${di.screen}</td></tr>`;
             if (di.location) html += `<tr><td class="fw-bold">Location</td><td><i class="fas fa-map-marker-alt me-1"></i>${di.location}</td></tr>`;
         }
     }

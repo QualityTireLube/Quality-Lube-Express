@@ -2570,8 +2570,9 @@
 
                 ${(() => { const di = parseDeviceInfo(sub); return di ? `
                 <div class="d-flex flex-wrap gap-2 mt-2" style="font-size: 12px;">
-                  ${di.device && di.device !== 'Unknown' ? `<span class="badge bg-light text-dark border"><i class="${di.icon} me-1"></i>${escapeHtml(di.device)}</span>` : ''}
-                  ${di.browser && di.browser !== 'Unknown' ? `<span class="badge bg-light text-dark border"><i class="fas fa-globe me-1"></i>${escapeHtml(di.browser)}</span>` : ''}
+                  ${di.device ? `<span class="badge bg-light text-dark border"><i class="${di.icon} me-1"></i>${escapeHtml(di.device)}</span>` : ''}
+                  ${di.os ? `<span class="badge bg-light text-dark border"><i class="fas fa-microchip me-1"></i>${escapeHtml(di.os)}</span>` : ''}
+                  ${di.browser ? `<span class="badge bg-light text-dark border"><i class="fas fa-globe me-1"></i>${escapeHtml(di.browser)}</span>` : ''}
                   ${di.location ? `<span class="badge bg-light text-dark border"><i class="fas fa-map-marker-alt me-1"></i>${escapeHtml(di.location)}</span>` : ''}
                 </div>` : ''; })()}
                 
@@ -2793,58 +2794,110 @@
         return typeNames[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       }
 
-      // Parse device type/model and browser from analytics data
+      // Parse device type/model, OS, browser, and location from analytics data
       // Checks multiple possible locations for analytics fields
       function parseDeviceInfo(sub) {
         const f = sub.fields || {};
         const ua = sub.userAgent || sub.user_agent || f.userAgent || f.user_agent || '';
         const platform = sub.platform || f.platform || sub.deviceType || sub.device_type || f.deviceType || '';
+        const vendor = sub.vendor || f.vendor || '';
         const city = sub.city || f.city || '';
         const region = sub.region || f.region || sub.state || f.state || '';
         const country = sub.country || f.country || '';
+        const screenRes = sub.screenResolution || sub.screen || f.screenResolution || f.screen || '';
         if (!ua && !platform && !city) return null;
 
-        // Detect browser
-        let browser = 'Unknown';
-        if (ua.includes('CriOS')) browser = 'Chrome (iOS)';
-        else if (ua.includes('FxiOS')) browser = 'Firefox (iOS)';
-        else if (ua.includes('EdgiOS') || ua.includes('Edg/') || ua.includes('Edge/')) browser = 'Edge';
-        else if (ua.includes('OPR/') || ua.includes('Opera')) browser = 'Opera';
-        else if (ua.includes('SamsungBrowser')) browser = 'Samsung Browser';
-        else if (ua.includes('Chrome') && !ua.includes('Edg')) browser = 'Chrome';
-        else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
-        else if (ua.includes('Firefox')) browser = 'Firefox';
-
-        // Extract version
-        const verMap = [
-          ['CriOS/', 'CriOS/'], ['FxiOS/', 'FxiOS/'], ['Edg/', 'Edg/'], ['Edge/', 'Edge/'],
-          ['OPR/', 'OPR/'], ['SamsungBrowser/', 'SamsungBrowser/'],
-          ['Chrome/', 'Chrome/'], ['Version/', 'Version/'], ['Firefox/', 'Firefox/']
+        // --- Detect Browser with full version ---
+        let browser = '';
+        const browserRules = [
+          [/CriOS\/(\S+)/, 'Chrome iOS'],
+          [/FxiOS\/(\S+)/, 'Firefox iOS'],
+          [/EdgiOS\/(\S+)/, 'Edge iOS'],
+          [/Edg\/(\S+)/, 'Edge'],
+          [/Edge\/(\S+)/, 'Edge'],
+          [/OPR\/(\S+)/, 'Opera'],
+          [/SamsungBrowser\/(\S+)/, 'Samsung Browser'],
+          [/Firefox\/(\S+)/, 'Firefox'],
         ];
-        for (const [key, prefix] of verMap) {
-          const idx = ua.indexOf(prefix);
-          if (idx !== -1) {
-            const verStr = ua.substring(idx + prefix.length).split(/[\s;)]/)[0];
-            const major = verStr.split('.')[0];
-            if (major) { browser += ' ' + major; break; }
+        for (const [regex, name] of browserRules) {
+          const m = ua.match(regex);
+          if (m) { browser = name + ' ' + m[1].split('.').slice(0,2).join('.'); break; }
+        }
+        if (!browser) {
+          // Chrome must be checked after Edg/OPR
+          const chromeMatch = ua.match(/Chrome\/(\S+)/);
+          if (chromeMatch && !ua.includes('Edg') && !ua.includes('OPR')) {
+            browser = 'Chrome ' + chromeMatch[1].split('.').slice(0,2).join('.');
+          }
+        }
+        if (!browser) {
+          // Safari: use Version/ for version number
+          if (ua.includes('Safari') && !ua.includes('Chrome')) {
+            const vMatch = ua.match(/Version\/(\S+)/);
+            browser = vMatch ? 'Safari ' + vMatch[1].split('.').slice(0,2).join('.') : 'Safari';
           }
         }
 
-        // Detect device
-        let device = platform || 'Unknown';
-        if (ua.includes('iPhone')) device = 'iPhone';
-        else if (ua.includes('iPad')) device = 'iPad';
-        else if (ua.includes('Android')) {
-          const m = ua.match(/Android[^;]*;\s*([^)]+)/);
-          device = m ? m[1].trim().split(' Build')[0] : 'Android';
-        } else if (ua.includes('Windows')) device = 'Windows PC';
-        else if (ua.includes('Macintosh')) device = 'Mac';
-        else if (ua.includes('Linux')) device = 'Linux';
+        // --- Detect OS with version ---
+        let os = '';
+        const iosMatch = ua.match(/(?:iPhone|iPad|iPod).*?OS (\d+[_.]\d+(?:[_.]\d+)?)/);
+        if (iosMatch) {
+          os = 'iOS ' + iosMatch[1].replace(/_/g, '.');
+        } else if (ua.includes('Mac OS X')) {
+          const macMatch = ua.match(/Mac OS X (\d+[_.]\d+(?:[_.]\d+)?)/);
+          os = macMatch ? 'macOS ' + macMatch[1].replace(/_/g, '.') : 'macOS';
+        } else if (ua.includes('Android')) {
+          const androidMatch = ua.match(/Android (\d+(?:\.\d+)?)/);
+          os = androidMatch ? 'Android ' + androidMatch[1] : 'Android';
+        } else if (ua.includes('Windows NT')) {
+          const winMap = {'10.0':'10/11','6.3':'8.1','6.2':'8','6.1':'7','6.0':'Vista','5.1':'XP'};
+          const winMatch = ua.match(/Windows NT (\d+\.\d+)/);
+          os = winMatch ? 'Windows ' + (winMap[winMatch[1]] || winMatch[1]) : 'Windows';
+        } else if (ua.includes('CrOS')) {
+          os = 'Chrome OS';
+        } else if (ua.includes('Linux')) {
+          os = 'Linux';
+        }
+
+        // --- Detect Device (model-specific) ---
+        let device = '';
+        if (ua.includes('iPhone')) {
+          device = 'iPhone';
+        } else if (ua.includes('iPad')) {
+          device = 'iPad';
+        } else if (ua.includes('Android')) {
+          // Try to extract model: "Android X.X; MODEL Build" or "Android X.X; MODEL)"
+          const modelMatch = ua.match(/Android[^;]*;\s*([^;)]+?)(?:\s*Build|\.?\s*\))/i);
+          if (modelMatch) {
+            let model = modelMatch[1].trim();
+            // Clean up common prefixes
+            model = model.replace(/^SAMSUNG[- ]?/i, '');
+            device = model || 'Android Device';
+          } else {
+            device = 'Android Device';
+          }
+        } else if (ua.includes('Macintosh')) {
+          device = 'Mac';
+        } else if (ua.includes('Windows')) {
+          device = 'Windows PC';
+        } else if (ua.includes('CrOS')) {
+          device = 'Chromebook';
+        } else if (ua.includes('Linux')) {
+          device = 'Linux PC';
+        } else if (platform) {
+          device = platform;
+        }
+
+        // If vendor available, prefix Apple devices
+        if (vendor && vendor.includes('Apple') && device === 'Mac') {
+          device = 'Apple Mac';
+        }
 
         // Device type icon
         let icon = 'fas fa-desktop';
-        if (/iPhone|Android|Mobile/i.test(ua)) icon = 'fas fa-mobile-alt';
-        else if (/iPad|Tablet/i.test(ua)) icon = 'fas fa-tablet-alt';
+        if (/iPhone|Android.*Mobile|Mobile/i.test(ua)) icon = 'fas fa-mobile-alt';
+        else if (/iPad|Tablet|Android(?!.*Mobile)/i.test(ua)) icon = 'fas fa-tablet-alt';
+        else if (/Macintosh|Mac/i.test(ua)) icon = 'fas fa-laptop';
 
         // Build location string
         let location = '';
@@ -2855,7 +2908,7 @@
           location = location ? location + ', ' + country : country;
         }
 
-        return { device, browser, icon, location };
+        return { device, os, browser, icon, location, screen: screenRes };
       }
 
       // Render individual submission card
@@ -2916,8 +2969,9 @@
 
             ${(() => { const di = parseDeviceInfo(sub); return di ? `
             <div class="d-flex flex-wrap gap-2 mt-2" style="font-size: 12px;">
-              ${di.device && di.device !== 'Unknown' ? `<span class="badge bg-light text-dark border"><i class="${di.icon} me-1"></i>${escapeHtml(di.device)}</span>` : ''}
-              ${di.browser && di.browser !== 'Unknown' ? `<span class="badge bg-light text-dark border"><i class="fas fa-globe me-1"></i>${escapeHtml(di.browser)}</span>` : ''}
+              ${di.device ? `<span class="badge bg-light text-dark border"><i class="${di.icon} me-1"></i>${escapeHtml(di.device)}</span>` : ''}
+              ${di.os ? `<span class="badge bg-light text-dark border"><i class="fas fa-microchip me-1"></i>${escapeHtml(di.os)}</span>` : ''}
+              ${di.browser ? `<span class="badge bg-light text-dark border"><i class="fas fa-globe me-1"></i>${escapeHtml(di.browser)}</span>` : ''}
               ${di.location ? `<span class="badge bg-light text-dark border"><i class="fas fa-map-marker-alt me-1"></i>${escapeHtml(di.location)}</span>` : ''}
             </div>` : ''; })()}
             
@@ -3005,7 +3059,8 @@
           '_token', '_wp_http_referer', 'action', 'nonce',
           'userAgent', 'user_agent', 'ip', 'org', 'screen', 'language',
           'country', 'city', 'region', 'platform', 'timezone',
-          'deviceType', 'device_type',
+          'deviceType', 'device_type', 'vendor',
+          'screenResolution', 'windowSize', 'referrer',
           'sessionId', 'visitorId', 'fingerprintId',
           'wpforms[id]', 'wpforms[author]', 'wpforms[post_id]'
         ]);
@@ -3080,19 +3135,31 @@
 
         const di = parseDeviceInfo(sub);
         if (di) {
-          rows.push(`
+          if (di.device) rows.push(`
             <tr>
               <th style="width:180px;background:#f9f9f9;">Device</th>
               <td><i class="${di.icon} me-1"></i>${escapeHtml(di.device)}</td>
             </tr>
+          `);
+          if (di.os) rows.push(`
+            <tr>
+              <th style="width:180px;background:#f9f9f9;">Operating System</th>
+              <td><i class="fas fa-microchip me-1"></i>${escapeHtml(di.os)}</td>
+            </tr>
+          `);
+          if (di.browser) rows.push(`
             <tr>
               <th style="width:180px;background:#f9f9f9;">Browser</th>
               <td><i class="fas fa-globe me-1"></i>${escapeHtml(di.browser)}</td>
             </tr>
           `);
-        }
-        if (di && di.location) {
-          rows.push(`
+          if (di.screen) rows.push(`
+            <tr>
+              <th style="width:180px;background:#f9f9f9;">Screen</th>
+              <td><i class="fas fa-tv me-1"></i>${escapeHtml(di.screen)}</td>
+            </tr>
+          `);
+          if (di.location) rows.push(`
             <tr>
               <th style="width:180px;background:#f9f9f9;">Location</th>
               <td><i class="fas fa-map-marker-alt me-1"></i>${escapeHtml(di.location)}</td>
