@@ -2266,7 +2266,40 @@
               mergeSessionData(sub);
               allSubmissions.push(sub);
             });
-            
+
+            // Deduplicate: some submissions exist as two Firestore docs
+            // (one with fields nested, one flat). Keep the richer version.
+            const deduped = [];
+            const seen = new Map();
+            const getTs = (s) => { const t = s.timestamp || s.date; if (!t) return 0; if (t.toDate) return t.toDate().getTime(); return new Date(t).getTime(); };
+            allSubmissions.forEach(sub => {
+              const email = (sub.email || '').toLowerCase().trim();
+              const phone = (sub.phone || '').replace(/\D/g, '');
+              const ts = getTs(sub);
+              const key = email || phone;
+              if (!key) { deduped.push(sub); return; }
+              let dominated = false;
+              for (const [k, existing] of seen.entries()) {
+                const eKey = (existing.email || '').toLowerCase().trim() || (existing.phone || '').replace(/\D/g, '');
+                const eTs = getTs(existing);
+                if (eKey === key && Math.abs(ts - eTs) < 5 * 60 * 1000) {
+                  // Same person within 5 min — keep the one with more data
+                  const subScore = (sub.analytics ? 2 : 0) + (sub.userAgent ? 1 : 0);
+                  const exScore = (existing.analytics ? 2 : 0) + (existing.userAgent ? 1 : 0);
+                  if (subScore > exScore) {
+                    const idx = deduped.indexOf(existing);
+                    if (idx !== -1) deduped.splice(idx, 1);
+                    seen.set(sub.id, sub);
+                    deduped.push(sub);
+                  }
+                  dominated = true;
+                  break;
+                }
+              }
+              if (!dominated) { seen.set(sub.id, sub); deduped.push(sub); }
+            });
+            allSubmissions = deduped;
+
             // Sort by timestamp/date descending (client-side)
             allSubmissions.sort((a, b) => {
               const dateA = a.timestamp || a.date ? new Date(a.timestamp || a.date) : new Date(0);
@@ -2621,9 +2654,9 @@
               }) : 'Unknown date';
 
               const f = sub.fields || {};
-              const firstName = sub.name || sub.first_name || f.First || f['First Name'] || sub['wpforms[fields][1][first]'] || '';
+              const firstName = sub.first_name || f.First || f['First Name'] || sub['wpforms[fields][1][first]'] || '';
               const lastName = sub.last_name || f.Last || f['Last Name'] || sub['wpforms[fields][1][last]'] || '';
-              const name = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Unknown Candidate');
+              const name = sub.name || (firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Unknown Candidate'));
               
               const email = sub.email || f.Email || '';
               const phone = sub.phone || f.Phone || '';
@@ -3044,13 +3077,13 @@
         const typeName = sub.form_name || getFormTypeName(formType);
         
         // Handle various field name formats (wpforms uses bracket notation)
-        const firstName = sub.name || sub.first_name || sub['wpforms[fields][1][first]'] || '';
-        const lastName = sub.last_name || sub['wpforms[fields][1][last]'] || '';
-        const name = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Unknown');
+        const firstName = sub.first_name || sub['wpforms[fields][1][first]'] || sub['wpforms[fields][0][first]'] || '';
+        const lastName = sub.last_name || sub['wpforms[fields][1][last]'] || sub['wpforms[fields][0][last]'] || '';
+        const name = sub.name || (firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Unknown'));
         
-        const email = sub.email || sub['wpforms[fields][4]'] || sub['wpforms[fields][2]'] || '';
+        const email = sub.email || sub['wpforms[fields][4]'] || sub['wpforms[fields][2]'] || sub['wpforms[fields][1]'] || '';
         const phone = sub.phone || sub['wpforms[fields][3]'] || '';
-        const message = sub.message || sub.comments || sub['wpforms[fields][5]'] || sub['wpforms[fields][6]'] || '';
+        const message = sub.message || sub.comments || sub['wpforms[fields][5]'] || sub['wpforms[fields][6]'] || sub['wpforms[fields][2]'] || '';
         const vehicle = sub.vehicle || sub['wpforms[fields][7]'] || '';
         
         return `
@@ -3308,11 +3341,11 @@
         currentReplyData = sub;
         
         // Handle various field name formats (wpforms uses bracket notation)
-        const firstName = sub.name || sub.first_name || sub['wpforms[fields][1][first]'] || '';
-        const lastName = sub.last_name || sub['wpforms[fields][1][last]'] || '';
-        const name = firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Customer');
+        const firstName = sub.first_name || sub['wpforms[fields][1][first]'] || sub['wpforms[fields][0][first]'] || '';
+        const lastName = sub.last_name || sub['wpforms[fields][1][last]'] || sub['wpforms[fields][0][last]'] || '';
+        const name = sub.name || (firstName && lastName ? `${firstName} ${lastName}` : (firstName || lastName || 'Customer'));
         
-        const email = sub.email || sub['wpforms[fields][4]'] || sub['wpforms[fields][2]'] || '';
+        const email = sub.email || sub['wpforms[fields][4]'] || sub['wpforms[fields][2]'] || sub['wpforms[fields][1]'] || '';
         const phone = sub.phone || sub['wpforms[fields][3]'] || '';
 
         document.getElementById('reply-to').value = `${name} - ${email || phone}`;
@@ -3340,9 +3373,9 @@
       // Template messages
       function useTemplate(type) {
         // Handle various field name formats for name
-        const firstName = currentReplyData?.name || currentReplyData?.first_name || currentReplyData?.['wpforms[fields][1][first]'] || '';
-        const lastName = currentReplyData?.last_name || currentReplyData?.['wpforms[fields][1][last]'] || '';
-        const name = firstName && lastName ? `${firstName}` : (firstName || 'there');
+        const firstName = currentReplyData?.first_name || currentReplyData?.['wpforms[fields][1][first]'] || currentReplyData?.['wpforms[fields][0][first]'] || '';
+        const lastName = currentReplyData?.last_name || currentReplyData?.['wpforms[fields][1][last]'] || currentReplyData?.['wpforms[fields][0][last]'] || '';
+        const name = currentReplyData?.name || (firstName && lastName ? `${firstName} ${lastName}` : (firstName || 'there'));
         
         const templates = {
           appointment_confirm: `Hi ${name},\n\nThank you for scheduling an appointment with Quality Lube Express!\n\nWe've received your request and will contact you shortly to confirm the date and time.\n\nIf you have any questions, feel free to call us at (940) 566-5169.\n\nThank you,\nQuality Lube Express`,
