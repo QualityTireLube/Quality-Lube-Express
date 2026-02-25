@@ -2129,6 +2129,8 @@
       let allServices = [];
       let unsubscribe = null;
       let currentReplyData = null;
+      let visitorSessionsCache = {};
+      let sessionsLoaded = false;
 
       // Auth Guard
       auth.onAuthStateChanged((user) => {
@@ -2159,8 +2161,85 @@
 
       // ==================== FORM SUBMISSIONS ====================
 
+      // Load visitor sessions for analytics data merging
+      function loadVisitorSessions() {
+        return db.collection('visitor_sessions')
+          .orderBy('firstSeen', 'desc')
+          .limit(1000)
+          .get()
+          .then(snap => {
+            visitorSessionsCache = {};
+            snap.forEach(doc => {
+              visitorSessionsCache[doc.id] = doc.data();
+            });
+            sessionsLoaded = true;
+            console.log('Loaded', Object.keys(visitorSessionsCache).length, 'visitor sessions for analytics merge');
+            return visitorSessionsCache;
+          })
+          .catch(err => {
+            console.warn('Could not load visitor sessions:', err);
+            sessionsLoaded = true;
+            return {};
+          });
+      }
+
+      // Merge visitor session analytics data onto a form submission
+      function mergeSessionData(sub) {
+        if (!sessionsLoaded || !Object.keys(visitorSessionsCache).length) return;
+        let session = null;
+
+        // 1. Match by sessionId stored on the submission
+        if (sub.sessionId && visitorSessionsCache[sub.sessionId]) {
+          session = visitorSessionsCache[sub.sessionId];
+        }
+
+        // 2. Fallback: match by IP + timestamp proximity (within 24h)
+        if (!session && sub.ip && sub.ip !== 'unknown') {
+          const subTime = new Date(sub.timestamp || sub.date || 0).getTime();
+          let bestMatch = null, bestDiff = Infinity;
+          for (const [sid, s] of Object.entries(visitorSessionsCache)) {
+            if (s.ip && s.ip === sub.ip) {
+              const sTime = s.firstSeen && s.firstSeen.toDate ? s.firstSeen.toDate().getTime() : new Date(s.firstSeen || 0).getTime();
+              const diff = Math.abs(subTime - sTime);
+              if (diff < 24 * 60 * 60 * 1000 && diff < bestDiff) {
+                bestDiff = diff;
+                bestMatch = s;
+              }
+            }
+          }
+          session = bestMatch;
+        }
+
+        if (!session) return;
+
+        // Merge analytics fields (don't overwrite existing values)
+        if (!sub.userAgent && session.userAgent) sub.userAgent = session.userAgent;
+        if (!sub.platform && session.platform) sub.platform = session.platform;
+        if (!sub.deviceType && session.deviceType) sub.deviceType = session.deviceType;
+        if (!sub.vendor && session.vendor) sub.vendor = session.vendor;
+        if (session.screen && typeof session.screen === 'object') {
+          const screenStr = session.screen.width + 'x' + session.screen.height;
+          if (!sub.screen) sub.screen = screenStr;
+          if (!sub.screenResolution) sub.screenResolution = screenStr;
+        }
+        // Analytics geo (always store as analytics_ prefix so form field city/state don't conflict)
+        const sCi = (session.city && session.city !== 'unknown') ? session.city : '';
+        const sRe = (session.region && session.region !== 'unknown') ? session.region : '';
+        const sCo = (session.country && session.country !== 'unknown') ? session.country : '';
+        if (sCi) sub.analytics_city = sCi;
+        if (sRe) sub.analytics_region = sRe;
+        if (sCo) sub.analytics_country = sCo;
+        if (!sub.city && sCi) sub.city = sCi;
+        if (!sub.region && sRe) sub.region = sRe;
+        if (!sub.country && sCo) sub.country = sCo;
+        if (!sub.ip && session.ip && session.ip !== 'unknown') sub.ip = session.ip;
+        if (!sub.referrer && session.referrer && session.referrer !== 'direct') sub.referrer = session.referrer;
+      }
+
       // Initialize real-time listener for form submissions
       function initLiveSubmissions() {
+        // Load visitor sessions first, then start real-time listener
+        loadVisitorSessions().then(() => {
         // Real-time listener - fetch all and sort client-side to avoid index requirements
         unsubscribe = db.collection('form_submissions')
           .limit(500)
@@ -2168,7 +2247,9 @@
             const previousCount = allSubmissions.length;
             allSubmissions = [];
             snapshot.forEach((doc) => {
-              allSubmissions.push({ id: doc.id, ...doc.data() });
+              const sub = { id: doc.id, ...doc.data() };
+              mergeSessionData(sub);
+              allSubmissions.push(sub);
             });
             
             // Sort by timestamp/date descending (client-side)
@@ -2196,6 +2277,7 @@
               </div>
             `;
           });
+        }); // end loadVisitorSessions().then()
       }
 
       // Play notification sound
@@ -2799,13 +2881,20 @@
       function parseDeviceInfo(sub) {
         const f = sub.fields || {};
         const ua = sub.userAgent || sub.user_agent || f.userAgent || f.user_agent || '';
-        const platform = sub.platform || f.platform || sub.deviceType || sub.device_type || f.deviceType || '';
+        const platform = sub.platform || f.platform || '';
+        const deviceType = sub.deviceType || sub.device_type || f.deviceType || '';
         const vendor = sub.vendor || f.vendor || '';
-        const city = sub.city || f.city || '';
-        const region = sub.region || f.region || sub.state || f.state || '';
-        const country = sub.country || f.country || '';
-        const screenRes = sub.screenResolution || sub.screen || f.screenResolution || f.screen || '';
-        if (!ua && !platform && !city) return null;
+        // Prefer analytics geo over form-field geo (form city is applicant's address, not their location)
+        const rawCity = sub.analytics_city || sub.city || f.city || '';
+        const rawRegion = sub.analytics_region || sub.region || f.region || sub.state || f.state || '';
+        const rawCountry = sub.analytics_country || sub.country || f.country || '';
+        const city = (rawCity && rawCity !== 'unknown') ? rawCity : '';
+        const region = (rawRegion && rawRegion !== 'unknown') ? rawRegion : '';
+        const country = (rawCountry && rawCountry !== 'unknown') ? rawCountry : '';
+        // Handle screen as string or object
+        let screenRes = sub.screenResolution || sub.screen || f.screenResolution || f.screen || '';
+        if (typeof screenRes === 'object' && screenRes.width) screenRes = screenRes.width + 'x' + screenRes.height;
+        if (!ua && !platform && !deviceType && !city) return null;
 
         // --- Detect Browser with full version ---
         let browser = '';
@@ -2858,6 +2947,13 @@
         } else if (ua.includes('Linux')) {
           os = 'Linux';
         }
+        // Fallback: infer OS from platform if UA didn't reveal it
+        if (!os && platform) {
+          if (platform === 'iPhone' || platform === 'iPad' || platform === 'iPod') os = 'iOS';
+          else if (platform === 'MacIntel' || platform === 'MacPPC') os = 'macOS';
+          else if (platform === 'Win32' || platform === 'Win64') os = 'Windows';
+          else if (platform.includes('Linux')) os = 'Linux';
+        }
 
         // --- Detect Device (model-specific) ---
         let device = '';
@@ -2884,8 +2980,14 @@
           device = 'Chromebook';
         } else if (ua.includes('Linux')) {
           device = 'Linux PC';
-        } else if (platform) {
-          device = platform;
+        } else if (platform && platform !== 'unknown') {
+          // Use platform as fallback (e.g. "iPhone", "Win32", "MacIntel")
+          const platMap = {'iPhone':'iPhone','iPad':'iPad','MacIntel':'Mac','Win32':'Windows PC','Linux x86_64':'Linux PC','Linux armv8l':'Android Device'};
+          device = platMap[platform] || platform;
+        } else if (deviceType && deviceType !== 'unknown') {
+          // Last fallback: deviceType from tracking.js ("mobile", "tablet", "desktop")
+          const dtMap = {'mobile':'Mobile Device','tablet':'Tablet','desktop':'Desktop'};
+          device = dtMap[deviceType] || deviceType;
         }
 
         // If vendor available, prefix Apple devices
@@ -2895,8 +2997,8 @@
 
         // Device type icon
         let icon = 'fas fa-desktop';
-        if (/iPhone|Android.*Mobile|Mobile/i.test(ua)) icon = 'fas fa-mobile-alt';
-        else if (/iPad|Tablet|Android(?!.*Mobile)/i.test(ua)) icon = 'fas fa-tablet-alt';
+        if (/iPhone|Android.*Mobile|Mobile/i.test(ua) || deviceType === 'mobile') icon = 'fas fa-mobile-alt';
+        else if (/iPad|Tablet|Android(?!.*Mobile)/i.test(ua) || deviceType === 'tablet') icon = 'fas fa-tablet-alt';
         else if (/Macintosh|Mac/i.test(ua)) icon = 'fas fa-laptop';
 
         // Build location string
@@ -3062,6 +3164,7 @@
           'deviceType', 'device_type', 'vendor',
           'screenResolution', 'windowSize', 'referrer',
           'sessionId', 'visitorId', 'fingerprintId',
+          'analytics_city', 'analytics_region', 'analytics_country',
           'wpforms[id]', 'wpforms[author]', 'wpforms[post_id]'
         ]);
 

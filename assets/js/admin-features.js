@@ -144,7 +144,8 @@ window.viewGenericSubmission = function(id) {
         'country', 'city', 'region', 'platform', 'timezone',
         'deviceType', 'device_type', 'vendor',
         'screenResolution', 'windowSize', 'referrer',
-        'sessionId', 'visitorId', 'fingerprintId', 'id', 'read', 'archived'
+        'sessionId', 'visitorId', 'fingerprintId', 'id', 'read', 'archived',
+        'analytics_city', 'analytics_region', 'analytics_country'
     ]);
     function isTokenVal(v) {
         if (typeof v !== 'string') return false;

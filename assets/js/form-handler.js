@@ -172,18 +172,20 @@
       userAgent: navigator.userAgent || '',
       platform: navigator.platform || '',
       screen: window.screen.width + 'x' + window.screen.height,
-      language: navigator.language || ''
+      language: navigator.language || '',
+      sessionId: sessionStorage.getItem('analytics_session_id') || ''
     };
 
     // Attach cached IP/location data from tracking session
+    // Store as analytics_ prefix so form field heuristics don't overwrite
     try {
       const cachedIP = localStorage.getItem('analytics_ip_data');
       if (cachedIP) {
         const ipInfo = JSON.parse(cachedIP);
         data.ip = ipInfo.ip || '';
-        data.city = ipInfo.city || '';
-        data.region = ipInfo.region || '';
-        data.country = ipInfo.country_name || '';
+        data.analytics_city = ipInfo.city || '';
+        data.analytics_region = ipInfo.region || '';
+        data.analytics_country = ipInfo.country_name || '';
         data.org = ipInfo.org || '';
       }
     } catch(e) { /* ignore parse errors */ }
@@ -191,6 +193,9 @@
     if (form.getAttribute("data-form-name")) {
       data.form_type = form.getAttribute("data-form-name").toLowerCase();
     }
+
+    // Keys that should not be overwritten by form fields
+    const protectedKeys = new Set(['userAgent','platform','screen','language','sessionId','ip','analytics_city','analytics_region','analytics_country','org','site','form_type','timestamp','page_url','attachments']);
 
     const formData = new FormData(form);
     const filePromises = [];
@@ -208,7 +213,10 @@
       if (!value) continue;
 
       // Default: add raw key-value to data (ensures unmapped fields are sent)
-      data[key] = value;
+      // But protect analytics keys from being overwritten
+      if (!protectedKeys.has(key)) {
+        data[key] = value;
+      }
 
       const k = key.toLowerCase();
 
