@@ -1312,9 +1312,7 @@ const LabelSystem = {
 
         // Try to get print queue info
         try {
-          const jobsResp = await fetch(serverUrl + '/api/print/jobs?status=pending', {
-            headers: { 'X-Print-Key': 'QL-print-2026-a7f3b9c1d4e8' }
-          });
+          const jobsResp = await fetch(serverUrl + '/api/print/jobs?status=pending');
           if (jobsResp.ok) {
             const jobs = await jobsResp.json();
             const pending = Array.isArray(jobs) ? jobs.filter(j => j.status === 'pending').length : 0;
@@ -1332,9 +1330,7 @@ const LabelSystem = {
 
         // Try to get printers
         try {
-          const printersResp = await fetch(serverUrl + '/api/print/printers', {
-            headers: { 'X-Print-Key': 'QL-print-2026-a7f3b9c1d4e8' }
-          });
+          const printersResp = await fetch(serverUrl + '/api/print/printers');
           if (printersResp.ok) {
             const printers = await printersResp.json();
             this.printClientPrinters = Array.isArray(printers) ? printers : [];
@@ -1431,10 +1427,7 @@ const LabelSystem = {
       const base64Pdf = this.uint8ArrayToBase64(pdfBytes);
       const response = await fetch(serverUrl + '/api/print/jobs', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Print-Key': 'QL-print-2026-a7f3b9c1d4e8'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           templateName: template.labelName,
           printer: printer,
