@@ -2629,8 +2629,8 @@
               <button class="btn btn-sm btn-outline-success" onclick="LabelSystem.testPrintClientConnection()">
                 <i class="fas fa-sync-alt me-1"></i>Test Connection
               </button>
-              <a href="https://autoflopro.com/print" target="_blank" class="btn btn-sm btn-outline-primary ms-1">
-                <i class="fas fa-external-link-alt me-1"></i>Open Print Client
+              <a href="https://api.autoflopro.com/api/print/printers" target="_blank" class="btn btn-sm btn-outline-primary ms-1">
+                <i class="fas fa-external-link-alt me-1"></i>View Print Server
               </a>
             </div>
           </div>
@@ -2797,8 +2797,18 @@
                   </select>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">Print Client URL</label>
-                  <input type="text" class="form-control" id="label-print-server" value="https://autoflopro.com/print" placeholder="https://autoflopro.com/print">
+                  <label class="form-label">Print Server URL</label>
+                  <input type="text" class="form-control" id="label-print-server" value="https://api.autoflopro.com" placeholder="https://api.autoflopro.com">
+                </div>
+                <div class="mb-3 d-none">
+                  <label class="form-label">Print Client JWT Token (not required)</label>
+                  <div class="input-group">
+                    <input type="password" class="form-control" id="label-print-token" placeholder="Not required — print routes are open" style="font-family: monospace; font-size: 0.8rem;">
+                    <button class="btn btn-outline-secondary" type="button" onclick="const el=document.getElementById('label-print-token'); el.type = el.type==='password' ? 'text' : 'password';">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </div>
+                  <small class="text-muted">Auth is not required for print server routes.</small>
                 </div>
                 <div class="form-check form-switch mb-3">
                   <input class="form-check-input" type="checkbox" id="label-auto-save" checked>

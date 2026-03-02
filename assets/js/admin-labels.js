@@ -1269,12 +1269,21 @@ const LabelSystem = {
   // ============================================================
   // PRINT CLIENT INTEGRATION
   // ============================================================
+
   getPrintClientUrl() {
     const saved = localStorage.getItem('labelSettings');
     if (saved) {
-      try { return JSON.parse(saved).printServerUrl || 'https://autoflopro.com/print'; } catch (e) {}
+      try { return JSON.parse(saved).printServerUrl || 'https://api.autoflopro.com'; } catch (e) {}
     }
-    return 'https://autoflopro.com/print';
+    return 'https://api.autoflopro.com';
+  },
+
+  getPrintClientHeaders(includeContentType) {
+    const headers = {};
+    if (includeContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
+    return headers;
   },
 
   async testPrintClientConnection() {
@@ -1289,27 +1298,31 @@ const LabelSystem = {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (isLocalhost) {
       bar.classList.add('disconnected');
-      statusEl.textContent = 'Print Client: Unavailable (localhost)';
+      statusEl.textContent = 'Print Server: Unavailable (localhost)';
       jobsEl.textContent = '';
       printersEl.textContent = 'PDF printing works — deploy for print server';
       this.printClientConnected = false;
       this.printClientPrinters = [];
       if (this.testMode) {
-        this.addTestLog('warn', 'Skipped print client connection — localhost blocked by CORS');
+        this.addTestLog('warn', 'Skipped print server connection — localhost blocked by CORS');
         this.addTestLog('info', '"Print Label" (PDF) works. "Send to Print Client" requires deployment.');
       }
       return;
     }
 
     if (this.testMode) {
-      this.addTestLog('info', 'Testing direct connection to print client: ' + printClientUrl);
+      this.addTestLog('info', 'Testing connection to print server: ' + printClientUrl);
     }
 
     try {
-      statusEl.textContent = 'Print Client: Connecting...';
+      statusEl.textContent = 'Print Server: Connecting...';
 
-      // Fetch printers directly from the print client
-      const printersResp = await fetch(printClientUrl + '/printers', { method: 'GET', mode: 'cors' });
+      // Fetch printers from the print server API
+      const printersResp = await fetch(printClientUrl + '/api/print/printers', {
+        method: 'GET',
+        mode: 'cors',
+        headers: this.getPrintClientHeaders(false)
+      });
 
       if (printersResp.ok) {
         const printers = await printersResp.json();
@@ -1317,13 +1330,13 @@ const LabelSystem = {
 
         bar.classList.remove('disconnected');
         if (!this.testMode) bar.classList.remove('test-mode');
-        statusEl.textContent = 'Print Client: Connected (direct)';
+        statusEl.textContent = 'Print Server: Connected';
         this.printClientConnected = true;
         jobsEl.textContent = '';  // No job queue in direct mode
         printersEl.textContent = 'Printers: ' + this.printClientPrinters.length + ' detected';
 
         if (this.testMode) {
-          this.addTestLog('success', 'Print client REACHABLE at ' + printClientUrl);
+          this.addTestLog('success', 'Print server REACHABLE at ' + printClientUrl);
           this.addTestLog('success', 'Discovered ' + this.printClientPrinters.length + ' printer(s): ' +
             this.printClientPrinters.map(p => p.name + ' (' + (p.status || 'Unknown') + ')').join(', '));
         }
@@ -1331,19 +1344,19 @@ const LabelSystem = {
         // Re-apply test-mode class if active
         if (this.testMode) bar.classList.add('test-mode');
       } else {
-        throw new Error('Print client returned ' + printersResp.status);
+        throw new Error('Print server returned ' + printersResp.status);
       }
     } catch (err) {
       bar.classList.add('disconnected');
-      statusEl.textContent = 'Print Client: Disconnected';
+      statusEl.textContent = 'Print Server: Disconnected';
       this.printClientConnected = false;
       jobsEl.textContent = '';
       printersEl.textContent = '';
       this.printClientPrinters = [];
 
       if (this.testMode) {
-        this.addTestLog('error', 'Cannot reach print client at ' + printClientUrl + ' — ' + (err.message || err));
-        this.addTestLog('info', 'No printers available. Check that the print client is running.');
+        this.addTestLog('error', 'Cannot reach print server at ' + printClientUrl + ' — ' + (err.message || err));
+        this.addTestLog('info', 'No printers available. Check that the print server is running.');
       }
     }
   },
@@ -1395,7 +1408,7 @@ const LabelSystem = {
         this.addTestLog('success', 'PRINT CLIENT REQUEST INTERCEPTED — Would send to printer: "' + printer + '"');
         this.addTestLog('info', 'Template: "' + template.labelName + '" | Copies: ' + copies + ' | Paper: ' + template.paperSize);
         this.addTestLog('info', 'PDF size: ' + (pdfBytes.length / 1024).toFixed(1) + ' KB (' + copies + ' page(s))');
-        this.addTestLog('info', 'Target: ' + printClientUrl + '/print-label  (DIRECT to print client)');
+        this.addTestLog('info', 'Target: ' + printClientUrl + '/api/print/jobs  (print server job queue)');
         const fieldSummary = Object.entries(this.creatorLabelData).filter(([k,v]) => v).map(([k,v]) => k + '="' + v + '"').join(', ');
         this.addTestLog('info', 'Payload: { printer: "' + printer + '", copies: ' + copies + ', data: {' + fieldSummary + '} }');
         this.addTestLog('warn', 'Printer "' + printer + '" did NOT receive this job (test mode). Opening PDF preview...');
@@ -1404,17 +1417,19 @@ const LabelSystem = {
         return;
       }
 
-      // ---- REAL MODE: Send directly to print client (no middleman) ----
+      // ---- REAL MODE: Submit print job to server queue (print client polls & prints) ----
       const base64Pdf = this.uint8ArrayToBase64(pdfBytes);
-      const response = await fetch(printClientUrl + '/print-label', {
+      const response = await fetch(printClientUrl + '/api/print/jobs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getPrintClientHeaders(true),
         mode: 'cors',
         body: JSON.stringify({
           templateName: template.labelName,
           printer: printer,
           copies: copies,
-          pdfData: base64Pdf
+          pdfData: base64Pdf,
+          labelData: this.creatorLabelData,
+          paperSize: template.paperSize
         })
       });
 
@@ -1478,14 +1493,20 @@ const LabelSystem = {
         const copiesEl = document.getElementById('label-default-copies');
         const paperEl = document.getElementById('label-default-paper');
         const serverEl = document.getElementById('label-print-server');
+        const tokenEl = document.getElementById('label-print-token');
         const autoSaveEl = document.getElementById('label-auto-save');
         if (copiesEl) copiesEl.value = settings.defaultCopies || 1;
         if (paperEl) paperEl.value = settings.defaultPaperSize || 'Brother-QL800';
-        if (serverEl) serverEl.value = settings.printServerUrl || 'https://autoflopro.com/print';
+        if (serverEl) serverEl.value = settings.printServerUrl || 'https://api.autoflopro.com';
+        if (tokenEl) tokenEl.value = settings.printClientToken || '';
         if (autoSaveEl) autoSaveEl.checked = settings.autoSaveEnabled !== false;
       } catch (e) {
         console.error('Error loading label settings:', e);
       }
+    } else {
+      // First load — pre-fill default token
+      const tokenEl = document.getElementById('label-print-token');
+      if (tokenEl) tokenEl.value = '';
     }
   },
 
@@ -1493,7 +1514,8 @@ const LabelSystem = {
     const settings = {
       defaultCopies: parseInt(document.getElementById('label-default-copies').value) || 1,
       defaultPaperSize: document.getElementById('label-default-paper').value,
-      printServerUrl: document.getElementById('label-print-server').value || 'https://autoflopro.com/print',
+      printServerUrl: document.getElementById('label-print-server').value || 'https://api.autoflopro.com',
+      printClientToken: document.getElementById('label-print-token').value || '',
       autoSaveEnabled: document.getElementById('label-auto-save').checked
     };
     localStorage.setItem('labelSettings', JSON.stringify(settings));
