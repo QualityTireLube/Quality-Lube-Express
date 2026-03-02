@@ -1276,6 +1276,22 @@ const LabelSystem = {
 
     const serverUrl = (localStorage.getItem('labelSettings') && JSON.parse(localStorage.getItem('labelSettings')).printServerUrl) || 'https://api.autoflopro.com';
 
+    // Skip network request entirely on localhost — server rejects CORS from local origins
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocalhost) {
+      bar.classList.add('disconnected');
+      statusEl.textContent = 'Print Client: Unavailable (localhost)';
+      jobsEl.textContent = '';
+      printersEl.textContent = 'PDF printing works — deploy for print server';
+      this.printClientConnected = false;
+      this.printClientPrinters = [];
+      if (this.testMode) {
+        this.addTestLog('warn', 'Skipped print server connection — localhost is blocked by CORS on ' + serverUrl);
+        this.addTestLog('info', '"Print Label" (PDF) works normally. "Send to Print Client" requires deployment to an allowed domain.');
+      }
+      return;
+    }
+
     if (this.testMode) {
       this.addTestLog('info', 'Testing connection to print server: ' + serverUrl);
     }
@@ -1344,26 +1360,15 @@ const LabelSystem = {
       }
     } catch (err) {
       bar.classList.add('disconnected');
+      statusEl.textContent = 'Print Client: Disconnected';
       this.printClientConnected = false;
       jobsEl.textContent = '';
+      printersEl.textContent = '';
       this.printClientPrinters = [];
 
-      // Detect localhost/CORS issue
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      if (isLocalhost) {
-        statusEl.textContent = 'Print Client: Unavailable (localhost — CORS blocked)';
-        printersEl.textContent = 'Deploy to use print server';
-        if (this.testMode) {
-          this.addTestLog('warn', 'Running on localhost — the print server at ' + serverUrl + ' blocks cross-origin requests from local development servers.');
-          this.addTestLog('info', 'This is expected. "Print Label" (PDF) works normally. "Send to Print Client" requires deployment to an allowed domain.');
-        }
-      } else {
-        statusEl.textContent = 'Print Client: Disconnected';
-        printersEl.textContent = '';
-        if (this.testMode) {
-          this.addTestLog('error', 'Cannot reach print server at ' + serverUrl + ' — ' + (err.message || err));
-          this.addTestLog('info', 'No printers available. Check that the print server is running.');
-        }
+      if (this.testMode) {
+        this.addTestLog('error', 'Cannot reach print server at ' + serverUrl + ' — ' + (err.message || err));
+        this.addTestLog('info', 'No printers available. Check that the print server is running.');
       }
     }
   },
