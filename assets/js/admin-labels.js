@@ -1278,8 +1278,20 @@ const LabelSystem = {
     return 'https://api.autoflopro.com';
   },
 
+  getPrintClientToken() {
+    const saved = localStorage.getItem('labelSettings');
+    if (saved) {
+      try { return JSON.parse(saved).printClientToken || ''; } catch (e) {}
+    }
+    return '';
+  },
+
   getPrintClientHeaders(includeContentType) {
     const headers = {};
+    const token = this.getPrintClientToken();
+    if (token) {
+      headers['Authorization'] = 'Bearer ' + token;
+    }
     if (includeContentType) {
       headers['Content-Type'] = 'application/json';
     }
@@ -1294,18 +1306,16 @@ const LabelSystem = {
 
     const printClientUrl = this.getPrintClientUrl();
 
-    // Skip network request entirely on localhost — CORS blocks it
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (isLocalhost) {
+    if (!this.getPrintClientToken()) {
       bar.classList.add('disconnected');
-      statusEl.textContent = 'Print Server: Unavailable (localhost)';
+      statusEl.textContent = 'Print Server: No JWT token configured';
       jobsEl.textContent = '';
-      printersEl.textContent = 'PDF printing works — deploy for print server';
+      printersEl.textContent = 'Set a JWT token in Label Settings to connect';
       this.printClientConnected = false;
       this.printClientPrinters = [];
       if (this.testMode) {
-        this.addTestLog('warn', 'Skipped print server connection — localhost blocked by CORS');
-        this.addTestLog('info', '"Print Label" (PDF) works. "Send to Print Client" requires deployment.');
+        this.addTestLog('warn', 'No JWT token set — cannot authenticate with print server');
+        this.addTestLog('info', 'Go to Label Settings and paste your JWT token, then save.');
       }
       return;
     }
@@ -1317,7 +1327,19 @@ const LabelSystem = {
     try {
       statusEl.textContent = 'Print Server: Connecting...';
 
-      // Fetch printers from the print server API
+      // Health check first via /api/print/stats/polling
+      const healthResp = await fetch(printClientUrl + '/api/print/stats/polling', {
+        method: 'GET',
+        mode: 'cors',
+        headers: this.getPrintClientHeaders(false)
+      });
+
+      if (!healthResp.ok) {
+        const code = healthResp.status;
+        throw new Error(code === 401 ? 'Authentication failed — check your JWT token' : 'Health check returned HTTP ' + code);
+      }
+
+      // Fetch registered printers from the print server
       const printersResp = await fetch(printClientUrl + '/api/print/printers', {
         method: 'GET',
         mode: 'cors',
@@ -1325,38 +1347,46 @@ const LabelSystem = {
       });
 
       if (printersResp.ok) {
-        const printers = await printersResp.json();
-        this.printClientPrinters = Array.isArray(printers) ? printers : [];
+        const data = await printersResp.json();
+        // Server may return { printers: [...] } or a flat array
+        const printerList = Array.isArray(data) ? data : (data.printers || []);
+        this.printClientPrinters = printerList.map(p => ({
+          id: p.printerId || p.id || p.name,
+          name: p.name || p.systemPrinterName || 'Unknown',
+          systemName: p.systemPrinterName || p.name,
+          status: p.status || p.online ? 'Online' : 'Unknown',
+          clientId: p.clientId || null,
+          locationId: p.locationId || null
+        }));
 
         bar.classList.remove('disconnected');
         if (!this.testMode) bar.classList.remove('test-mode');
         statusEl.textContent = 'Print Server: Connected';
         this.printClientConnected = true;
-        jobsEl.textContent = '';  // No job queue in direct mode
-        printersEl.textContent = 'Printers: ' + this.printClientPrinters.length + ' detected';
+        jobsEl.textContent = '';
+        printersEl.textContent = 'Printers: ' + this.printClientPrinters.length + ' registered';
 
         if (this.testMode) {
           this.addTestLog('success', 'Print server REACHABLE at ' + printClientUrl);
           this.addTestLog('success', 'Discovered ' + this.printClientPrinters.length + ' printer(s): ' +
-            this.printClientPrinters.map(p => p.name + ' (' + (p.status || 'Unknown') + ')').join(', '));
+            this.printClientPrinters.map(p => p.name + ' (' + p.status + ')').join(', '));
         }
 
-        // Re-apply test-mode class if active
         if (this.testMode) bar.classList.add('test-mode');
       } else {
-        throw new Error('Print server returned ' + printersResp.status);
+        throw new Error('Printers endpoint returned ' + printersResp.status);
       }
     } catch (err) {
       bar.classList.add('disconnected');
       statusEl.textContent = 'Print Server: Disconnected';
       this.printClientConnected = false;
       jobsEl.textContent = '';
-      printersEl.textContent = '';
+      printersEl.textContent = err.message || '';
       this.printClientPrinters = [];
 
       if (this.testMode) {
         this.addTestLog('error', 'Cannot reach print server at ' + printClientUrl + ' — ' + (err.message || err));
-        this.addTestLog('info', 'No printers available. Check that the print server is running.');
+        this.addTestLog('info', 'Check that the server is running and your JWT token is valid.');
       }
     }
   },
@@ -1382,8 +1412,9 @@ const LabelSystem = {
     }
     printers.forEach(p => {
       const opt = document.createElement('option');
-      opt.value = p.name;
+      opt.value = p.id;  // printerId for job submission
       opt.textContent = p.name + (p.status ? ' (' + p.status + ')' : '');
+      opt.dataset.systemName = p.systemName || p.name;
       select.appendChild(opt);
     });
 
@@ -1395,7 +1426,11 @@ const LabelSystem = {
     const template = this.creatorSelectedTemplate;
     if (!template) return;
 
-    const printer = document.getElementById('print-printer-select').value;
+    const selectEl = document.getElementById('print-printer-select');
+    const printerId = selectEl.value;
+    const selectedOption = selectEl.options[selectEl.selectedIndex];
+    const printerName = selectedOption ? selectedOption.textContent.split(' (')[0] : printerId;
+    const systemName = selectedOption ? (selectedOption.dataset.systemName || printerName) : printerName;
     const copies = parseInt(document.getElementById('print-copies').value) || 1;
     const printClientUrl = this.getPrintClientUrl();
 
@@ -1405,45 +1440,49 @@ const LabelSystem = {
 
       // ---- TEST MODE: Intercept and log, do NOT send to printer ----
       if (this.testMode) {
-        this.addTestLog('success', 'PRINT CLIENT REQUEST INTERCEPTED — Would send to printer: "' + printer + '"');
+        this.addTestLog('success', 'PRINT CLIENT REQUEST INTERCEPTED — Would send to printer: "' + printerName + '"');
         this.addTestLog('info', 'Template: "' + template.labelName + '" | Copies: ' + copies + ' | Paper: ' + template.paperSize);
         this.addTestLog('info', 'PDF size: ' + (pdfBytes.length / 1024).toFixed(1) + ' KB (' + copies + ' page(s))');
-        this.addTestLog('info', 'Target: ' + printClientUrl + '/api/print/jobs  (print server job queue)');
+        this.addTestLog('info', 'Target: ' + printClientUrl + '/api/print/jobs  (server queues → print client polls & prints)');
         const fieldSummary = Object.entries(this.creatorLabelData).filter(([k,v]) => v).map(([k,v]) => k + '="' + v + '"').join(', ');
-        this.addTestLog('info', 'Payload: { printer: "' + printer + '", copies: ' + copies + ', data: {' + fieldSummary + '} }');
-        this.addTestLog('warn', 'Printer "' + printer + '" did NOT receive this job (test mode). Opening PDF preview...');
+        this.addTestLog('info', 'Payload: { printerId: "' + printerId + '", printerName: "' + printerName + '", copies: ' + copies + ', data: {' + fieldSummary + '} }');
+        this.addTestLog('warn', 'Printer "' + printerName + '" did NOT receive this job (test mode). Opening PDF preview...');
         LabelPdfGenerator.openPdfInNewTab(pdfBytes);
         bootstrap.Modal.getInstance(document.getElementById('labelPrintModal')).hide();
         return;
       }
 
-      // ---- REAL MODE: Submit print job to server queue (print client polls & prints) ----
+      // ---- REAL MODE: Submit print job to server queue ----
+      // Server queues the job; Print Client polls /api/print/jobs/pending,
+      // claims the job, downloads the PDF, and prints to the target printer.
       const base64Pdf = this.uint8ArrayToBase64(pdfBytes);
       const response = await fetch(printClientUrl + '/api/print/jobs', {
         method: 'POST',
         headers: this.getPrintClientHeaders(true),
         mode: 'cors',
         body: JSON.stringify({
-          templateName: template.labelName,
-          printer: printer,
+          printerId: printerId,
+          printerName: systemName,
           copies: copies,
           pdfData: base64Pdf,
-          labelData: this.creatorLabelData,
-          paperSize: template.paperSize
+          templateName: template.labelName,
+          paperSize: template.paperSize,
+          labelData: this.creatorLabelData
         })
       });
 
       if (response.ok) {
         const result = await response.json();
         bootstrap.Modal.getInstance(document.getElementById('labelPrintModal')).hide();
-        alert('Printed "' + template.labelName + '" on ' + (result.printer || printer) + '!');
+        const jobId = result.jobId || result.id || '';
+        alert('Print job queued' + (jobId ? ' (ID: ' + jobId + ')' : '') + '\nPrinter: ' + printerName + '\nThe Print Client will pick it up automatically.');
       } else {
         const errData = await response.json().catch(() => null);
         const errMsg = errData && errData.error ? errData.error : 'HTTP ' + response.status;
-        console.warn('Print client returned error:', errMsg);
+        console.warn('Print job submission failed:', errMsg);
         LabelPdfGenerator.openPdfInNewTab(pdfBytes);
         bootstrap.Modal.getInstance(document.getElementById('labelPrintModal')).hide();
-        alert('Print failed: ' + errMsg + '\nPDF opened in new tab for manual printing.');
+        alert('Print job failed: ' + errMsg + '\nPDF opened in new tab for manual printing.');
       }
     } catch (err) {
       console.error('Send to print client failed:', err);
@@ -1473,12 +1512,15 @@ const LabelSystem = {
     if (this.printClientPrinters.length > 0) {
       listEl.innerHTML = this.printClientPrinters.map(p =>
         '<div class="d-flex justify-content-between align-items-center py-2 border-bottom">' +
-          '<strong>' + this.escHtml(p.name) + '</strong>' +
+          '<div>' +
+            '<strong>' + this.escHtml(p.name) + '</strong>' +
+            (p.systemName && p.systemName !== p.name ? '<br><small class="text-muted">CUPS: ' + this.escHtml(p.systemName) + '</small>' : '') +
+          '</div>' +
           '<span class="badge ' + (p.status === 'Online' ? 'bg-success' : 'bg-secondary') + '">' + (p.status || 'Unknown') + '</span>' +
         '</div>'
       ).join('');
     } else {
-      listEl.innerHTML = '<p class="text-muted">No printers detected. Ensure the Print Client is running.</p>';
+      listEl.innerHTML = '<p class="text-muted">No printers detected. Ensure the Print Client is running and registered.</p>';
     }
   },
 
