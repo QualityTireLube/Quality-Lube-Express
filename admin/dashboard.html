@@ -2734,7 +2734,7 @@
 
             <div id="label-creator-step-fill" style="display:none;">
               <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0"><i class="fas fa-tag me-2"></i>Create <span id="creator-template-name"></span> Label</h5>
+                <h5 class="mb-0"><i class="fas fa-print me-2"></i>Print <span id="creator-template-name"></span> Label</h5>
                 <button class="btn btn-outline-secondary btn-sm" onclick="LabelSystem.creatorBackToSelect()">
                   <i class="fas fa-arrow-left me-1"></i>Back to Templates
                 </button>
@@ -2742,11 +2742,39 @@
               <div id="creator-alert" class="alert alert-danger" style="display:none;"></div>
               <div class="label-creator-form-row">
                 <div class="label-creator-form-col">
-                  <div class="card">
+                  <div class="card mb-3">
                     <div class="card-body">
+                      <h6 class="mb-2"><i class="fas fa-edit me-1"></i>Label Fields</h6>
                       <div class="auto-filled-chips" id="creator-auto-chips"></div>
                       <div id="creator-fields-form">
                         <!-- Rendered by JS -->
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Print Settings Card -->
+                  <div class="card">
+                    <div class="card-body">
+                      <h6 class="mb-2"><i class="fas fa-cog me-1"></i>Print Settings</h6>
+                      <div class="mb-2">
+                        <label class="form-label small">Paper Size</label>
+                        <select class="form-select form-select-sm" id="creator-paper-size" onchange="LabelSystem.creatorPaperSizeChanged(this.value)">
+                          <!-- Populated by JS -->
+                        </select>
+                      </div>
+                      <div class="mb-2">
+                        <label class="form-label small">Printer</label>
+                        <select class="form-select form-select-sm" id="creator-printer-select" onchange="LabelSystem.creatorPrinterChanged()">
+                          <option value="" disabled>Connect to print server first</option>
+                        </select>
+                      </div>
+                      <div class="mb-2">
+                        <label class="form-label small">Copies</label>
+                        <input type="number" class="form-control form-control-sm" id="creator-copies" value="1" min="1" max="20">
+                      </div>
+                      <hr class="my-2">
+                      <h6 class="mb-2"><i class="fas fa-sync-alt me-1"></i>Field Rotation</h6>
+                      <div id="creator-rotation-controls">
+                        <!-- Populated by JS -->
                       </div>
                     </div>
                   </div>
@@ -2761,18 +2789,21 @@
                       <small class="d-block text-center text-muted mt-2" id="creator-preview-info"></small>
                     </div>
                   </div>
+                  <!-- Action Buttons -->
+                  <div class="d-flex flex-column gap-2 mt-3">
+                    <button class="btn btn-primary btn-lg w-100" onclick="LabelSystem.creatorSendToPrintClient()" id="creator-send-btn" disabled>
+                      <i class="fas fa-paper-plane me-1"></i><span id="creator-send-label">Send to Print Client</span>
+                    </button>
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-outline-primary flex-fill" onclick="LabelSystem.creatorPreviewPdf()">
+                        <i class="fas fa-eye me-1"></i>View PDF
+                      </button>
+                      <button class="btn btn-outline-success flex-fill" onclick="LabelSystem.creatorPrint()" id="creator-print-btn" disabled>
+                        <i class="fas fa-print me-1"></i><span id="creator-print-label">Browser Print</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="d-flex justify-content-end gap-2 mt-3">
-                <button class="btn btn-outline-primary" onclick="LabelSystem.creatorPreviewPdf()">
-                  <i class="fas fa-eye me-1"></i>View PDF
-                </button>
-                <button class="btn btn-success" onclick="LabelSystem.creatorPrint()" id="creator-print-btn" disabled>
-                  <i class="fas fa-print me-1"></i><span id="creator-print-label">Print Label</span>
-                </button>
-                <button class="btn btn-primary" onclick="LabelSystem.creatorSendToPrintClient()" id="creator-send-btn" disabled>
-                  <i class="fas fa-paper-plane me-1"></i><span id="creator-send-label">Send to Print Client</span>
-                </button>
               </div>
             </div>
           </div>

@@ -1048,6 +1048,12 @@ const LabelSystem = {
   useTemplate(templateId) {
     this.showView('creator');
     this.creatorSelectTemplate(templateId);
+    // Auto-connect to print server if not already connected
+    if (!this.printClientConnected) {
+      this.testPrintClientConnection().then(() => {
+        this.creatorPopulatePrinters();
+      });
+    }
   },
 
   creatorSelectTemplate(templateId) {
@@ -1081,17 +1087,119 @@ const LabelSystem = {
       .join('');
     document.getElementById('creator-auto-chips').innerHTML = chipsHtml;
 
+    // Populate paper size dropdown
+    const paperSelect = document.getElementById('creator-paper-size');
+    if (paperSelect) {
+      paperSelect.innerHTML = '';
+      Object.entries(PAPER_SIZES).forEach(([key, ps]) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = ps.name + ' (' + ps.width + '\u00d7' + ps.height + 'mm)';
+        paperSelect.appendChild(opt);
+      });
+      paperSelect.value = template.paperSize || DEFAULT_PAPER_SIZE;
+    }
+
+    // Populate printer dropdown
+    this.creatorPopulatePrinters();
+
+    // Set copies
+    const copiesEl = document.getElementById('creator-copies');
+    if (copiesEl) copiesEl.value = data['Copies to be Printed'] || '1';
+
     // Render form fields
     this.renderCreatorForm();
+
+    // Render rotation controls
+    this.renderCreatorRotationControls();
 
     // Render preview
     this.updateCreatorPreview();
 
     // Preview info
-    const pc = PAPER_SIZES[template.paperSize];
+    this.updateCreatorPreviewInfo();
+  },
+
+  updateCreatorPreviewInfo() {
+    const template = this.creatorSelectedTemplate;
+    if (!template) return;
+    const paperKey = document.getElementById('creator-paper-size') ? document.getElementById('creator-paper-size').value : template.paperSize;
+    const pc = PAPER_SIZES[paperKey];
     document.getElementById('creator-preview-info').textContent =
-      'Size: ' + (pc ? pc.width + 'x' + pc.height + pc.unit : template.width + 'x' + template.height + 'px') +
-      ' — Updates in real-time';
+      'Size: ' + (pc ? pc.width + '\u00d7' + pc.height + pc.unit : template.width + 'x' + template.height + 'px') +
+      ' \u2014 Updates in real-time';
+  },
+
+  creatorPopulatePrinters() {
+    const select = document.getElementById('creator-printer-select');
+    if (!select) return;
+    select.innerHTML = '';
+    const printers = this.printClientPrinters;
+    if (printers.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'No printers detected';
+      opt.disabled = true;
+      select.appendChild(opt);
+    }
+    printers.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.name + (p.status ? ' (' + p.status + ')' : '');
+      opt.dataset.systemName = p.systemName || p.name;
+      select.appendChild(opt);
+    });
+    // Auto-select paper size for first printer
+    if (printers.length > 0) this.creatorPrinterChanged();
+  },
+
+  creatorPrinterChanged() {
+    const printerSelect = document.getElementById('creator-printer-select');
+    const paperSelect = document.getElementById('creator-paper-size');
+    if (!printerSelect || !paperSelect) return;
+    const selOpt = printerSelect.options[printerSelect.selectedIndex];
+    const sysName = selOpt ? selOpt.dataset.systemName : '';
+    const pd = PRINTER_DEFAULTS[sysName];
+    if (pd && pd.paperSize) {
+      paperSelect.value = pd.paperSize;
+      this.creatorPaperSizeChanged(pd.paperSize);
+    }
+  },
+
+  creatorPaperSizeChanged(paperKey) {
+    // Update the template's paper size for preview
+    if (this.creatorSelectedTemplate) {
+      this.creatorSelectedTemplate.paperSize = paperKey;
+    }
+    this.updateCreatorPreview();
+    this.updateCreatorPreviewInfo();
+  },
+
+  renderCreatorRotationControls() {
+    const template = this.creatorSelectedTemplate;
+    const container = document.getElementById('creator-rotation-controls');
+    if (!template || !container) return;
+    let html = '';
+    template.fields.forEach((field, idx) => {
+      const rot = field.rotation || 0;
+      html += '<div class="d-flex align-items-center gap-2 mb-1">' +
+        '<span class="small text-truncate" style="width:100px;" title="' + this.escHtml(field.name) + '">' + this.escHtml(field.name) + '</span>' +
+        '<select class="form-select form-select-sm" style="width:80px;" onchange="LabelSystem.creatorSetFieldRotation(' + idx + ', parseInt(this.value))">' +
+          '<option value="0"' + (rot === 0 ? ' selected' : '') + '>0\u00b0</option>' +
+          '<option value="90"' + (rot === 90 ? ' selected' : '') + '>90\u00b0</option>' +
+          '<option value="180"' + (rot === 180 ? ' selected' : '') + '>180\u00b0</option>' +
+          '<option value="270"' + (rot === 270 ? ' selected' : '') + '>270\u00b0</option>' +
+        '</select>' +
+      '</div>';
+    });
+    container.innerHTML = html;
+  },
+
+  creatorSetFieldRotation(fieldIdx, degrees) {
+    const template = this.creatorSelectedTemplate;
+    if (!template || !template.fields[fieldIdx]) return;
+    template.fields[fieldIdx].rotation = degrees;
+    this.updateCreatorPreview();
   },
 
   renderCreatorForm() {
@@ -1461,59 +1569,52 @@ const LabelSystem = {
 
   creatorSendToPrintClient() {
     if (!this.creatorSelectedTemplate) return;
-    // Update modal test banner visibility
+
+    // Sync inline creator values to the print modal
     const modalBanner = document.getElementById('print-modal-test-banner');
     if (modalBanner) modalBanner.style.display = this.testMode ? 'block' : 'none';
 
-    // Open modal to select printer
-    const select = document.getElementById('print-printer-select');
-    select.innerHTML = '';
+    // Copy printer list from inline to modal
+    const inlinePrinter = document.getElementById('creator-printer-select');
+    const modalPrinter = document.getElementById('print-printer-select');
+    modalPrinter.innerHTML = inlinePrinter.innerHTML;
+    modalPrinter.value = inlinePrinter.value;
 
-    // Only list printers that were actually detected
-    const printers = this.printClientPrinters;
-    if (printers.length === 0) {
-      const opt = document.createElement('option');
-      opt.value = '';
-      opt.textContent = 'No printers detected — connect to print server';
-      opt.disabled = true;
-      select.appendChild(opt);
-    }
-    printers.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.id;  // printerId for job submission
-      opt.textContent = p.name + (p.status ? ' (' + p.status + ')' : '');
-      opt.dataset.systemName = p.systemName || p.name;
-      select.appendChild(opt);
-    });
+    // Sync copies from inline
+    const inlineCopies = document.getElementById('creator-copies');
+    document.getElementById('print-copies').value = inlineCopies ? inlineCopies.value : (this.creatorLabelData['Copies to be Printed'] || '1');
 
-    document.getElementById('print-copies').value = this.creatorLabelData['Copies to be Printed'] || '1';
-
-    // Populate paper size dropdown
-    const paperSelect = document.getElementById('print-paper-size');
-    if (paperSelect) {
-      paperSelect.innerHTML = '';
+    // Sync paper size from inline
+    const inlinePaper = document.getElementById('creator-paper-size');
+    const modalPaper = document.getElementById('print-paper-size');
+    if (modalPaper && inlinePaper) {
+      modalPaper.innerHTML = '';
       Object.entries(PAPER_SIZES).forEach(([key, ps]) => {
         const opt = document.createElement('option');
         opt.value = key;
-        opt.textContent = ps.name + ' (' + ps.width + '×' + ps.height + 'mm)';
-        paperSelect.appendChild(opt);
+        opt.textContent = ps.name + ' (' + ps.width + '\u00d7' + ps.height + 'mm)';
+        modalPaper.appendChild(opt);
       });
-      // Default to template paper size
-      paperSelect.value = (this.creatorSelectedTemplate && this.creatorSelectedTemplate.paperSize) || DEFAULT_PAPER_SIZE;
+      modalPaper.value = inlinePaper.value;
     }
 
-    // Auto-select paper size when printer changes
-    const printerSelect = document.getElementById('print-printer-select');
-    printerSelect.onchange = () => {
-      const selOpt = printerSelect.options[printerSelect.selectedIndex];
+    // Copy systemName data attributes
+    for (let i = 0; i < modalPrinter.options.length; i++) {
+      const srcOpt = inlinePrinter.options[i];
+      if (srcOpt && srcOpt.dataset.systemName) {
+        modalPrinter.options[i].dataset.systemName = srcOpt.dataset.systemName;
+      }
+    }
+
+    // Auto-select paper size when printer changes in modal
+    modalPrinter.onchange = () => {
+      const selOpt = modalPrinter.options[modalPrinter.selectedIndex];
       const sysName = selOpt ? selOpt.dataset.systemName : '';
       const pd = PRINTER_DEFAULTS[sysName];
-      if (pd && pd.paperSize && paperSelect) {
-        paperSelect.value = pd.paperSize;
+      if (pd && pd.paperSize && modalPaper) {
+        modalPaper.value = pd.paperSize;
       }
     };
-    // Trigger once for initial selection
-    if (printerSelect.options.length > 0) printerSelect.onchange();
 
     new bootstrap.Modal(document.getElementById('labelPrintModal')).show();
   },
