@@ -318,9 +318,21 @@ app.get('/api/print/stats/polling', authMiddleware, statsHandler);
 // ═══════════════════════════════════════════════════════════════════
 
 // GET /api/print/printers
-app.get('/api/print/printers', authMiddleware, async (_req, res) => {
-  try { res.json(await readAll(PRINTERS_COL)); }
-  catch (err) { res.status(500).json({ error: err.message }); }
+app.get('/api/print/printers', authMiddleware, async (req, res) => {
+  try {
+    const all = await readAll(PRINTERS_COL);
+    // Deduplicate by systemName — keep the most recently seen entry
+    const seen = {};
+    for (const p of all) {
+      const key = (p.systemName || p.name || '').toLowerCase();
+      if (!key) continue;
+      const prev = seen[key];
+      if (!prev || (p.lastSeen && (!prev.lastSeen || p.lastSeen > prev.lastSeen))) {
+        seen[key] = p;
+      }
+    }
+    res.json(Object.values(seen));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // POST /api/print/printers — register

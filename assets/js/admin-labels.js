@@ -1351,14 +1351,26 @@ const LabelSystem = {
         const data = await printersResp.json();
         // Server may return { printers: [...] } or a flat array
         const printerList = Array.isArray(data) ? data : (data.printers || []);
-        this.printClientPrinters = printerList.map(p => ({
+        // Deduplicate by systemName — keep the most recently seen entry
+        const mapped = printerList.map(p => ({
           id: p.printerId || p.id || p.name,
           name: p.name || p.systemPrinterName || 'Unknown',
-          systemName: p.systemPrinterName || p.name,
+          systemName: p.systemPrinterName || p.systemName || p.name,
           status: p.status || p.online ? 'Online' : 'Unknown',
           clientId: p.clientId || null,
-          locationId: p.locationId || null
+          locationId: p.locationId || null,
+          lastSeen: p.lastSeen || null
         }));
+        const seen = {};
+        for (const p of mapped) {
+          const key = (p.systemName || p.name || '').toLowerCase();
+          if (!key) continue;
+          const prev = seen[key];
+          if (!prev || (p.lastSeen && (!prev.lastSeen || p.lastSeen > prev.lastSeen))) {
+            seen[key] = p;
+          }
+        }
+        this.printClientPrinters = Object.values(seen);
 
         bar.classList.remove('disconnected');
         if (!this.testMode) bar.classList.remove('test-mode');
