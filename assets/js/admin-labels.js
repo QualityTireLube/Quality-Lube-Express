@@ -586,6 +586,7 @@ const LabelSystem = {
       '<div class="label-card-fields">' + fieldsHtml + moreFields + '</div>' +
       '<div class="label-card-actions">' +
         '<button class="btn btn-outline-primary btn-sm" onclick="LabelSystem.openEditor(\'' + template.id + '\')"><i class="fas fa-edit me-1"></i>Edit</button>' +
+        (!isArchived ? '<button class="btn btn-success btn-sm" onclick="LabelSystem.useTemplate(\'' + template.id + '\')"><i class="fas fa-print me-1"></i>Print</button>' : '') +
         '<div>' +
           (!isArchived ? '<button class="btn btn-outline-secondary btn-sm me-1" title="Archive" onclick="LabelSystem.archiveTemplate(\'' + template.id + '\')"><i class="fas fa-archive"></i></button>' : '') +
           (isArchived ? '<button class="btn btn-outline-success btn-sm me-1" title="Restore" onclick="LabelSystem.restoreTemplate(\'' + template.id + '\')"><i class="fas fa-undo"></i></button>' : '') +
@@ -1042,6 +1043,11 @@ const LabelSystem = {
     }
 
     container.innerHTML = html;
+  },
+
+  useTemplate(templateId) {
+    this.showView('creator');
+    this.creatorSelectTemplate(templateId);
   },
 
   creatorSelectTemplate(templateId) {
