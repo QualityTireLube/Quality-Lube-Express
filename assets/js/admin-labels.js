@@ -321,6 +321,9 @@ const LabelSystem = {
     this.loadTemplates();
     this.loadTestMode();
 
+    // Auto-connect to print server on init
+    this.testPrintClientConnection();
+
     // Listen for labels tab showing
     document.querySelectorAll('#dashboardTabs a[data-bs-toggle="tab"]').forEach(tab => {
       tab.addEventListener('shown.bs.tab', (e) => {
@@ -2064,7 +2067,7 @@ const StickerSystem = {
     this.populatePrinters();
     // If no printers yet, trigger a print server connect
     if ((LabelSystem.printClientPrinters || []).length === 0) {
-      LabelSystem.refreshPrintStatus();
+      LabelSystem.testPrintClientConnection();
     }
     this.loadStickers();
   },
