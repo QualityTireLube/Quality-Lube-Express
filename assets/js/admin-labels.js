@@ -16,9 +16,24 @@
 // ============================================================
 
 const PAPER_SIZES = {
-  'Brother-QL800': { name: 'Brother QL-800', width: 62, height: 29, unit: 'mm' },
-  'Dymo-TwinTurbo': { name: 'Dymo Twin Turbo', width: 89, height: 36, unit: 'mm' },
-  '29mmx90mm': { name: 'Brother DK1201 (90mm x 29mm)', width: 90, height: 29, unit: 'mm' }
+  '29mmx90mm':       { name: 'Brother DK1201 (90×29mm)', width: 90, height: 29, unit: 'mm' },
+  'Brother-QL800':   { name: 'Brother QL-800 (62×29mm)', width: 62, height: 29, unit: 'mm' },
+  'Dymo-TwinTurbo':  { name: 'Dymo Twin Turbo (89×36mm)', width: 89, height: 36, unit: 'mm' },
+  'Dymo-30252':      { name: 'Dymo 30252 (89×28mm)', width: 89, height: 28, unit: 'mm' },
+  'Brother-DK2205':  { name: 'Brother DK-2205 (62mm cont.)', width: 62, height: 100, unit: 'mm' },
+  'Zebra-2x1':       { name: 'Zebra 2×1" (51×25mm)', width: 51, height: 25, unit: 'mm' }
+};
+
+const DEFAULT_PAPER_SIZE = '29mmx90mm';
+
+// Map physical CUPS printer names to their default paper size key
+const PRINTER_DEFAULTS = {
+  'Brother_QL_800':                  { paperSize: '29mmx90mm',      label: 'Brother QL-800 (#1)' },
+  'Brother_QL_800_2':                { paperSize: '29mmx90mm',      label: 'Brother QL-800 (#2)' },
+  'GODEX':                           { paperSize: '29mmx90mm',      label: 'GODEX' },
+  'Canon_TS3500_series':             { paperSize: null,             label: 'Canon TS3500 (full page)' },
+  'HP_LaserJet_400_M401n__B429A7_':  { paperSize: null,             label: 'HP LaserJet 400 M401n' },
+  'HP_LaserJet_Pro_M118_M119':       { paperSize: null,             label: 'HP LaserJet Pro M118/M119' }
 };
 
 const AVAILABLE_FIELDS = [
@@ -52,6 +67,7 @@ function createField(name, yPosition) {
     textAlign: 'left',
     color: '#000000',
     value: name,
+    rotation: 0,
     showInForm: true
   };
 }
@@ -68,56 +84,56 @@ function getPredefinedTemplates() {
     {
       id: generateId(), labelName: 'Tire Check-In',
       fields: [createField('Created By', 15), createField('Created Date', 35), createField('Invoice #', 55), createField('Tire Size', 75), createField('Copies to be Printed', 95)],
-      paperSize: 'Brother-QL800', width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
       copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
     },
     {
       id: generateId(), labelName: 'Tires Restock',
       fields: [createField('Created By', 15), createField('Created Date', 35), createField('Tire Size', 55), createField('Bin/Location', 75), createField('Copies to be Printed', 95)],
-      paperSize: 'Brother-QL800', width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
       copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
     },
     {
       id: generateId(), labelName: 'Tire Completed',
       fields: [createField('Created By', 15), createField('Created Date', 35), createField('Invoice #', 55), createField('Tire Size', 75), createField('Copies to be Printed', 95)],
-      paperSize: 'Brother-QL800', width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
       copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
     },
     {
       id: generateId(), labelName: 'Tire Warranty',
       fields: [createField('Created By', 15), createField('Created Date', 35), createField('Invoice #', 55), createField('Tire Size', 75), createField('Copies to be Printed', 95)],
-      paperSize: 'Brother-QL800', width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
       copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
     },
     {
       id: generateId(), labelName: 'Tire Return',
       fields: [createField('Created By', 15), createField('Created Date', 35), createField('Tire Size', 55), createField('Copies to be Printed', 75)],
-      paperSize: 'Brother-QL800', width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
       copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
     },
     // PARTS TEMPLATES
     {
       id: generateId(), labelName: 'Parts Check-In',
       fields: [createField('Created By', 10), createField('Created Date', 25), createField('Invoice #', 40), createField('Part Number', 55), createField('Vendor Part Number', 70), createField('Copies to be Printed', 85)],
-      paperSize: 'Brother-QL800', width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
       copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
     },
     {
       id: generateId(), labelName: 'Parts Restock',
       fields: [createField('Created By', 10), createField('Created Date', 25), createField('Part Number', 40), createField('Vendor Part Number', 55), createField('Bin/Location', 70), createField('Copies to be Printed', 85)],
-      paperSize: 'Brother-QL800', width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
       copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
     },
     {
       id: generateId(), labelName: 'Parts Warranty',
       fields: [createField('Created By', 15), createField('Created Date', 35), createField('Invoice #', 55), createField('Part Number', 75), createField('Vendor', 95), createField('Copies to be Printed', 115)],
-      paperSize: 'Brother-QL800', width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
       copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
     },
     {
       id: generateId(), labelName: 'Parts Return',
       fields: [createField('Created By', 15), createField('Created Date', 35), createField('Invoice #', 55), createField('Part Number', 75), createField('Vendor', 95)],
-      paperSize: 'Brother-QL800', width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
       copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
     }
   ];
@@ -169,11 +185,15 @@ const LabelPdfGenerator = {
 
         const y = pageHeight - (field.position.y * scaleY) - fontSize;
 
+        const rotation = field.rotation || 0;
+        const rotateRadians = (rotation * Math.PI) / 180;
+
         page.drawText(value, {
           x, y,
           size: fontSize,
           font: selectedFont,
-          color: this.parseColor(field.color || '#000000')
+          color: this.parseColor(field.color || '#000000'),
+          rotate: PDFLib.degrees(rotation)
         });
       }
     }
@@ -202,10 +222,18 @@ const LabelPdfGenerator = {
       const value = this.getFieldValue(field, labelData);
       if (!value) continue;
 
+      ctx.save();
       ctx.font = (field.fontSize || 10) + 'px ' + (field.fontFamily || 'Arial');
       ctx.fillStyle = field.color || '#000000';
       ctx.textAlign = field.textAlign || 'left';
-      ctx.fillText(value, field.position.x, field.position.y + (field.fontSize || 10));
+      if (field.rotation) {
+        ctx.translate(field.position.x, field.position.y + (field.fontSize || 10));
+        ctx.rotate((field.rotation * Math.PI) / 180);
+        ctx.fillText(value, 0, 0);
+      } else {
+        ctx.fillText(value, field.position.x, field.position.y + (field.fontSize || 10));
+      }
+      ctx.restore();
     }
 
     return canvas.toDataURL('image/png');
@@ -628,7 +656,7 @@ const LabelSystem = {
       this.editorTemplate = null;
       this.editorFields = [];
       document.getElementById('editor-label-name').value = '';
-      document.getElementById('editor-paper-size').value = 'Brother-QL800';
+      document.getElementById('editor-paper-size').value = DEFAULT_PAPER_SIZE;
       document.getElementById('editor-copies').value = 1;
       document.getElementById('editor-title').textContent = 'Create New Label Template';
     }
@@ -684,6 +712,10 @@ const LabelSystem = {
         el.style.fontFamily = field.fontFamily || 'Arial';
         el.style.color = field.color || '#000000';
         el.style.textAlign = field.textAlign || 'left';
+        if (field.rotation) {
+          el.style.transform = 'rotate(' + field.rotation + 'deg)';
+          el.style.transformOrigin = 'left top';
+        }
         el.textContent = field.value || field.name;
         el.dataset.fieldId = field.id;
         el.onclick = (e) => { e.stopPropagation(); this.editorSelectField(field.id); };
@@ -748,6 +780,7 @@ const LabelSystem = {
       textAlign: 'left',
       color: '#000000',
       value: name,
+      rotation: 0,
       showInForm: true
     };
     this.editorFields.push(newField);
@@ -794,6 +827,8 @@ const LabelSystem = {
     document.getElementById('prop-font-size').value = f.fontSize || 12;
     document.getElementById('prop-font-size-val').textContent = f.fontSize || 12;
     document.getElementById('prop-color').value = f.color || '#000000';
+    document.getElementById('prop-rotation').value = f.rotation || 0;
+    document.getElementById('prop-rotation-val').textContent = (f.rotation || 0) + '°';
 
     // Update alignment buttons
     ['left', 'center', 'right'].forEach(a => {
@@ -811,6 +846,8 @@ const LabelSystem = {
       field.position.x = Math.max(0, value);
     } else if (prop === 'y') {
       field.position.y = Math.max(0, value);
+    } else if (prop === 'rotation') {
+      field.rotation = parseInt(value) || 0;
     } else {
       field[prop] = value;
     }
@@ -1444,6 +1481,34 @@ const LabelSystem = {
     });
 
     document.getElementById('print-copies').value = this.creatorLabelData['Copies to be Printed'] || '1';
+
+    // Populate paper size dropdown
+    const paperSelect = document.getElementById('print-paper-size');
+    if (paperSelect) {
+      paperSelect.innerHTML = '';
+      Object.entries(PAPER_SIZES).forEach(([key, ps]) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = ps.name + ' (' + ps.width + '×' + ps.height + 'mm)';
+        paperSelect.appendChild(opt);
+      });
+      // Default to template paper size
+      paperSelect.value = (this.creatorSelectedTemplate && this.creatorSelectedTemplate.paperSize) || DEFAULT_PAPER_SIZE;
+    }
+
+    // Auto-select paper size when printer changes
+    const printerSelect = document.getElementById('print-printer-select');
+    printerSelect.onchange = () => {
+      const selOpt = printerSelect.options[printerSelect.selectedIndex];
+      const sysName = selOpt ? selOpt.dataset.systemName : '';
+      const pd = PRINTER_DEFAULTS[sysName];
+      if (pd && pd.paperSize && paperSelect) {
+        paperSelect.value = pd.paperSize;
+      }
+    };
+    // Trigger once for initial selection
+    if (printerSelect.options.length > 0) printerSelect.onchange();
+
     new bootstrap.Modal(document.getElementById('labelPrintModal')).show();
   },
 
@@ -1457,6 +1522,8 @@ const LabelSystem = {
     const printerName = selectedOption ? selectedOption.textContent.split(' (')[0] : printerId;
     const systemName = selectedOption ? (selectedOption.dataset.systemName || printerName) : printerName;
     const copies = parseInt(document.getElementById('print-copies').value) || 1;
+    const paperSizeEl = document.getElementById('print-paper-size');
+    const selectedPaperSize = paperSizeEl ? paperSizeEl.value : (template.paperSize || DEFAULT_PAPER_SIZE);
     const printClientUrl = this.getPrintClientUrl();
 
     try {
@@ -1491,7 +1558,7 @@ const LabelSystem = {
           copies: copies,
           pdfData: base64Pdf,
           templateName: template.labelName,
-          paperSize: template.paperSize,
+          paperSize: selectedPaperSize,
           labelData: this.creatorLabelData
         })
       });

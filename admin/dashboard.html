@@ -3053,9 +3053,12 @@
             <div class="mb-2">
               <label class="form-label small">Paper Size</label>
               <select class="form-select form-select-sm" id="editor-paper-size">
-                <option value="Brother-QL800">Brother QL-800 (62x29mm)</option>
-                <option value="Dymo-TwinTurbo">Dymo Twin Turbo (89x36mm)</option>
-                <option value="29mmx90mm">Brother DK1201 (90x29mm)</option>
+                <option value="29mmx90mm" selected>Brother DK1201 (90×29mm)</option>
+                <option value="Brother-QL800">Brother QL-800 (62×29mm)</option>
+                <option value="Dymo-TwinTurbo">Dymo Twin Turbo (89×36mm)</option>
+                <option value="Dymo-30252">Dymo 30252 (89×28mm)</option>
+                <option value="Brother-DK2205">Brother DK-2205 (62mm cont.)</option>
+                <option value="Zebra-2x1">Zebra 2×1" (51×25mm)</option>
               </select>
             </div>
             <div class="mb-2">
@@ -3154,6 +3157,13 @@
                   <input type="color" class="form-control form-control-sm form-control-color" id="prop-color" value="#000000" style="width:100%;" onchange="LabelSystem.editorUpdateFieldProp('color', this.value)">
                 </div>
                 <div class="mb-2">
+                  <label class="form-label small">Rotation: <span id="prop-rotation-val">0°</span></label>
+                  <input type="range" class="form-range" id="prop-rotation" min="0" max="270" step="90" value="0" oninput="LabelSystem.editorUpdateFieldProp('rotation', parseInt(this.value)); document.getElementById('prop-rotation-val').textContent=this.value+'°';">
+                  <div class="d-flex justify-content-between" style="font-size:0.65rem; color:#999;">
+                    <span>0°</span><span>90°</span><span>180°</span><span>270°</span>
+                  </div>
+                </div>
+                <div class="mb-2">
                   <label class="form-label small">Quick Position</label>
                   <div class="quick-pos-grid" id="quick-pos-grid">
                     <!-- Populated by JS -->
@@ -3192,6 +3202,17 @@
             <div class="mb-3">
               <label class="form-label">Copies</label>
               <input type="number" class="form-control" id="print-copies" value="1" min="1" max="20">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Paper Size</label>
+              <select class="form-select" id="print-paper-size">
+                <option value="29mmx90mm" selected>Brother DK1201 (90×29mm)</option>
+                <option value="Brother-QL800">Brother QL-800 (62×29mm)</option>
+                <option value="Dymo-TwinTurbo">Dymo Twin Turbo (89×36mm)</option>
+                <option value="Dymo-30252">Dymo 30252 (89×28mm)</option>
+                <option value="Brother-DK2205">Brother DK-2205 (62mm cont.)</option>
+                <option value="Zebra-2x1">Zebra 2×1" (51×25mm)</option>
+              </select>
             </div>
           </div>
           <div class="modal-footer">
