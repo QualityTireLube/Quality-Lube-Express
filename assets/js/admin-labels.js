@@ -1991,14 +1991,19 @@ const LabelSystem = {
 
 // ============================================================
 // STATIC STICKER SYSTEM (Oil Change Stickers)
-// Ported from Inspectionapp sticker system
+// Ported from Inspectionapp sticker system — all sticker types with QR codes
 // ============================================================
 
 const STICKER_PAPER_SIZES = {
-  'Dymo200i':      { name: 'Dymo 200i Label', width: 46.1, height: 63.5 },
-  'DymoStd':       { name: 'Dymo Standard Label', width: 25.4, height: 76.2 },
-  'BrotherSmall':  { name: 'Brother Small Label', width: 36, height: 89 },
-  '29mmx90mm':     { name: 'Brother DK1201', width: 90, height: 29 }
+  'Dymo200i':      { name: 'Dymo 200i Label',       width: 46.1, height: 63.5 },
+  'DymoStd':       { name: 'Dymo Standard Label',    width: 25.4, height: 76.2 },
+  'BrotherSmall':  { name: 'Brother Small Label',     width: 36,   height: 89 },
+  '29mmx90mm':     { name: 'Brother DK1201',          width: 90,   height: 29 },
+  'Letter':        { name: 'Letter (8.5×11)',          width: 216,  height: 279 },
+  'A4':            { name: 'A4',                       width: 210,  height: 297 },
+  'Legal':         { name: 'Legal (8.5×14)',           width: 216,  height: 356 },
+  '4x6':           { name: '4×6 in',                   width: 102,  height: 152 },
+  '5x7':           { name: '5×7 in',                   width: 127,  height: 178 }
 };
 
 const OIL_TYPES = {
@@ -2009,19 +2014,31 @@ const OIL_TYPES = {
   'delvac':  { name: 'Delvac 1',         durationDays: 365, mileageInterval: 10000 }
 };
 
+// Premade sticker templates — one per oil type + custom
+const STICKER_TEMPLATES = {
+  'oil_conv':   { name: 'Conventional Oil Sticker', oilTypeKey: 'conv',   description: 'Standard oil change reminder sticker', color: '#4a90d9' },
+  'oil_super':  { name: 'Super Synthetic Sticker',  oilTypeKey: 'super',  description: 'Extended synthetic oil change sticker', color: '#e67e22' },
+  'oil_mobil1': { name: 'Mobil 1 Sticker',          oilTypeKey: 'mobil1', description: 'Premium full synthetic oil change sticker', color: '#e74c3c' },
+  'oil_rotella':{ name: 'Rotella Sticker',           oilTypeKey: 'rotella', description: 'Diesel engine Rotella oil sticker', color: '#27ae60' },
+  'oil_delvac': { name: 'Delvac 1 Sticker',         oilTypeKey: 'delvac', description: 'Heavy-duty diesel Delvac 1 sticker', color: '#8e44ad' },
+  'oil_custom': { name: 'Custom Sticker',            oilTypeKey: '',      description: 'Blank — choose oil type manually', color: '#95a5a6' }
+};
+
 const STICKER_LAYOUT = {
   fontSize: 8,
   fontFamily: 'Helvetica',
   margins: { top: 2, bottom: 2, left: 2, right: 2 },
+  qrCodeSize: 10, // mm
+  qrCodePosition: { x: 50, y: 78 }, // percentage of available area
   elements: [
-    { id: 'header',         label: 'Header',          content: 'Next Service Due',  x: 50, y: 18, fontSize: 1.25, bold: true,  align: 'center' },
-    { id: 'serviceDate',    label: 'Service Date',    content: '{serviceDate}',     x: 10, y: 26, fontSize: 1.0,  bold: false, align: 'left' },
-    { id: 'serviceMileage', label: 'Service Mileage', content: '{serviceMileage}',  x: 90, y: 26, fontSize: 1.0,  bold: false, align: 'right' },
-    { id: 'oilType',        label: 'Oil Type',        content: '{oilType}',         x: 50, y: 32, fontSize: 1.0,  bold: false, align: 'center' },
-    { id: 'companyName',    label: 'Company Name',    content: 'Quality Lube Express', x: 50, y: 40, fontSize: 1.25, bold: true,  align: 'center' },
-    { id: 'address',        label: 'Address',         content: '3617 HWY 19 Zachary LA 70791', x: 50, y: 45, fontSize: 0.7, bold: false, align: 'center' },
-    { id: 'message',        label: 'Thank You',       content: 'THANK YOU',          x: 50, y: 55, fontSize: 1.25, bold: true,  align: 'center' },
-    { id: 'decodedDetails', label: 'Vehicle Details',  content: '{decodedDetails}',  x: 50, y: 60, fontSize: 0.7,  bold: false, align: 'center' }
+    { id: 'header',         label: 'Header',          content: 'Next Service Due',  x: 50, y: 10, fontSize: 1.25, bold: true,  align: 'center' },
+    { id: 'serviceDate',    label: 'Service Date',    content: '{serviceDate}',     x: 10, y: 18, fontSize: 1.0,  bold: false, align: 'left' },
+    { id: 'serviceMileage', label: 'Service Mileage', content: '{serviceMileage}',  x: 90, y: 18, fontSize: 1.0,  bold: false, align: 'right' },
+    { id: 'oilType',        label: 'Oil Type',        content: '{oilType}',         x: 50, y: 24, fontSize: 1.0,  bold: false, align: 'center' },
+    { id: 'companyName',    label: 'Company Name',    content: 'Quality Lube Express', x: 50, y: 32, fontSize: 1.25, bold: true,  align: 'center' },
+    { id: 'address',        label: 'Address',         content: '3617 HWY 19 Zachary LA 70791', x: 50, y: 37, fontSize: 0.7, bold: false, align: 'center' },
+    { id: 'message',        label: 'Thank You',       content: 'THANK YOU',          x: 50, y: 44, fontSize: 1.25, bold: true,  align: 'center' },
+    { id: 'decodedDetails', label: 'Vehicle Details',  content: '{decodedDetails}',  x: 50, y: 50, fontSize: 0.7,  bold: false, align: 'center' }
   ]
 };
 
@@ -2029,17 +2046,38 @@ const StickerSystem = {
   stickers: [],
   decodedVin: null,
   initialized: false,
+  activeTemplate: null,
+  qrDataUrlCache: {},
 
   init() {
     if (!this.initialized) {
       this.initialized = true;
-      // Set default date to today
       const dateEl = document.getElementById('sticker-date');
       if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
-      // Populate printers from LabelSystem
       this.populatePrinters();
     }
     this.loadStickers();
+  },
+
+  // ---- Templates ----
+  useTemplate(templateId) {
+    const tpl = STICKER_TEMPLATES[templateId];
+    if (!tpl) return;
+    this.activeTemplate = templateId;
+    this.showCreateForm();
+    // Pre-select oil type
+    if (tpl.oilTypeKey) {
+      document.getElementById('sticker-oil-type').value = tpl.oilTypeKey;
+    }
+    // Show template badge
+    const badge = document.getElementById('sticker-template-badge');
+    const badgeName = document.getElementById('sticker-template-name-badge');
+    if (badge && badgeName) {
+      badgeName.innerHTML = '<i class="fas fa-oil-can me-1"></i>' + this.esc(tpl.name);
+      badgeName.style.background = tpl.color;
+      badge.style.display = 'block';
+    }
+    this.updatePreview();
   },
 
   // ---- Firebase CRUD ----
@@ -2100,10 +2138,14 @@ const StickerSystem = {
     document.getElementById('sticker-oil-type').value = '';
     document.getElementById('sticker-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('sticker-copies').value = '1';
+    document.getElementById('sticker-qr-enabled').checked = true;
     document.getElementById('sticker-vehicle-info').style.display = 'none';
     document.getElementById('sticker-vin-status').textContent = 'Enter full 17-character VIN';
     document.getElementById('sticker-preview-box').innerHTML = '<p class="text-muted">Fill in the form to see a preview</p>';
+    const badge = document.getElementById('sticker-template-badge');
+    if (badge) badge.style.display = 'none';
     this.decodedVin = null;
+    this.activeTemplate = null;
     this.updateButtons();
   },
 
@@ -2164,7 +2206,11 @@ const StickerSystem = {
         engineL: r.DisplacementL || '',
         engineCylinders: r.EngineCylinders || '',
         trim: r.Trim || '',
-        bodyType: r.BodyClass || ''
+        bodyType: r.BodyClass || '',
+        driveType: r.DriveType || '',
+        transmission: r.TransmissionStyle || '',
+        fuelType: r.FuelTypePrimary || '',
+        manufacturer: r.Manufacturer || ''
       };
       const parts = [this.decodedVin.year, this.decodedVin.make, this.decodedVin.model].filter(Boolean);
       if (this.decodedVin.engineL) parts.push(this.decodedVin.engineL + 'L');
@@ -2188,6 +2234,7 @@ const StickerSystem = {
     const oilTypeKey = document.getElementById('sticker-oil-type').value;
     const mileageStr = document.getElementById('sticker-mileage').value;
     const dateStr = document.getElementById('sticker-date').value || new Date().toISOString().split('T')[0];
+    const qrEnabled = document.getElementById('sticker-qr-enabled').checked;
 
     if (!vin || vin.length !== 17 || !oilTypeKey || !mileageStr) return null;
 
@@ -2197,7 +2244,6 @@ const StickerSystem = {
     const nextServiceDate = new Date(serviceDate.getTime() + oilType.durationDays * 86400000);
     const nextServiceMileage = mileage + oilType.mileageInterval;
 
-    // Build vehicle details string
     let vehicleDetails = '';
     if (this.decodedVin) {
       const p = [this.decodedVin.year, this.decodedVin.make, this.decodedVin.model].filter(Boolean);
@@ -2214,7 +2260,10 @@ const StickerSystem = {
       vehicleDetails,
       decodedVin: this.decodedVin || {},
       companyName: 'Quality Lube Express',
-      address: '3617 HWY 19 Zachary LA 70791'
+      address: '3617 HWY 19 Zachary LA 70791',
+      qrCode: vin,         // QR encodes VIN (matches Inspection App)
+      qrEnabled: qrEnabled,
+      templateId: this.activeTemplate || 'oil_custom'
     };
   },
 
@@ -2229,7 +2278,28 @@ const StickerSystem = {
     if (saveBtn) saveBtn.disabled = !valid;
   },
 
-  updatePreview() {
+  // ---- QR Code Generation ----
+  async generateQrDataUrl(text, size) {
+    // Uses the qrcode CDN library (same as Inspection App)
+    if (!text) return null;
+    const cacheKey = text + '_' + size;
+    if (this.qrDataUrlCache[cacheKey]) return this.qrDataUrlCache[cacheKey];
+    try {
+      const dataUrl = await QRCode.toDataURL(text, {
+        width: size || 100,
+        margin: 0,
+        color: { dark: '#000000', light: '#ffffff' },
+        errorCorrectionLevel: 'M'
+      });
+      this.qrDataUrlCache[cacheKey] = dataUrl;
+      return dataUrl;
+    } catch (err) {
+      console.error('QR generation failed:', err);
+      return null;
+    }
+  },
+
+  async updatePreview() {
     this.updateButtons();
     const data = this.getStickerData();
     const box = document.getElementById('sticker-preview-box');
@@ -2238,7 +2308,18 @@ const StickerSystem = {
       return;
     }
 
-    // Render preview as styled HTML card
+    let qrHtml = '';
+    if (data.qrEnabled && data.vin) {
+      try {
+        const qrUrl = await this.generateQrDataUrl(data.vin, 100);
+        if (qrUrl) {
+          qrHtml = '<div style="margin-top:4px;"><img src="' + qrUrl + '" style="width:50px; height:50px; image-rendering:pixelated;" alt="QR"></div>';
+        }
+      } catch (e) {
+        qrHtml = '<div style="margin-top:4px; width:50px; height:50px; border:1px dashed #999; display:flex; align-items:center; justify-content:center; font-size:7px; color:#999;">QR</div>';
+      }
+    }
+
     box.innerHTML =
       '<div style="background:#fff; border:2px solid #333; border-radius:6px; padding:10px; width:180px; font-family:Calibri,Arial,sans-serif; text-align:center; font-size:11px;">' +
         '<div style="font-weight:bold; font-size:13px; margin-bottom:4px;">Next Service Due</div>' +
@@ -2250,50 +2331,82 @@ const StickerSystem = {
         '<div style="font-weight:bold; font-size:12px; margin-bottom:1px;">Quality Lube Express</div>' +
         '<div style="font-size:8px; color:#666; margin-bottom:3px;">3617 HWY 19 Zachary LA 70791</div>' +
         '<div style="font-weight:bold; font-size:12px; margin-bottom:3px;">THANK YOU</div>' +
-        (data.vehicleDetails ? '<div style="font-size:8px; color:#666;">' + this.esc(data.vehicleDetails) + '</div>' : '') +
+        (data.vehicleDetails ? '<div style="font-size:8px; color:#666; margin-bottom:3px;">' + this.esc(data.vehicleDetails) + '</div>' : '') +
+        qrHtml +
       '</div>';
   },
 
-  // ---- PDF Generation ----
+  // ---- PDF Generation with QR ----
   async generateStickerPdf(data, copies) {
     const { PDFDocument, rgb, StandardFonts } = PDFLib;
     const pdfDoc = await PDFDocument.create();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    const paperKey = document.getElementById('sticker-paper-size').value;
+    const paperEl = document.getElementById('sticker-paper-size');
+    const paperKey = paperEl ? paperEl.value : 'Dymo200i';
     const paper = STICKER_PAPER_SIZES[paperKey] || STICKER_PAPER_SIZES['Dymo200i'];
     const mmToPt = (mm) => mm * 2.834645669;
     const pw = mmToPt(paper.width);
     const ph = mmToPt(paper.height);
     const baseFontSize = STICKER_LAYOUT.fontSize;
 
+    // Generate QR code PNG if enabled
+    let qrImgEmbed = null;
+    const qrEnabled = data.qrEnabled !== false;
+    if (qrEnabled && data.vin) {
+      try {
+        const qrDataUrl = await this.generateQrDataUrl(data.vin, STICKER_LAYOUT.qrCodeSize * 10);
+        if (qrDataUrl) {
+          const qrPngBytes = Uint8Array.from(atob(qrDataUrl.split(',')[1]), c => c.charCodeAt(0));
+          qrImgEmbed = await pdfDoc.embedPng(qrPngBytes);
+        }
+      } catch (e) {
+        console.warn('QR embed failed:', e);
+      }
+    }
+
     copies = copies || 1;
 
     for (let c = 0; c < copies; c++) {
       const page = pdfDoc.addPage([pw, ph]);
+      const mL = mmToPt(STICKER_LAYOUT.margins.left);
+      const mR = mmToPt(STICKER_LAYOUT.margins.right);
+      const mT = mmToPt(STICKER_LAYOUT.margins.top);
+      const mB = mmToPt(STICKER_LAYOUT.margins.bottom);
+      const availW = pw - mL - mR;
+      const availH = ph - mT - mB;
 
+      // Draw text elements
       for (const el of STICKER_LAYOUT.elements) {
         let text = el.content
-          .replace('{serviceDate}', data.nextServiceDate)
-          .replace('{serviceMileage}', data.nextServiceMileage + ' mi')
-          .replace('{oilType}', data.oilTypeName)
+          .replace('{serviceDate}', data.nextServiceDate || '')
+          .replace('{serviceMileage}', (data.nextServiceMileage || '') + ' mi')
+          .replace('{oilType}', data.oilTypeName || '')
           .replace('{decodedDetails}', data.vehicleDetails || '');
 
         if (!text.trim()) continue;
 
         const fs = baseFontSize * el.fontSize;
         const usedFont = el.bold ? boldFont : font;
-        const availW = pw - mmToPt(STICKER_LAYOUT.margins.left) - mmToPt(STICKER_LAYOUT.margins.right);
-        const availH = ph - mmToPt(STICKER_LAYOUT.margins.top) - mmToPt(STICKER_LAYOUT.margins.bottom);
-        let x = mmToPt(STICKER_LAYOUT.margins.left) + (el.x / 100) * availW;
-        const y = ph - mmToPt(STICKER_LAYOUT.margins.top) - (el.y / 100) * availH;
+        let x = mL + (el.x / 100) * availW;
+        const y = ph - mT - (el.y / 100) * availH;
 
         const tw = usedFont.widthOfTextAtSize(text, fs);
         if (el.align === 'center') x -= tw / 2;
         else if (el.align === 'right') x -= tw;
 
         page.drawText(text, { x, y, size: fs, font: usedFont, color: rgb(0, 0, 0) });
+      }
+
+      // Draw QR code
+      if (qrImgEmbed) {
+        const qrSizePt = mmToPt(STICKER_LAYOUT.qrCodeSize);
+        const qrX = mL + (STICKER_LAYOUT.qrCodePosition.x / 100) * availW - qrSizePt / 2;
+        const qrY = ph - mT - (STICKER_LAYOUT.qrCodePosition.y / 100) * availH - qrSizePt / 2;
+        page.drawImage(qrImgEmbed, {
+          x: qrX, y: qrY, width: qrSizePt, height: qrSizePt
+        });
       }
     }
 
@@ -2318,7 +2431,6 @@ const StickerSystem = {
       await this.saveSticker(data);
       this.hideCreateForm();
       await this.loadStickers();
-      // Brief success toast
       const alertEl = document.getElementById('sticker-alert');
       alertEl.className = 'alert alert-success';
       alertEl.textContent = 'Sticker saved!';
@@ -2347,14 +2459,15 @@ const StickerSystem = {
     const printerName = selectedOption ? selectedOption.textContent.split(' (')[0] : printerId;
     const systemName = selectedOption ? (selectedOption.dataset.systemName || printerName) : printerName;
     const copies = parseInt(document.getElementById('sticker-copies').value) || 1;
-    const paperKey = document.getElementById('sticker-paper-size').value;
+    const paperEl = document.getElementById('sticker-paper-size');
+    const paperKey = paperEl ? paperEl.value : 'Dymo200i';
 
     try {
       const pdfBytes = await this.generateStickerPdf(data, copies);
 
       if (LabelSystem.testMode) {
-        LabelSystem.addTestLog('success', 'STICKER PRINT INTERCEPTED \u2014 VIN: ' + data.vin + ' | Oil: ' + data.oilTypeName + ' | Copies: ' + copies);
-        LabelSystem.addTestLog('info', 'PDF: ' + (pdfBytes.length / 1024).toFixed(1) + ' KB | Printer: ' + printerName);
+        LabelSystem.addTestLog('success', 'STICKER PRINT INTERCEPTED \u2014 VIN: ' + data.vin + ' | Oil: ' + data.oilTypeName + ' | QR: ' + (data.qrEnabled ? 'YES' : 'NO') + ' | Copies: ' + copies);
+        LabelSystem.addTestLog('info', 'PDF: ' + (pdfBytes.length / 1024).toFixed(1) + ' KB | Printer: ' + printerName + ' | Template: ' + (data.templateId || 'custom'));
         LabelPdfGenerator.openPdfInNewTab(pdfBytes);
         return;
       }
@@ -2370,7 +2483,11 @@ const StickerSystem = {
           pdfData: base64Pdf,
           templateName: 'Oil Change Sticker - ' + data.vin,
           paperSize: paperKey,
-          labelData: { vin: data.vin, oilType: data.oilTypeName, mileage: data.mileage }
+          labelData: {
+            vin: data.vin, oilType: data.oilTypeName,
+            mileage: data.mileage, qrCode: data.qrCode,
+            templateId: data.templateId
+          }
         })
       });
 
@@ -2378,7 +2495,6 @@ const StickerSystem = {
         const result = await response.json();
         const jobId = result.jobId || result.id || '';
         alert('Sticker print job queued' + (jobId ? ' (ID: ' + jobId + ')' : '') + '\nPrinter: ' + printerName);
-        // Save the sticker as printed
         await this.saveSticker({ ...data, printed: true });
         await this.loadStickers();
       } else {
@@ -2411,11 +2527,17 @@ const StickerSystem = {
       const oilName = s.oilTypeName || (OIL_TYPES[s.oilTypeKey] ? OIL_TYPES[s.oilTypeKey].name : s.oilTypeKey);
       const created = s.createdDate ? new Date(s.createdDate).toLocaleDateString() : '\u2014';
       const vehicleTxt = s.vehicleDetails || '';
+      const tplName = s.templateId && STICKER_TEMPLATES[s.templateId] ? STICKER_TEMPLATES[s.templateId].name : '';
+      const tplColor = s.templateId && STICKER_TEMPLATES[s.templateId] ? STICKER_TEMPLATES[s.templateId].color : '#6c757d';
       return '<div class="label-template-card">' +
         '<div class="label-card-header">' +
           '<h5><i class="fas fa-oil-can me-1"></i>' + this.esc(s.vin || '') + '</h5>' +
         '</div>' +
-        (s.printed ? '<span class="badge bg-success mb-2">Printed</span>' : '<span class="badge bg-warning text-dark mb-2">Not Printed</span>') +
+        '<div class="d-flex gap-1 mb-2">' +
+          (s.printed ? '<span class="badge bg-success">Printed</span>' : '<span class="badge bg-warning text-dark">Not Printed</span>') +
+          (s.qrEnabled !== false ? '<span class="badge bg-info">QR</span>' : '') +
+          (tplName ? '<span class="badge" style="background:' + tplColor + ';">' + this.esc(tplName.replace(' Sticker', '')) + '</span>' : '') +
+        '</div>' +
         '<div class="label-card-info">' +
           '<p><strong>Oil Type:</strong> ' + this.esc(oilName) + '</p>' +
           '<p><strong>Mileage:</strong> ' + (s.mileage || 0).toLocaleString() + '</p>' +
