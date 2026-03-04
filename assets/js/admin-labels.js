@@ -2400,14 +2400,16 @@ const StickerSystem = {
     if (!select) return;
     select.innerHTML = '';
     const printers = LabelSystem.printClientPrinters || [];
-    if (printers.length === 0) {
+    // Only show GODEX printers for static stickers
+    const godexPrinters = printers.filter(p => (p.name || '').toUpperCase().includes('GODEX') || (p.systemName || '').toUpperCase().includes('GODEX'));
+    if (godexPrinters.length === 0) {
       const opt = document.createElement('option');
       opt.value = '';
-      opt.textContent = 'No printers detected';
+      opt.textContent = printers.length > 0 ? '\u26a0 No GODEX printer found' : 'No printers detected';
       opt.disabled = true;
       select.appendChild(opt);
     }
-    printers.forEach(p => {
+    godexPrinters.forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.id;
       opt.textContent = p.name + (p.status ? ' (' + p.status + ')' : '');
@@ -2421,9 +2423,11 @@ const StickerSystem = {
     document.getElementById('sticker-vin').value = clean;
     const btn = document.getElementById('sticker-decode-btn');
     if (clean.length === 17) {
-      document.getElementById('sticker-vin-status').textContent = 'VIN ready \u2014 click Decode';
-      document.getElementById('sticker-vin-status').className = 'text-success small';
+      document.getElementById('sticker-vin-status').textContent = 'Auto-decoding...';
+      document.getElementById('sticker-vin-status').className = 'text-info small';
       btn.disabled = false;
+      // Auto-decode as soon as 17 characters are entered
+      this.decodeVin();
     } else {
       document.getElementById('sticker-vin-status').textContent = clean.length + '/17 characters';
       document.getElementById('sticker-vin-status').className = 'text-muted small';
