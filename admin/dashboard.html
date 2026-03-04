@@ -2655,6 +2655,9 @@
               <button class="btn btn-outline-secondary btn-sm" onclick="LabelSystem.showView('creator')" id="label-nav-creator">
                 <i class="fas fa-plus-circle me-1"></i>Create Label
               </button>
+              <button class="btn btn-outline-secondary btn-sm" onclick="LabelSystem.showView('stickers')" id="label-nav-stickers">
+                <i class="fas fa-sticky-note me-1"></i>Stickers
+              </button>
               <button class="btn btn-outline-secondary btn-sm" onclick="LabelSystem.showView('settings')" id="label-nav-settings">
                 <i class="fas fa-cog me-1"></i>Settings
               </button>
@@ -2804,6 +2807,128 @@
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIEW: Static Stickers -->
+          <div class="label-view" id="label-view-stickers">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Static Stickers</h5>
+              <button class="btn btn-primary btn-sm" onclick="StickerSystem.showCreateForm()">
+                <i class="fas fa-plus me-1"></i>New Oil Change Sticker
+              </button>
+            </div>
+            <p class="text-muted small">Oil change service stickers — enter VIN, mileage, oil type, and print. Same stickers from the Inspection App.</p>
+
+            <!-- Sticker Create Form -->
+            <div id="sticker-create-form" style="display:none;">
+              <div class="card mb-3">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0"><i class="fas fa-oil-can me-2"></i>Create Oil Change Sticker</h6>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="StickerSystem.hideCreateForm()">
+                      <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                  </div>
+                  <div id="sticker-alert" class="alert alert-danger" style="display:none;"></div>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <div class="mb-3">
+                        <label class="form-label">VIN <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                          <input type="text" class="form-control" id="sticker-vin" maxlength="17" placeholder="Enter 17-character VIN" oninput="StickerSystem.onVinInput(this.value)" style="font-family:monospace; text-transform:uppercase;">
+                          <button class="btn btn-outline-primary" onclick="StickerSystem.decodeVin()" id="sticker-decode-btn" disabled>
+                            <i class="fas fa-search me-1"></i>Decode
+                          </button>
+                        </div>
+                        <small class="text-muted" id="sticker-vin-status">Enter full 17-character VIN</small>
+                      </div>
+                      <div id="sticker-vehicle-info" style="display:none;" class="alert alert-success py-2 mb-3">
+                        <small><strong>Vehicle:</strong> <span id="sticker-vehicle-text"></span></small>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Oil Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="sticker-oil-type" onchange="StickerSystem.updatePreview()">
+                          <option value="">Select oil type...</option>
+                          <option value="conv" data-days="90" data-miles="3000">Conventional Oil (90 days / 3,000 mi)</option>
+                          <option value="super" data-days="180" data-miles="7000">Super Synthetic (180 days / 7,000 mi)</option>
+                          <option value="mobil1" data-days="365" data-miles="10000">Mobil 1 (365 days / 10,000 mi)</option>
+                          <option value="rotella" data-days="90" data-miles="3000">Rotella (90 days / 3,000 mi)</option>
+                          <option value="delvac" data-days="365" data-miles="10000">Delvac 1 (365 days / 10,000 mi)</option>
+                        </select>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Current Mileage <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="sticker-mileage" placeholder="e.g. 45000" min="0" oninput="StickerSystem.updatePreview()">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Service Date</label>
+                        <input type="date" class="form-control" id="sticker-date" onchange="StickerSystem.updatePreview()">
+                        <small class="text-muted">Defaults to today</small>
+                      </div>
+                      <hr>
+                      <h6 class="mb-2"><i class="fas fa-cog me-1"></i>Print Settings</h6>
+                      <div class="mb-2">
+                        <label class="form-label small">Paper Size</label>
+                        <select class="form-select form-select-sm" id="sticker-paper-size">
+                          <option value="Dymo200i" selected>Dymo 200i Label (46.1×63.5mm)</option>
+                          <option value="DymoStd">Dymo Standard Label (25.4×76.2mm)</option>
+                          <option value="BrotherSmall">Brother Small Label (36×89mm)</option>
+                          <option value="29mmx90mm">Brother DK1201 (90×29mm)</option>
+                        </select>
+                      </div>
+                      <div class="mb-2">
+                        <label class="form-label small">Printer</label>
+                        <select class="form-select form-select-sm" id="sticker-printer-select">
+                          <option value="" disabled>Connect to print server first</option>
+                        </select>
+                      </div>
+                      <div class="mb-2">
+                        <label class="form-label small">Copies</label>
+                        <input type="number" class="form-control form-control-sm" id="sticker-copies" value="1" min="1" max="20">
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="card h-100">
+                        <div class="card-body d-flex flex-column">
+                          <h6 class="text-center mb-3">Sticker Preview</h6>
+                          <div class="flex-grow-1 d-flex align-items-center justify-content-center" id="sticker-preview-box" style="background:#f8f9fa; border-radius:8px; min-height:200px;">
+                            <p class="text-muted">Fill in the form to see a preview</p>
+                          </div>
+                          <div class="d-flex flex-column gap-2 mt-3">
+                            <button class="btn btn-primary w-100" onclick="StickerSystem.sendToPrintClient()" id="sticker-send-btn" disabled>
+                              <i class="fas fa-paper-plane me-1"></i>Send to Print Client
+                            </button>
+                            <div class="d-flex gap-2">
+                              <button class="btn btn-outline-primary flex-fill" onclick="StickerSystem.previewPdf()" id="sticker-preview-btn" disabled>
+                                <i class="fas fa-eye me-1"></i>View PDF
+                              </button>
+                              <button class="btn btn-outline-success flex-fill" onclick="StickerSystem.createAndSave()" id="sticker-save-btn" disabled>
+                                <i class="fas fa-save me-1"></i>Save Sticker
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Stickers List -->
+            <div id="sticker-list">
+              <div class="label-cards-grid" id="stickers-grid">
+                <!-- Cards rendered by JS -->
+              </div>
+              <div class="label-empty-state" id="stickers-empty">
+                <i class="fas fa-sticky-note d-block"></i>
+                <h6>No stickers yet</h6>
+                <p>Create your first oil change sticker</p>
+                <button class="btn btn-primary" onclick="StickerSystem.showCreateForm()">
+                  <i class="fas fa-plus me-1"></i>New Oil Change Sticker
+                </button>
               </div>
             </div>
           </div>
