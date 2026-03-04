@@ -30,7 +30,7 @@ const DEFAULT_PAPER_SIZE = '29mmx90mm';
 const PRINTER_DEFAULTS = {
   'Brother_QL_800':                  { paperSize: '29mmx90mm',      label: 'Brother QL-800 (#1)' },
   'Brother_QL_800_2':                { paperSize: '29mmx90mm',      label: 'Brother QL-800 (#2)' },
-  'GODEX':                           { paperSize: '29mmx90mm',      label: 'GODEX' },
+  'GODEX':                           { paperSize: 'GODEX',          label: 'GODEX' },
   'Canon_TS3500_series':             { paperSize: null,             label: 'Canon TS3500 (full page)' },
   'HP_LaserJet_400_M401n__B429A7_':  { paperSize: null,             label: 'HP LaserJet 400 M401n' },
   'HP_LaserJet_Pro_M118_M119':       { paperSize: null,             label: 'HP LaserJet Pro M118/M119' }
@@ -2069,15 +2069,16 @@ const LabelSystem = {
 // ============================================================
 
 const STICKER_PAPER_SIZES = {
-  'Dymo200i':      { name: 'Dymo 200i Label',       width: 46.1, height: 63.5 },
-  'DymoStd':       { name: 'Dymo Standard Label',    width: 25.4, height: 76.2 },
-  'BrotherSmall':  { name: 'Brother Small Label',     width: 36,   height: 89 },
-  '29mmx90mm':     { name: 'Brother DK1201',          width: 90,   height: 29 },
-  'Letter':        { name: 'Letter (8.5×11)',          width: 216,  height: 279 },
-  'A4':            { name: 'A4',                       width: 210,  height: 297 },
-  'Legal':         { name: 'Legal (8.5×14)',           width: 216,  height: 356 },
-  '4x6':           { name: '4×6 in',                   width: 102,  height: 152 },
-  '5x7':           { name: '5×7 in',                   width: 127,  height: 178 }
+  'GODEX':         { name: 'GODEX (1.8125×2.5 in)',   width: 46.04, height: 63.5 },
+  'Dymo200i':      { name: 'Dymo 200i Label',         width: 46.1, height: 63.5 },
+  'DymoStd':       { name: 'Dymo Standard Label',     width: 25.4, height: 76.2 },
+  'BrotherSmall':  { name: 'Brother Small Label',      width: 36,   height: 89 },
+  '29mmx90mm':     { name: 'Brother DK1201',           width: 90,   height: 29 },
+  'Letter':        { name: 'Letter (8.5×11)',           width: 216,  height: 279 },
+  'A4':            { name: 'A4',                        width: 210,  height: 297 },
+  'Legal':         { name: 'Legal (8.5×14)',            width: 216,  height: 356 },
+  '4x6':           { name: '4×6 in',                    width: 102,  height: 152 },
+  '5x7':           { name: '5×7 in',                    width: 127,  height: 178 }
 };
 
 const OIL_TYPES = {
@@ -2209,8 +2210,8 @@ const StickerSystem = {
 
   _initStickerCanvas() {
     const paperEl = document.getElementById('sticker-paper-size');
-    const paperKey = paperEl ? paperEl.value : 'Dymo200i';
-    const paper = STICKER_PAPER_SIZES[paperKey] || STICKER_PAPER_SIZES['Dymo200i'];
+    const paperKey = paperEl ? paperEl.value : 'GODEX';
+    const paper = STICKER_PAPER_SIZES[paperKey] || STICKER_PAPER_SIZES['GODEX'];
     const self = this;
 
     // Convert sticker layout elements to canvas elements
@@ -2363,8 +2364,8 @@ const StickerSystem = {
 
   onPaperChange() {
     const paperEl = document.getElementById('sticker-paper-size');
-    const paperKey = paperEl ? paperEl.value : 'Dymo200i';
-    const paper = STICKER_PAPER_SIZES[paperKey] || STICKER_PAPER_SIZES['Dymo200i'];
+    const paperKey = paperEl ? paperEl.value : 'GODEX';
+    const paper = STICKER_PAPER_SIZES[paperKey] || STICKER_PAPER_SIZES['GODEX'];
     if (this._stickerEditor) {
       this._stickerEditor.setPaper(paper.width, paper.height);
     }
@@ -2562,8 +2563,8 @@ const StickerSystem = {
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
     const paperEl = document.getElementById('sticker-paper-size');
-    const paperKey = paperEl ? paperEl.value : 'Dymo200i';
-    const paper = STICKER_PAPER_SIZES[paperKey] || STICKER_PAPER_SIZES['Dymo200i'];
+    const paperKey = paperEl ? paperEl.value : 'GODEX';
+    const paper = STICKER_PAPER_SIZES[paperKey] || STICKER_PAPER_SIZES['GODEX'];
     const mmToPt = (mm) => mm * 2.834645669;
     const pw = mmToPt(paper.width);
     const ph = mmToPt(paper.height);
