@@ -1533,6 +1533,11 @@ const LabelSystem = {
         jobsEl.textContent = '';
         printersEl.textContent = 'Printers: ' + this.printClientPrinters.length + ' registered';
 
+        // Sync printers to sticker system
+        if (typeof StickerSystem !== 'undefined' && StickerSystem.populatePrinters) {
+          StickerSystem.populatePrinters();
+        }
+
         if (this.testMode) {
           this.addTestLog('success', 'Print server REACHABLE at ' + printClientUrl);
           this.addTestLog('success', 'Discovered ' + this.printClientPrinters.length + ' printer(s): ' +
@@ -2054,7 +2059,12 @@ const StickerSystem = {
       this.initialized = true;
       const dateEl = document.getElementById('sticker-date');
       if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
-      this.populatePrinters();
+    }
+    // Always refresh printers — they may have loaded after initial init
+    this.populatePrinters();
+    // If no printers yet, trigger a print server connect
+    if ((LabelSystem.printClientPrinters || []).length === 0) {
+      LabelSystem.refreshPrintStatus();
     }
     this.loadStickers();
   },
