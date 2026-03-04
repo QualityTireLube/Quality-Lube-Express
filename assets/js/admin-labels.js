@@ -658,30 +658,198 @@ const LabelSystem = {
       document.getElementById('editor-label-name').value = template.labelName;
       document.getElementById('editor-paper-size').value = template.paperSize;
       document.getElementById('editor-copies').value = template.copies || 1;
-      document.getElementById('editor-title').textContent = 'Edit Label Template';
     } else {
       this.editorTemplate = null;
       this.editorFields = [];
       document.getElementById('editor-label-name').value = '';
       document.getElementById('editor-paper-size').value = DEFAULT_PAPER_SIZE;
       document.getElementById('editor-copies').value = 1;
-      document.getElementById('editor-title').textContent = 'Create New Label Template';
     }
 
     this.editorSelectedField = null;
     overlay.classList.add('active');
-    this.editorRender();
+
+    // Initialize the CanvasEditor on the viewport
+    const ps = document.getElementById('editor-paper-size').value;
+    const pc = PAPER_SIZES[ps];
+    const self = this;
+
+    // Convert label fields to canvas-editor elements
+    const canvasElements = this.editorFields.map(f => ({
+      ...f,
+      id: f.id,
+      text: f.value || f.name,
+      _type: 'label'
+    }));
+
+    setTimeout(() => {
+      const viewport = document.getElementById('fe-canvas-viewport');
+      CanvasEditor.init(viewport, {
+        paperWidth: pc.width,
+        paperHeight: pc.height,
+        elements: canvasElements,
+        showGrid: true,
+        showRulers: true,
+        onSelectionChange(el) {
+          self.editorSelectedField = el;
+          self._feUpdatePropsPanel();
+          self._feUpdateLayersList();
+        },
+        onElementsChange(elements) {
+          // Sync back to editorFields
+          self.editorFields = elements.map(e => ({
+            id: e.id,
+            name: e.name,
+            position: e.position || { x: 0, y: 0 },
+            fontSize: e.fontSize || 12,
+            fontFamily: e.fontFamily || 'Arial',
+            textAlign: e.textAlign || 'left',
+            color: e.color || '#000000',
+            value: e.text || e.value || e.name,
+            rotation: e.rotation || 0,
+            showInForm: e.showInForm !== false,
+            bold: e.bold || false
+          }));
+        }
+      });
+      self._feUpdateLayersList();
+      self._feUpdateAvailableFields();
+      self._feUpdateStatusBar();
+    }, 50);
 
     // Listen for paper size changes
-    document.getElementById('editor-paper-size').onchange = () => this.editorRender();
+    document.getElementById('editor-paper-size').onchange = () => {
+      const ps2 = document.getElementById('editor-paper-size').value;
+      const pc2 = PAPER_SIZES[ps2];
+      CanvasEditor.setPaper(pc2.width, pc2.height);
+      this._feUpdateStatusBar();
+    };
   },
 
   closeEditor() {
     document.getElementById('labelEditorOverlay').classList.remove('active');
+    CanvasEditor.destroy();
     this.editorTemplate = null;
     this.editorFields = [];
     this.editorSelectedField = null;
     this.loadTemplates();
+  },
+
+  // ---- Freeform Editor Toolbar Actions ----
+  feZoom(dir) {
+    const newZoom = CanvasEditor.zoom * (dir > 0 ? 1.2 : 0.8);
+    CanvasEditor.setZoom(newZoom);
+    document.getElementById('fe-zoom-label').textContent = Math.round(CanvasEditor.zoom * 100) + '%';
+  },
+
+  feZoomFit() {
+    CanvasEditor.fitToView();
+    document.getElementById('fe-zoom-label').textContent = Math.round(CanvasEditor.zoom * 100) + '%';
+  },
+
+  feToggleGrid() {
+    CanvasEditor.showGrid = !CanvasEditor.showGrid;
+    document.getElementById('fe-toggle-grid').classList.toggle('active', CanvasEditor.showGrid);
+    CanvasEditor.render();
+  },
+
+  feToggleSnap() {
+    CanvasEditor.snapToGrid = !CanvasEditor.snapToGrid;
+    document.getElementById('fe-toggle-snap').classList.toggle('active', CanvasEditor.snapToGrid);
+  },
+
+  feToggleRulers() {
+    CanvasEditor.showRulers = !CanvasEditor.showRulers;
+    document.getElementById('fe-toggle-rulers').classList.toggle('active', CanvasEditor.showRulers);
+    CanvasEditor.render();
+  },
+
+  feUndo() { CanvasEditor.undo(); },
+  feRedo() { CanvasEditor.redo(); },
+
+  // ---- Freeform Editor State Sync ----
+  _feUpdateStatusBar() {
+    const ps = document.getElementById('editor-paper-size').value;
+    const pc = PAPER_SIZES[ps];
+    const paperEl = document.getElementById('fe-status-paper');
+    if (paperEl) paperEl.textContent = pc.width + ' × ' + pc.height + ' mm';
+    const fieldsEl = document.getElementById('fe-status-fields');
+    if (fieldsEl) fieldsEl.textContent = this.editorFields.length + ' fields';
+    document.getElementById('editor-field-count').textContent = this.editorFields.length;
+  },
+
+  _feUpdateAvailableFields() {
+    const usedNames = this.editorFields.map(f => f.name);
+    const available = AVAILABLE_FIELDS.filter(n => !usedNames.includes(n));
+    const container = document.getElementById('editor-available-fields');
+    container.innerHTML = available.map(name =>
+      '<span class="fe-field-chip" onclick="LabelSystem.editorAddField(\'' + this.escHtml(name) + '\')">' +
+        '<i class="fas fa-plus"></i>' + this.escHtml(name) +
+      '</span>'
+    ).join('');
+  },
+
+  _feUpdateLayersList() {
+    const list = document.getElementById('editor-fields-list');
+    document.getElementById('editor-field-count').textContent = CanvasEditor.elements.length;
+    if (!list) return;
+
+    list.innerHTML = CanvasEditor.elements.map(el => {
+      const isSelected = CanvasEditor.selected.includes(el.id);
+      return '<div class="fe-layer-item' + (isSelected ? ' selected' : '') + '" onclick="LabelSystem.feSelectLayer(\'' + el.id + '\')">' +
+        '<span class="layer-icon"><i class="fas fa-font"></i></span>' +
+        '<span class="layer-name">' + this.escHtml(el.name || el.text || 'Untitled') + '</span>' +
+        '<span class="layer-meta">' + (el.fontSize || 12) + 'px</span>' +
+        '<button class="layer-del" onclick="event.stopPropagation();LabelSystem.editorDeleteField(\'' + el.id + '\')"><i class="fas fa-times"></i></button>' +
+      '</div>';
+    }).join('');
+    this._feUpdateStatusBar();
+  },
+
+  _feUpdatePropsPanel() {
+    const empty = document.getElementById('fe-props-empty');
+    const content = document.getElementById('fe-props-content');
+    const el = this.editorSelectedField;
+
+    if (!el) {
+      empty.style.display = 'flex';
+      content.style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    content.style.display = 'block';
+
+    document.getElementById('editor-prop-field-name').textContent = el.name || el.text || 'Field';
+    document.getElementById('prop-value').value = el.text || el.value || '';
+    document.getElementById('prop-x').value = el.position ? el.position.x : 0;
+    document.getElementById('prop-y').value = el.position ? el.position.y : 0;
+    document.getElementById('prop-font-family').value = el.fontFamily || 'Arial';
+    document.getElementById('prop-font-size').value = el.fontSize || 12;
+    document.getElementById('prop-font-size-val').textContent = el.fontSize || 12;
+    document.getElementById('prop-color').value = el.color || '#000000';
+    document.getElementById('prop-color-hex').textContent = el.color || '#000000';
+    document.getElementById('prop-rotation').value = el.rotation || 0;
+    document.getElementById('prop-rotation-val').textContent = (el.rotation || 0) + '°';
+    document.getElementById('prop-show-in-form').checked = el.showInForm !== false;
+
+    // Bold button
+    document.getElementById('prop-bold').classList.toggle('active', !!el.bold);
+
+    // Alignment buttons
+    ['left', 'center', 'right'].forEach(a => {
+      document.getElementById('prop-align-' + a).classList.toggle('active', (el.textAlign || 'left') === a);
+    });
+  },
+
+  feSelectLayer(id) {
+    CanvasEditor.selectElement(id);
+  },
+
+  editorToggleBold() {
+    if (!this.editorSelectedField) return;
+    const el = CanvasEditor.elements.find(e => e.id === this.editorSelectedField.id);
+    if (!el) return;
+    CanvasEditor.updateElement(el.id, { bold: !el.bold });
   },
 
   editorGetCanvasDims() {
@@ -692,95 +860,40 @@ const LabelSystem = {
     return { canvasWidth, canvasHeight, paperConfig: pc };
   },
 
+  _syncFieldsFromCanvas() {
+    if (!CanvasEditor.elements) return;
+    this.editorFields = CanvasEditor.elements.map(e => ({
+      id: e.id,
+      name: e.name || e.text || 'Field',
+      position: e.position || { x: 0, y: 0 },
+      fontSize: e.fontSize || 12,
+      fontFamily: e.fontFamily || 'Arial',
+      textAlign: e.textAlign || 'left',
+      color: e.color || '#000000',
+      value: e.text || e.value || e.name || '',
+      rotation: e.rotation || 0,
+      showInForm: e.showInForm !== false,
+      bold: e.bold || false
+    }));
+  },
+
   editorRender() {
-    const { canvasWidth, canvasHeight, paperConfig } = this.editorGetCanvasDims();
-
-    // Update canvas size
-    const canvas = document.getElementById('editor-canvas');
-    canvas.style.width = canvasWidth + 'px';
-    canvas.style.height = canvasHeight + 'px';
-    document.getElementById('editor-canvas-title').textContent = 'Label Preview (' + paperConfig.name + ')';
-
-    // Render fields on canvas
-    const emptyMsg = document.getElementById('editor-canvas-empty');
-    // Remove old field elements (but not the empty message)
-    canvas.querySelectorAll('.label-canvas-field').forEach(el => el.remove());
-
-    if (this.editorFields.length === 0) {
-      emptyMsg.style.display = 'block';
-    } else {
-      emptyMsg.style.display = 'none';
-      this.editorFields.forEach(field => {
-        const el = document.createElement('div');
-        el.className = 'label-canvas-field' + (this.editorSelectedField && this.editorSelectedField.id === field.id ? ' selected' : '');
-        el.style.left = field.position.x + 'px';
-        el.style.top = field.position.y + 'px';
-        el.style.fontSize = (field.fontSize || 10) + 'px';
-        el.style.fontFamily = field.fontFamily || 'Arial';
-        el.style.color = field.color || '#000000';
-        el.style.textAlign = field.textAlign || 'left';
-        if (field.rotation) {
-          el.style.transform = 'rotate(' + field.rotation + 'deg)';
-          el.style.transformOrigin = 'left top';
-        }
-        el.textContent = field.value || field.name;
-        el.dataset.fieldId = field.id;
-        el.onclick = (e) => { e.stopPropagation(); this.editorSelectField(field.id); };
-        el.onmousedown = (e) => this.editorStartDrag(e, field.id);
-        canvas.appendChild(el);
-      });
-    }
-
-    // Canvas click to deselect
-    canvas.onclick = () => {
-      this.editorSelectedField = null;
-      this.editorRender();
-    };
-
-    // Render available fields list
-    const usedNames = this.editorFields.map(f => f.name);
-    const available = AVAILABLE_FIELDS.filter(n => !usedNames.includes(n));
-    const listEl = document.getElementById('editor-available-fields');
-    listEl.innerHTML = available.map(name =>
-      '<li onclick="LabelSystem.editorAddField(\'' + this.escHtml(name) + '\')">' +
-        '<i class="fas fa-plus-circle"></i>' + this.escHtml(name) +
-      '</li>'
-    ).join('');
-
-    // Render fields list
-    const fieldsListEl = document.getElementById('editor-fields-list');
-    document.getElementById('editor-field-count').textContent = this.editorFields.length;
-    fieldsListEl.innerHTML = this.editorFields.map(field => {
-      const isSelected = this.editorSelectedField && this.editorSelectedField.id === field.id;
-      return '<div class="label-field-list-item' + (isSelected ? ' selected' : '') + '" onclick="LabelSystem.editorSelectField(\'' + field.id + '\')">' +
-        '<i class="fas fa-grip-vertical text-muted me-2"></i>' +
-        '<div class="field-info">' +
-          '<div>' + this.escHtml(field.name) + '</div>' +
-          '<small>' + field.fontSize + 'px &bull; ' + field.position.x + ', ' + field.position.y + ' &bull; ' + field.textAlign + '</small>' +
-        '</div>' +
-        '<button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation();LabelSystem.editorDeleteField(\'' + field.id + '\')"><i class="fas fa-trash"></i></button>' +
-      '</div>';
-    }).join('');
-
-    // Preview button state
-    document.getElementById('editor-preview-btn').disabled = this.editorFields.length === 0;
-
-    // Update properties panel
-    this.editorRenderProps();
-
-    // Render quick position grid
-    this.editorRenderQuickPos();
+    // For backward compatibility — now handled by CanvasEditor
+    if (CanvasEditor.canvas) CanvasEditor.render();
+    this._feUpdateLayersList();
+    this._feUpdateAvailableFields();
   },
 
   editorSelectField(fieldId) {
-    this.editorSelectedField = this.editorFields.find(f => f.id === fieldId) || null;
-    this.editorRender();
+    CanvasEditor.selectElement(fieldId);
   },
 
   editorAddField(name) {
     const newField = {
       id: generateId(),
       name: name,
+      text: name,
+      _type: 'label',
       position: { x: 10, y: 30 },
       fontSize: 12,
       fontFamily: 'Arial',
@@ -788,11 +901,12 @@ const LabelSystem = {
       color: '#000000',
       value: name,
       rotation: 0,
-      showInForm: true
+      showInForm: true,
+      bold: false
     };
+    CanvasEditor.addElement(newField);
     this.editorFields.push(newField);
-    this.editorSelectedField = newField;
-    this.editorRender();
+    this._feUpdateAvailableFields();
   },
 
   editorAddCustomField() {
@@ -804,11 +918,14 @@ const LabelSystem = {
   },
 
   editorDeleteField(fieldId) {
+    CanvasEditor.deleteElement(fieldId);
     this.editorFields = this.editorFields.filter(f => f.id !== fieldId);
     if (this.editorSelectedField && this.editorSelectedField.id === fieldId) {
       this.editorSelectedField = null;
     }
-    this.editorRender();
+    this._feUpdateAvailableFields();
+    this._feUpdateLayersList();
+    this._feUpdatePropsPanel();
   },
 
   editorDeleteSelectedField() {
@@ -817,121 +934,66 @@ const LabelSystem = {
     }
   },
 
-  editorRenderProps() {
-    const panel = document.getElementById('editor-props-panel');
-    if (!this.editorSelectedField) {
-      panel.style.display = 'none';
-      return;
-    }
-    panel.style.display = 'flex';
-    const f = this.editorSelectedField;
-    document.getElementById('editor-prop-field-name').textContent = f.name;
-    document.getElementById('prop-value').value = f.value || '';
-    document.getElementById('prop-show-in-form').checked = f.showInForm !== false;
-    document.getElementById('prop-x').value = f.position.x;
-    document.getElementById('prop-y').value = f.position.y;
-    document.getElementById('prop-font-family').value = f.fontFamily || 'Arial';
-    document.getElementById('prop-font-size').value = f.fontSize || 12;
-    document.getElementById('prop-font-size-val').textContent = f.fontSize || 12;
-    document.getElementById('prop-color').value = f.color || '#000000';
-    document.getElementById('prop-rotation').value = f.rotation || 0;
-    document.getElementById('prop-rotation-val').textContent = (f.rotation || 0) + '°';
-
-    // Update alignment buttons
-    ['left', 'center', 'right'].forEach(a => {
-      const btn = document.getElementById('prop-align-' + a);
-      btn.className = 'btn btn-sm ' + (f.textAlign === a ? 'btn-primary' : 'btn-outline-secondary');
-    });
-  },
+  // Old props panels replaced by _feUpdatePropsPanel above
 
   editorUpdateFieldProp(prop, value) {
     if (!this.editorSelectedField) return;
-    const field = this.editorFields.find(f => f.id === this.editorSelectedField.id);
-    if (!field) return;
+    const id = this.editorSelectedField.id;
+    const update = {};
 
     if (prop === 'x') {
-      field.position.x = Math.max(0, value);
+      // Update element position.x
+      const el = CanvasEditor.elements.find(e => e.id === id);
+      if (el) {
+        update.position = { ...(el.position || {}), x: Math.max(0, parseFloat(value)) };
+      }
     } else if (prop === 'y') {
-      field.position.y = Math.max(0, value);
+      const el = CanvasEditor.elements.find(e => e.id === id);
+      if (el) {
+        update.position = { ...(el.position || {}), y: Math.max(0, parseFloat(value)) };
+      }
     } else if (prop === 'rotation') {
-      field.rotation = parseInt(value) || 0;
+      update.rotation = parseInt(value) || 0;
+    } else if (prop === 'textAlign') {
+      update.textAlign = value;
+    } else if (prop === 'fontSize') {
+      update.fontSize = parseInt(value);
+    } else if (prop === 'value') {
+      update.text = value;
+      update.value = value;
     } else {
-      field[prop] = value;
+      update[prop] = value;
     }
-    this.editorSelectedField = field;
-    this.editorRender();
+
+    CanvasEditor.updateElement(id, update);
+    
+    // Keep editorFields in sync
+    const field = this.editorFields.find(f => f.id === id);
+    if (field) {
+      if (update.position) field.position = update.position;
+      if (update.rotation !== undefined) field.rotation = update.rotation;
+      if (update.textAlign) field.textAlign = update.textAlign;
+      if (update.fontSize) field.fontSize = update.fontSize;
+      if (update.text) { field.value = update.text; field.text = update.text; }
+      if (update.color) field.color = update.color;
+      if (update.fontFamily) field.fontFamily = update.fontFamily;
+      if (update.showInForm !== undefined) field.showInForm = update.showInForm;
+      if (update.bold !== undefined) field.bold = update.bold;
+    }
   },
 
-  editorRenderQuickPos() {
+  editorSetRotation(deg) {
     if (!this.editorSelectedField) return;
-    const { canvasWidth, canvasHeight } = this.editorGetCanvasDims();
-    const margin = 10;
-    const usableWidth = canvasWidth - (2 * margin);
-    const usableHeight = canvasHeight - (2 * margin);
-    const positions = [
-      { label: 'TL', x: margin, y: margin, align: 'left' },
-      { label: 'TC', x: margin + usableWidth / 2, y: margin, align: 'center' },
-      { label: 'TR', x: margin + usableWidth - 50, y: margin, align: 'right' },
-      { label: 'UL', x: margin, y: margin + usableHeight * 0.25, align: 'left' },
-      { label: 'UC', x: margin + usableWidth / 2, y: margin + usableHeight * 0.25, align: 'center' },
-      { label: 'UR', x: margin + usableWidth - 50, y: margin + usableHeight * 0.25, align: 'right' },
-      { label: 'ML', x: margin, y: margin + usableHeight * 0.5, align: 'left' },
-      { label: 'MC', x: margin + usableWidth / 2, y: margin + usableHeight * 0.5, align: 'center' },
-      { label: 'MR', x: margin + usableWidth - 50, y: margin + usableHeight * 0.5, align: 'right' },
-      { label: 'LL', x: margin, y: margin + usableHeight * 0.75, align: 'left' },
-      { label: 'LC', x: margin + usableWidth / 2, y: margin + usableHeight * 0.75, align: 'center' },
-      { label: 'LR', x: margin + usableWidth - 50, y: margin + usableHeight * 0.75, align: 'right' },
-      { label: 'BL', x: margin, y: margin + usableHeight - 20, align: 'left' },
-      { label: 'BC', x: margin + usableWidth / 2, y: margin + usableHeight - 20, align: 'center' },
-      { label: 'BR', x: margin + usableWidth - 50, y: margin + usableHeight - 20, align: 'right' },
-    ];
-    const labels = ['Top L', 'Top M', 'Top R', 'Up L', 'Up M', 'Up R', 'Mid L', 'Mid M', 'Mid R', 'Lo L', 'Lo M', 'Lo R', 'Bot L', 'Bot M', 'Bot R'];
-    const grid = document.getElementById('quick-pos-grid');
-    grid.innerHTML = positions.map((p, i) =>
-      '<button onclick="LabelSystem.editorQuickPos(' + Math.round(p.x) + ',' + Math.round(p.y) + ',\'' + p.align + '\')">' + labels[i] + '</button>'
-    ).join('');
-  },
-
-  editorQuickPos(x, y, align) {
-    if (!this.editorSelectedField) return;
-    const field = this.editorFields.find(f => f.id === this.editorSelectedField.id);
-    if (!field) return;
-    field.position = { x, y };
-    field.textAlign = align;
-    this.editorSelectedField = field;
-    this.editorRender();
-  },
-
-  // Canvas field dragging
-  editorStartDrag(e, fieldId) {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    const canvas = document.getElementById('editor-canvas');
-    const rect = canvas.getBoundingClientRect();
-    const field = this.editorFields.find(f => f.id === fieldId);
-    if (!field) return;
-
-    const offsetX = e.clientX - rect.left - field.position.x;
-    const offsetY = e.clientY - rect.top - field.position.y;
-
-    const onMove = (ev) => {
-      const newX = Math.max(0, Math.min(ev.clientX - rect.left - offsetX, parseInt(canvas.style.width) - 50));
-      const newY = Math.max(0, Math.min(ev.clientY - rect.top - offsetY, parseInt(canvas.style.height) - 20));
-      field.position = { x: Math.round(newX), y: Math.round(newY) };
-      this.editorSelectedField = field;
-      this.editorRender();
-    };
-
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    document.getElementById('prop-rotation').value = deg;
+    document.getElementById('prop-rotation-val').textContent = deg + '°';
+    this.editorUpdateFieldProp('rotation', deg);
   },
 
   async editorPreview() {
+    // Sync fields from CanvasEditor before preview
+    if (CanvasEditor.elements) {
+      this._syncFieldsFromCanvas();
+    }
     if (this.editorFields.length === 0) return;
     try {
       const ps = document.getElementById('editor-paper-size').value;
@@ -959,6 +1021,10 @@ const LabelSystem = {
   },
 
   async editorSave() {
+    // Sync fields from CanvasEditor before saving
+    if (CanvasEditor.elements) {
+      this._syncFieldsFromCanvas();
+    }
     const labelName = document.getElementById('editor-label-name').value.trim();
     const paperSize = document.getElementById('editor-paper-size').value;
     const copies = parseInt(document.getElementById('editor-copies').value) || 1;
@@ -2036,7 +2102,7 @@ const STICKER_LAYOUT = {
   fontSize: 8,
   fontFamily: 'Helvetica',
   margins: { top: 2, bottom: 2, left: 2, right: 2 },
-  qrCodeSize: 10, // mm
+  qrCodeSize: 14, // mm
   qrCodePosition: { x: 50, y: 78 }, // percentage of available area
   elements: [
     { id: 'header',         label: 'Header',          content: 'Next Service Due',  x: 50, y: 10, fontSize: 1.25, bold: true,  align: 'center' },
@@ -2138,10 +2204,178 @@ const StickerSystem = {
     const dateEl = document.getElementById('sticker-date');
     if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
     this.populatePrinters();
+    this._initStickerCanvas();
+  },
+
+  _initStickerCanvas() {
+    const paperEl = document.getElementById('sticker-paper-size');
+    const paperKey = paperEl ? paperEl.value : 'Dymo200i';
+    const paper = STICKER_PAPER_SIZES[paperKey] || STICKER_PAPER_SIZES['Dymo200i'];
+    const self = this;
+
+    // Convert sticker layout elements to canvas elements
+    const canvasElements = STICKER_LAYOUT.elements.map(el => ({
+      id: el.id,
+      name: el.label || el.id,
+      text: el.content,
+      _type: 'sticker',
+      x: el.x,    // percentage coords stored directly for stickers
+      y: el.y,
+      position: { x: el.x, y: el.y },
+      fontSize: Math.round(STICKER_LAYOUT.fontSize * el.fontSize),
+      fontFamily: STICKER_LAYOUT.fontFamily || 'Helvetica',
+      textAlign: el.align || 'center',
+      color: '#000000',
+      bold: !!el.bold,
+      rotation: 0,
+      showInForm: true
+    }));
+
+    setTimeout(() => {
+      const viewport = document.getElementById('se-canvas-viewport');
+      if (!viewport) return;
+
+      // Use a separate CanvasEditor instance for stickers (stored on StickerSystem)
+      if (!this._stickerEditor) {
+        this._stickerEditor = Object.create(CanvasEditor);
+      }
+      this._stickerEditor.init(viewport, {
+        paperWidth: paper.width,
+        paperHeight: paper.height,
+        elements: canvasElements,
+        showGrid: false,
+        showRulers: false,
+        onSelectionChange(sel) {
+          self._seUpdatePropsPanel(sel);
+        },
+        onElementsChange(elements) {
+          // Sticker elements updated
+        }
+      });
+      this._seUpdateDataOnCanvas();
+    }, 80);
+  },
+
+  _seUpdateDataOnCanvas() {
+    // Update element text based on form data
+    if (!this._stickerEditor || !this._stickerEditor.elements) return;
+    const data = this.getStickerData();
+    this._stickerEditor.elements.forEach(el => {
+      let text = el.text || '';
+      if (data) {
+        text = (STICKER_LAYOUT.elements.find(e => e.id === el.id) || {}).content || text;
+        text = text
+          .replace('{serviceDate}', data.nextServiceDate || '')
+          .replace('{serviceMileage}', (data.nextServiceMileage || '') + ' mi')
+          .replace('{oilType}', data.oilTypeName || '')
+          .replace('{decodedDetails}', data.vehicleDetails || '');
+      }
+      el.text = text;
+    });
+    this._stickerEditor.render();
+  },
+
+  _seUpdatePropsPanel(el) {
+    const empty = document.getElementById('se-props-empty');
+    const content = document.getElementById('se-props-content');
+    if (!el) {
+      if (empty) empty.style.display = 'flex';
+      if (content) content.style.display = 'none';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    if (content) content.style.display = 'block';
+
+    const nameEl = document.getElementById('se-prop-name');
+    if (nameEl) nameEl.textContent = el.name || el.id;
+    const textEl = document.getElementById('se-prop-text');
+    if (textEl) textEl.value = el.text || '';
+    const xEl = document.getElementById('se-prop-x');
+    if (xEl) xEl.value = el.position ? el.position.x : 0;
+    const yEl = document.getElementById('se-prop-y');
+    if (yEl) yEl.value = el.position ? el.position.y : 0;
+    const fsEl = document.getElementById('se-prop-fontsize');
+    if (fsEl) fsEl.value = el.fontSize || 8;
+    const fsVal = document.getElementById('se-prop-fontsize-val');
+    if (fsVal) fsVal.textContent = (el.fontSize || 8) + 'px';
+    const boldEl = document.getElementById('se-prop-bold');
+    if (boldEl) boldEl.classList.toggle('active', !!el.bold);
+    ['left', 'center', 'right'].forEach(a => {
+      const btn = document.getElementById('se-align-' + a);
+      if (btn) btn.classList.toggle('active', (el.textAlign || 'center') === a);
+    });
+  },
+
+  seUpdateProp(prop, value) {
+    if (!this._stickerEditor) return;
+    const sel = this._stickerEditor.getSelectedElement();
+    if (!sel) return;
+    const update = {};
+    if (prop === 'x') {
+      update.x = parseFloat(value);
+      update.position = { ...sel.position, x: parseFloat(value) };
+    } else if (prop === 'y') {
+      update.y = parseFloat(value);
+      update.position = { ...sel.position, y: parseFloat(value) };
+    } else if (prop === 'fontSize') {
+      update.fontSize = parseInt(value);
+    } else if (prop === 'text') {
+      update.text = value;
+    } else if (prop === 'textAlign') {
+      update.textAlign = value;
+      update.align = value;
+    } else {
+      update[prop] = value;
+    }
+    this._stickerEditor.updateElement(sel.id, update);
+  },
+
+  seToggleBold() {
+    if (!this._stickerEditor) return;
+    const sel = this._stickerEditor.getSelectedElement();
+    if (!sel) return;
+    this._stickerEditor.updateElement(sel.id, { bold: !sel.bold });
+  },
+
+  seToggleGrid() {
+    if (!this._stickerEditor) return;
+    this._stickerEditor.showGrid = !this._stickerEditor.showGrid;
+    const btn = document.getElementById('se-toggle-grid');
+    if (btn) btn.classList.toggle('active', this._stickerEditor.showGrid);
+    this._stickerEditor.render();
+  },
+
+  seZoomFit() {
+    if (this._stickerEditor) {
+      this._stickerEditor.fitToView();
+      const lbl = document.getElementById('se-zoom-label');
+      if (lbl) lbl.textContent = Math.round(this._stickerEditor.zoom * 100) + '%';
+    }
+  },
+
+  seUndo() { if (this._stickerEditor) this._stickerEditor.undo(); },
+  seRedo() { if (this._stickerEditor) this._stickerEditor.redo(); },
+
+  onDataChange() {
+    this._seUpdateDataOnCanvas();
+    this.updateButtons();
+  },
+
+  onPaperChange() {
+    const paperEl = document.getElementById('sticker-paper-size');
+    const paperKey = paperEl ? paperEl.value : 'Dymo200i';
+    const paper = STICKER_PAPER_SIZES[paperKey] || STICKER_PAPER_SIZES['Dymo200i'];
+    if (this._stickerEditor) {
+      this._stickerEditor.setPaper(paper.width, paper.height);
+    }
   },
 
   hideCreateForm() {
     document.getElementById('sticker-create-form').style.display = 'none';
+    if (this._stickerEditor) {
+      this._stickerEditor.destroy();
+      this._stickerEditor = null;
+    }
     this.resetForm();
   },
 
@@ -2154,7 +2388,6 @@ const StickerSystem = {
     document.getElementById('sticker-qr-enabled').checked = true;
     document.getElementById('sticker-vehicle-info').style.display = 'none';
     document.getElementById('sticker-vin-status').textContent = 'Enter full 17-character VIN';
-    document.getElementById('sticker-preview-box').innerHTML = '<p class="text-muted">Fill in the form to see a preview</p>';
     const badge = document.getElementById('sticker-template-badge');
     if (badge) badge.style.display = 'none';
     this.decodedVin = null;
@@ -2314,39 +2547,7 @@ const StickerSystem = {
 
   async updatePreview() {
     this.updateButtons();
-    const data = this.getStickerData();
-    const box = document.getElementById('sticker-preview-box');
-    if (!data) {
-      box.innerHTML = '<p class="text-muted">Fill in VIN, oil type, and mileage</p>';
-      return;
-    }
-
-    let qrHtml = '';
-    if (data.qrEnabled && data.vin) {
-      try {
-        const qrUrl = await this.generateQrDataUrl(data.vin, 100);
-        if (qrUrl) {
-          qrHtml = '<div style="margin-top:4px;"><img src="' + qrUrl + '" style="width:50px; height:50px; image-rendering:pixelated;" alt="QR"></div>';
-        }
-      } catch (e) {
-        qrHtml = '<div style="margin-top:4px; width:50px; height:50px; border:1px dashed #999; display:flex; align-items:center; justify-content:center; font-size:7px; color:#999;">QR</div>';
-      }
-    }
-
-    box.innerHTML =
-      '<div style="background:#fff; border:2px solid #333; border-radius:6px; padding:10px; width:180px; font-family:Calibri,Arial,sans-serif; text-align:center; font-size:11px;">' +
-        '<div style="font-weight:bold; font-size:13px; margin-bottom:4px;">Next Service Due</div>' +
-        '<div style="display:flex; justify-content:space-between; font-size:10px; margin-bottom:2px;">' +
-          '<span>' + this.esc(data.nextServiceDate) + '</span>' +
-          '<span>' + this.esc(data.nextServiceMileage) + ' mi</span>' +
-        '</div>' +
-        '<div style="font-size:10px; margin-bottom:3px;">' + this.esc(data.oilTypeName) + '</div>' +
-        '<div style="font-weight:bold; font-size:12px; margin-bottom:1px;">Quality Lube Express</div>' +
-        '<div style="font-size:8px; color:#666; margin-bottom:3px;">3617 HWY 19 Zachary LA 70791</div>' +
-        '<div style="font-weight:bold; font-size:12px; margin-bottom:3px;">THANK YOU</div>' +
-        (data.vehicleDetails ? '<div style="font-size:8px; color:#666; margin-bottom:3px;">' + this.esc(data.vehicleDetails) + '</div>' : '') +
-        qrHtml +
-      '</div>';
+    this._seUpdateDataOnCanvas();
   },
 
   // ---- PDF Generation with QR ----

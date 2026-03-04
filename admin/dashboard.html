@@ -1556,189 +1556,213 @@
         margin-bottom: 16px;
       }
 
-      /* Label Editor - Full overlay */
+      /* Label Editor - Full overlay — Freeform Canvas Editor */
       .label-editor-overlay {
         display: none;
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        top: 0; left: 0; right: 0; bottom: 0;
         z-index: 9999;
-        background: #f5f5f5;
-        overflow: auto;
+        background: #1a1a2e;
+        overflow: hidden;
       }
       .label-editor-overlay.active { display: flex; flex-direction: column; }
-      .label-editor-toolbar {
-        background: #fff;
-        border-bottom: 1px solid #ddd;
-        padding: 10px 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        flex-shrink: 0;
-      }
-      .label-editor-toolbar h5 {
-        margin: 0;
-        font-weight: 600;
-      }
-      .label-editor-body {
-        display: flex;
-        flex-grow: 1;
-        min-height: 0;
-        overflow: hidden;
-      }
 
-      /* Editor Left Panel */
-      .label-editor-left {
-        width: 280px;
-        background: #fff;
-        border-right: 1px solid #ddd;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
+      /* Freeform Editor Toolbar */
+      .fe-toolbar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 6px 12px;
+        background: #16213e;
+        border-bottom: 1px solid #0f3460;
         flex-shrink: 0;
-      }
-      .label-editor-left .panel-section {
-        padding: 16px;
-        border-bottom: 1px solid #eee;
-      }
-      .label-editor-left .panel-section h6 {
-        margin: 0 0 12px 0;
-        font-weight: 600;
-        font-size: 0.9rem;
-      }
-      .label-field-add-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
-      .label-field-add-list li {
-        display: flex;
-        align-items: center;
         gap: 8px;
-        padding: 8px 12px;
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
-        margin-bottom: 6px;
-        cursor: pointer;
-        font-size: 0.875rem;
-        transition: background 0.15s;
       }
-      .label-field-add-list li:hover {
-        background: #e3f2fd;
-        border-color: #90caf9;
+      .fe-toolbar-left, .fe-toolbar-center, .fe-toolbar-right { display: flex; align-items: center; gap: 8px; }
+      .fe-toolbar-left { min-width: 240px; }
+      .fe-toolbar-center { flex: 1; justify-content: center; }
+      .fe-toolbar-right { min-width: 200px; justify-content: flex-end; }
+      .fe-close-btn { color: #e94560 !important; }
+      .fe-close-btn:hover { background: #e94560 !important; color: #fff !important; }
+      .fe-title-input {
+        background: transparent; border: 1px solid transparent; color: #fff;
+        font-size: 0.95rem; font-weight: 600; padding: 4px 8px;
+        border-radius: 4px; width: 180px;
       }
-      .label-field-add-list li i { color: #1976d2; }
+      .fe-title-input:focus { border-color: #0f3460; background: rgba(255,255,255,0.05); outline: none; }
+      .fe-toolbar-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 32px; height: 32px; border: none; border-radius: 4px;
+        background: transparent; color: #a0aec0; cursor: pointer;
+        transition: all 0.15s; font-size: 0.85rem;
+      }
+      .fe-toolbar-btn:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+      .fe-toolbar-btn.fe-toggle.active { background: rgba(15,52,96,0.6); color: #53c0f0; }
+      .fe-toolbar-sep { width: 1px; height: 20px; background: #2a2a4a; margin: 0 4px; }
+      .fe-zoom-group { display: flex; align-items: center; gap: 4px; }
+      .fe-zoom-label { color: #a0aec0; font-size: 0.75rem; min-width: 40px; text-align: center; }
 
-      /* Editor Center - Canvas */
-      .label-editor-center {
-        flex-grow: 1;
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        overflow: auto;
-      }
-      .label-canvas-wrapper {
-        position: relative;
-        border: 2px dashed #1976d2;
-        background: #fff;
-        margin-bottom: 20px;
-        overflow: hidden;
-        flex-shrink: 0;
-      }
-      .label-canvas-field {
-        position: absolute;
-        cursor: move;
-        padding: 2px 4px;
-        border: 1px solid transparent;
-        border-radius: 3px;
-        user-select: none;
-        white-space: nowrap;
-      }
-      .label-canvas-field:hover {
-        background: rgba(0,0,0,0.04);
-        border-color: #bbb;
-      }
-      .label-canvas-field.selected {
-        border: 2px solid #1976d2;
-        background: rgba(25,118,210,0.05);
-      }
+      /* Editor Body */
+      .fe-body { display: flex; flex: 1; min-height: 0; overflow: hidden; }
 
-      /* Editor Bottom panels */
-      .label-editor-bottom {
-        display: flex;
-        gap: 16px;
-        width: 100%;
-        max-width: 900px;
-        flex-grow: 1;
-        min-height: 200px;
+      /* Left Sidebar */
+      .fe-sidebar-left {
+        width: 240px; background: #16213e; border-right: 1px solid #0f3460;
+        display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
       }
-      .label-fields-list-panel, .label-field-props-panel {
-        flex: 1;
-        background: #fff;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
+      .fe-sidebar-section { display: flex; flex-direction: column; }
+      .fe-sidebar-section.collapsed .fe-section-body { display: none; }
+      .fe-sidebar-section.collapsed .fe-chevron { transform: rotate(-90deg); }
+      .fe-section-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 12px; cursor: pointer; color: #cbd5e0; font-size: 0.8rem;
+        font-weight: 600; border-bottom: 1px solid #0f3460;
+        transition: background 0.15s; user-select: none;
       }
-      .label-fields-list-panel .panel-header,
-      .label-field-props-panel .panel-header {
-        padding: 12px 16px;
-        border-bottom: 1px solid #eee;
-        font-weight: 600;
-        font-size: 0.9rem;
-        flex-shrink: 0;
+      .fe-section-header:hover { background: rgba(255,255,255,0.04); }
+      .fe-chevron { font-size: 0.65rem; transition: transform 0.2s; }
+      .fe-section-body { padding: 10px 12px; border-bottom: 1px solid #0f3460; }
+      .fe-section-body .form-label { color: #a0aec0; }
+      .fe-section-body .form-control, .fe-section-body .form-select {
+        background: #1a1a3e; border-color: #2a2a5a; color: #e2e8f0;
       }
-      .label-fields-list-panel .panel-body {
-        overflow: auto;
-        flex-grow: 1;
-      }
-      .label-field-props-panel .panel-body {
-        overflow: auto;
-        flex-grow: 1;
-        padding: 16px;
-      }
-      .label-field-list-item {
-        display: flex;
-        align-items: center;
-        padding: 10px 16px;
-        border-bottom: 1px solid #f0f0f0;
-        cursor: pointer;
-        transition: background 0.15s;
-      }
-      .label-field-list-item:hover { background: #f5f5f5; }
-      .label-field-list-item.selected { background: #e3f2fd; }
-      .label-field-list-item .field-info {
-        flex-grow: 1;
-      }
-      .label-field-list-item .field-info small {
-        color: #888;
-        font-size: 0.75rem;
+      .fe-section-body .form-control:focus, .fe-section-body .form-select:focus {
+        border-color: #53c0f0; box-shadow: 0 0 0 2px rgba(83,192,240,0.15);
       }
 
-      /* Quick Position Grid */
-      .quick-pos-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 4px;
+      /* Field chips */
+      .fe-field-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+      .fe-field-chip {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 4px 10px; border: 1px solid #2a2a5a; border-radius: 14px;
+        color: #53c0f0; font-size: 0.75rem; cursor: pointer;
+        transition: all 0.15s; background: transparent;
       }
-      .quick-pos-grid button {
-        font-size: 0.7rem;
-        padding: 4px 2px;
-        border: 1px solid #ddd;
-        background: #fafafa;
-        border-radius: 4px;
-        cursor: pointer;
+      .fe-field-chip:hover { background: rgba(83,192,240,0.12); border-color: #53c0f0; }
+      .fe-field-chip i { font-size: 0.65rem; }
+
+      /* Layers list */
+      .fe-layers-list { overflow-y: auto; flex: 1; min-height: 0; padding: 0 !important; }
+      .fe-layer-item {
+        display: flex; align-items: center; gap: 8px;
+        padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #0f3460;
+        transition: background 0.15s; color: #cbd5e0; font-size: 0.8rem;
+      }
+      .fe-layer-item:hover { background: rgba(255,255,255,0.04); }
+      .fe-layer-item.selected { background: rgba(83,192,240,0.1); border-left: 3px solid #53c0f0; }
+      .fe-layer-item .layer-icon { color: #53c0f0; width: 14px; text-align: center; }
+      .fe-layer-item .layer-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .fe-layer-item .layer-meta { color: #6b7280; font-size: 0.65rem; }
+      .fe-layer-item .layer-del {
+        opacity: 0; color: #e94560; background: none; border: none; cursor: pointer;
+        font-size: 0.7rem; padding: 2px 4px; border-radius: 3px;
+      }
+      .fe-layer-item:hover .layer-del { opacity: 0.6; }
+      .fe-layer-item .layer-del:hover { opacity: 1; background: rgba(233,69,96,0.15); }
+
+      /* Center Canvas Viewport */
+      .fe-canvas-viewport {
+        flex: 1; background: #1a1a2e; position: relative; overflow: hidden;
+        cursor: default;
+      }
+
+      /* Right Sidebar: Properties */
+      .fe-sidebar-right {
+        width: 260px; background: #16213e; border-left: 1px solid #0f3460;
+        overflow-y: auto; flex-shrink: 0;
+      }
+      .fe-props-empty {
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; height: 200px; color: #4a5568; text-align: center;
+      }
+      .fe-props-empty i { font-size: 2rem; margin-bottom: 8px; }
+      .fe-props-empty p { margin: 0; font-size: 0.85rem; color: #718096; }
+      .fe-props-empty small { color: #4a5568; font-size: 0.75rem; }
+      .fe-props-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 12px; border-bottom: 1px solid #0f3460;
+        font-weight: 600; font-size: 0.85rem; color: #e2e8f0;
+      }
+      .fe-props-section {
+        padding: 8px 12px; border-bottom: 1px solid rgba(15,52,96,0.4);
+      }
+      .fe-props-label { font-size: 0.7rem; color: #718096; margin-bottom: 4px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+      .fe-props-section .form-control, .fe-props-section .form-select {
+        background: #1a1a3e; border-color: #2a2a5a; color: #e2e8f0;
+      }
+      .fe-props-section .form-control:focus, .fe-props-section .form-select:focus {
+        border-color: #53c0f0; box-shadow: 0 0 0 2px rgba(83,192,240,0.15);
+      }
+      .fe-props-section .form-range { accent-color: #53c0f0; }
+      .fe-props-section .form-check-input { background-color: #2a2a5a; border-color: #3a3a6a; }
+      .fe-props-section .form-check-input:checked { background-color: #53c0f0; border-color: #53c0f0; }
+      .fe-props-section .form-check-label { color: #cbd5e0; }
+
+      /* Format buttons */
+      .fe-format-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 30px; height: 28px; border: 1px solid #2a2a5a; border-radius: 4px;
+        background: transparent; color: #a0aec0; cursor: pointer; font-size: 0.8rem;
         transition: all 0.15s;
       }
-      .quick-pos-grid button:hover {
-        background: #e3f2fd;
-        border-color: #90caf9;
+      .fe-format-btn:hover { background: rgba(255,255,255,0.08); color: #e2e8f0; }
+      .fe-format-btn.active { background: #53c0f0; color: #16213e; border-color: #53c0f0; }
+      .fe-rotation-presets { display: flex; gap: 4px; }
+      .fe-preset-btn {
+        flex: 1; padding: 2px; border: 1px solid #2a2a5a; border-radius: 3px;
+        background: transparent; color: #718096; font-size: 0.65rem; cursor: pointer;
+        transition: all 0.15s;
       }
+      .fe-preset-btn:hover { background: rgba(83,192,240,0.1); color: #53c0f0; border-color: #53c0f0; }
+
+      /* Status bar */
+      .fe-statusbar {
+        display: flex; align-items: center; gap: 8px;
+        padding: 4px 12px; background: #0f3460; color: #718096;
+        font-size: 0.7rem; flex-shrink: 0;
+      }
+      .fe-statusbar-sep { color: #2a2a4a; }
+      .fe-statusbar-hint { color: #4a5568; font-size: 0.65rem; }
+
+      /* ===== Sticker Editor Layout ===== */
+      .se-layout {
+        display: flex; min-height: 400px; max-height: 70vh;
+      }
+      .se-data-panel {
+        width: 220px; padding: 12px; border-right: 1px solid #e0e0e0;
+        overflow-y: auto; flex-shrink: 0; background: #fafbfc;
+      }
+      .se-section { margin-bottom: 8px; }
+      .se-canvas-area {
+        flex: 1; display: flex; flex-direction: column; min-width: 0;
+      }
+      .se-canvas-toolbar {
+        display: flex; align-items: center; gap: 4px;
+        padding: 4px 8px; background: #f0f2f5; border-bottom: 1px solid #e0e0e0;
+      }
+      .se-canvas-toolbar .fe-toolbar-btn { color: #666; width: 28px; height: 28px; }
+      .se-canvas-toolbar .fe-toolbar-btn:hover { background: rgba(0,0,0,0.08); color: #333; }
+      .se-canvas-toolbar .fe-toolbar-btn.fe-toggle.active { background: rgba(25,118,210,0.1); color: #1976d2; }
+      .se-canvas-toolbar .fe-zoom-label { color: #888; }
+      .se-canvas-wrapper {
+        flex: 1; background: #e8e8e8; position: relative; overflow: hidden; min-height: 250px;
+      }
+      .se-props-panel {
+        width: 200px; border-left: 1px solid #e0e0e0; overflow-y: auto;
+        flex-shrink: 0; background: #fafbfc;
+      }
+      .se-props-empty {
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; height: 120px; text-align: center; padding: 12px;
+      }
+      .se-props-panel .fe-props-header { border-bottom: 1px solid #eee; color: #333; }
+      .se-props-panel .fe-props-section { border-bottom: 1px solid #f0f0f0; }
+      .se-props-panel .fe-props-label { color: #888; }
+      .se-props-panel .form-control, .se-props-panel .form-select {
+        background: #fff; border-color: #ddd; color: #333;
+      }
+      .se-props-panel .form-range { accent-color: #1976d2; }
+      .se-props-panel .fe-format-btn { border-color: #ddd; color: #666; }
+      .se-props-panel .fe-format-btn:hover { background: rgba(0,0,0,0.05); }
+      .se-props-panel .fe-format-btn.active { background: #1976d2; color: #fff; border-color: #1976d2; }
 
       /* Label Creator Modal */
       .label-creator-templates {
@@ -1995,16 +2019,14 @@
         .label-cards-grid {
           grid-template-columns: 1fr;
         }
-        .label-editor-body {
-          flex-direction: column;
-        }
-        .label-editor-left {
-          width: 100%;
-          max-height: 200px;
-        }
-        .label-editor-bottom {
-          flex-direction: column;
-        }
+        .fe-body { flex-direction: column; }
+        .fe-sidebar-left { width: 100%; max-height: 180px; flex-direction: row; overflow-x: auto; }
+        .fe-sidebar-right { width: 100%; max-height: 200px; }
+        .fe-toolbar { flex-wrap: wrap; }
+        .fe-toolbar-center { order: 3; width: 100%; justify-content: center; }
+        .se-layout { flex-direction: column; max-height: none; }
+        .se-data-panel { width: 100%; border-right: none; border-bottom: 1px solid #e0e0e0; max-height: 250px; }
+        .se-props-panel { width: 100%; border-left: none; border-top: 1px solid #e0e0e0; max-height: 200px; }
         .label-creator-form-row {
           flex-direction: column;
         }
@@ -2918,114 +2940,149 @@
               </div>
             </div>
 
-            <!-- Sticker Create Form -->
+            <!-- Sticker Create Form — Now with Freeform Canvas Editor -->
             <div id="sticker-create-form" style="display:none;">
               <div class="card mb-3">
-                <div class="card-body">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0"><i class="fas fa-oil-can me-2"></i>Create Oil Change Sticker</h6>
+                <div class="card-body p-0">
+                  <div class="d-flex justify-content-between align-items-center p-3 pb-0">
+                    <h6 class="mb-0"><i class="fas fa-oil-can me-2"></i>Sticker Editor</h6>
                     <button class="btn btn-outline-secondary btn-sm" onclick="StickerSystem.hideCreateForm()">
                       <i class="fas fa-times me-1"></i>Cancel
                     </button>
                   </div>
-                  <div id="sticker-alert" class="alert alert-danger" style="display:none;"></div>
-                  <!-- Template indicator -->
-                  <div id="sticker-template-badge" class="mb-3" style="display:none;">
+                  <div id="sticker-alert" class="alert alert-danger mx-3 mt-2" style="display:none;"></div>
+                  <div id="sticker-template-badge" class="mx-3 mt-2" style="display:none;">
                     <span class="badge bg-info fs-6" id="sticker-template-name-badge"></span>
                   </div>
-                  <div class="row g-3">
-                    <div class="col-md-6">
-                      <div class="mb-3">
-                        <label class="form-label">VIN <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                          <input type="text" class="form-control" id="sticker-vin" maxlength="17" placeholder="Enter 17-character VIN" oninput="StickerSystem.onVinInput(this.value)" style="font-family:monospace; text-transform:uppercase;">
+                  <div class="se-layout">
+                    <!-- Left: Data Inputs -->
+                    <div class="se-data-panel">
+                      <div class="se-section">
+                        <label class="form-label fw-bold small">VIN <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-sm">
+                          <input type="text" class="form-control" id="sticker-vin" maxlength="17" placeholder="17-character VIN" oninput="StickerSystem.onVinInput(this.value)" style="font-family:monospace; text-transform:uppercase;">
                           <button class="btn btn-outline-primary" onclick="StickerSystem.decodeVin()" id="sticker-decode-btn" disabled>
-                            <i class="fas fa-search me-1"></i>Decode
+                            <i class="fas fa-search"></i>
                           </button>
                         </div>
                         <small class="text-muted" id="sticker-vin-status">Enter full 17-character VIN</small>
+                        <div id="sticker-vehicle-info" style="display:none;" class="alert alert-success py-1 px-2 mt-1 mb-0">
+                          <small><strong>Vehicle:</strong> <span id="sticker-vehicle-text"></span></small>
+                        </div>
                       </div>
-                      <div id="sticker-vehicle-info" style="display:none;" class="alert alert-success py-2 mb-3">
-                        <small><strong>Vehicle:</strong> <span id="sticker-vehicle-text"></span></small>
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Oil Type <span class="text-danger">*</span></label>
-                        <select class="form-select" id="sticker-oil-type" onchange="StickerSystem.updatePreview()">
+                      <div class="se-section">
+                        <label class="form-label fw-bold small">Oil Type <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" id="sticker-oil-type" onchange="StickerSystem.onDataChange()">
                           <option value="">Select oil type...</option>
-                          <option value="conv" data-days="90" data-miles="3000">Conventional Oil (90 days / 3,000 mi)</option>
-                          <option value="super" data-days="180" data-miles="7000">Super Synthetic (180 days / 7,000 mi)</option>
-                          <option value="mobil1" data-days="365" data-miles="10000">Mobil 1 (365 days / 10,000 mi)</option>
-                          <option value="rotella" data-days="90" data-miles="3000">Rotella (90 days / 3,000 mi)</option>
-                          <option value="delvac" data-days="365" data-miles="10000">Delvac 1 (365 days / 10,000 mi)</option>
+                          <option value="conv" data-days="90" data-miles="3000">Conventional (90d / 3k mi)</option>
+                          <option value="super" data-days="180" data-miles="7000">Super Synthetic (180d / 7k mi)</option>
+                          <option value="mobil1" data-days="365" data-miles="10000">Mobil 1 (365d / 10k mi)</option>
+                          <option value="rotella" data-days="90" data-miles="3000">Rotella (90d / 3k mi)</option>
+                          <option value="delvac" data-days="365" data-miles="10000">Delvac 1 (365d / 10k mi)</option>
                         </select>
                       </div>
-                      <div class="mb-3">
-                        <label class="form-label">Current Mileage <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="sticker-mileage" placeholder="e.g. 45000" min="0" oninput="StickerSystem.updatePreview()">
+                      <div class="se-section">
+                        <label class="form-label fw-bold small">Current Mileage <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control form-control-sm" id="sticker-mileage" placeholder="e.g. 45000" min="0" oninput="StickerSystem.onDataChange()">
                       </div>
-                      <div class="mb-3">
-                        <label class="form-label">Service Date</label>
-                        <input type="date" class="form-control" id="sticker-date" onchange="StickerSystem.updatePreview()">
-                        <small class="text-muted">Defaults to today</small>
+                      <div class="se-section">
+                        <label class="form-label fw-bold small">Service Date</label>
+                        <input type="date" class="form-control form-control-sm" id="sticker-date" onchange="StickerSystem.onDataChange()">
                       </div>
-                      <hr>
-                      <h6 class="mb-2"><i class="fas fa-cog me-1"></i>Print Settings</h6>
-                      <div class="mb-2">
-                        <label class="form-label small">Paper Size</label>
-                        <select class="form-select form-select-sm" id="sticker-paper-size">
+                      <hr class="my-2">
+                      <div class="se-section">
+                        <label class="form-label fw-bold small"><i class="fas fa-cog me-1"></i>Print Settings</label>
+                        <select class="form-select form-select-sm mb-1" id="sticker-paper-size" onchange="StickerSystem.onPaperChange()">
                           <optgroup label="Sticker Printers">
-                            <option value="Dymo200i" selected>Dymo 200i Label (46.1×63.5mm)</option>
-                            <option value="DymoStd">Dymo Standard Label (25.4×76.2mm)</option>
-                            <option value="BrotherSmall">Brother Small Label (36×89mm)</option>
+                            <option value="Dymo200i" selected>Dymo 200i (46.1×63.5mm)</option>
+                            <option value="DymoStd">Dymo Standard (25.4×76.2mm)</option>
+                            <option value="BrotherSmall">Brother Small (36×89mm)</option>
                             <option value="29mmx90mm">Brother DK1201 (90×29mm)</option>
                           </optgroup>
                           <optgroup label="Standard Paper">
                             <option value="Letter">Letter (8.5×11 in)</option>
                             <option value="A4">A4 (210×297mm)</option>
-                            <option value="Legal">Legal (8.5×14 in)</option>
-                          </optgroup>
-                          <optgroup label="Photo / Receipt">
-                            <option value="4x6">4×6 in</option>
-                            <option value="5x7">5×7 in</option>
                           </optgroup>
                         </select>
-                      </div>
-                      <div class="mb-2">
-                        <label class="form-label small">Printer</label>
-                        <select class="form-select form-select-sm" id="sticker-printer-select">
+                        <select class="form-select form-select-sm mb-1" id="sticker-printer-select">
                           <option value="" disabled>Connect to print server first</option>
                         </select>
-                      </div>
-                      <div class="mb-2">
-                        <label class="form-label small">Copies</label>
-                        <input type="number" class="form-control form-control-sm" id="sticker-copies" value="1" min="1" max="20">
-                      </div>
-                      <div class="mb-2">
-                        <div class="form-check form-switch">
-                          <input class="form-check-input" type="checkbox" id="sticker-qr-enabled" checked onchange="StickerSystem.updatePreview()">
-                          <label class="form-check-label small" for="sticker-qr-enabled">Include QR Code (encodes VIN)</label>
+                        <div class="d-flex gap-2 align-items-center mb-1">
+                          <label class="small text-nowrap">Copies:</label>
+                          <input type="number" class="form-control form-control-sm" id="sticker-copies" value="1" min="1" max="20" style="width:60px;">
+                          <div class="form-check form-switch ms-auto">
+                            <input class="form-check-input" type="checkbox" id="sticker-qr-enabled" checked onchange="StickerSystem.onDataChange()">
+                            <label class="form-check-label small" for="sticker-qr-enabled">QR</label>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div class="col-md-6">
-                      <div class="card h-100">
-                        <div class="card-body d-flex flex-column">
-                          <h6 class="text-center mb-3">Sticker Preview</h6>
-                          <div class="flex-grow-1 d-flex align-items-center justify-content-center" id="sticker-preview-box" style="background:#f8f9fa; border-radius:8px; min-height:250px;">
-                            <p class="text-muted">Fill in the form to see a preview</p>
-                          </div>
-                          <div class="d-flex flex-column gap-2 mt-3">
-                            <button class="btn btn-primary w-100" onclick="StickerSystem.sendToPrintClient()" id="sticker-send-btn" disabled>
-                              <i class="fas fa-paper-plane me-1"></i>Send to Print Client
-                            </button>
-                            <div class="d-flex gap-2">
-                              <button class="btn btn-outline-primary flex-fill" onclick="StickerSystem.previewPdf()" id="sticker-preview-btn" disabled>
-                                <i class="fas fa-eye me-1"></i>View PDF
-                              </button>
-                              <button class="btn btn-outline-success flex-fill" onclick="StickerSystem.createAndSave()" id="sticker-save-btn" disabled>
-                                <i class="fas fa-save me-1"></i>Save Sticker
-                              </button>
+                    <!-- Center: Canvas Editor -->
+                    <div class="se-canvas-area">
+                      <div class="se-canvas-toolbar">
+                        <button class="fe-toolbar-btn fe-toggle active" id="se-toggle-grid" onclick="StickerSystem.seToggleGrid()" title="Grid"><i class="fas fa-th"></i></button>
+                        <button class="fe-toolbar-btn" onclick="StickerSystem.seZoomFit()" title="Fit"><i class="fas fa-expand"></i></button>
+                        <span class="fe-zoom-label" id="se-zoom-label">100%</span>
+                        <span style="flex:1;"></span>
+                        <button class="fe-toolbar-btn" onclick="StickerSystem.seUndo()" title="Undo"><i class="fas fa-undo"></i></button>
+                        <button class="fe-toolbar-btn" onclick="StickerSystem.seRedo()" title="Redo"><i class="fas fa-redo"></i></button>
+                      </div>
+                      <div class="se-canvas-wrapper" id="se-canvas-viewport">
+                        <!-- Canvas rendered by CanvasEditor -->
+                      </div>
+                      <div class="d-flex gap-2 p-2">
+                        <button class="btn btn-primary btn-sm flex-fill" onclick="StickerSystem.sendToPrintClient()" id="sticker-send-btn" disabled>
+                          <i class="fas fa-paper-plane me-1"></i>Print
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="StickerSystem.previewPdf()" id="sticker-preview-btn" disabled>
+                          <i class="fas fa-eye me-1"></i>PDF
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="StickerSystem.createAndSave()" id="sticker-save-btn" disabled>
+                          <i class="fas fa-save me-1"></i>Save
+                        </button>
+                      </div>
+                    </div>
+                    <!-- Right: Element Properties -->
+                    <div class="se-props-panel" id="se-props-panel">
+                      <div class="se-props-empty" id="se-props-empty">
+                        <i class="fas fa-mouse-pointer text-muted"></i>
+                        <small class="text-muted d-block mt-1">Select an element</small>
+                      </div>
+                      <div id="se-props-content" style="display:none;">
+                        <div class="fe-props-header">
+                          <span id="se-prop-name">Element</span>
+                        </div>
+                        <div class="fe-props-section">
+                          <label class="fe-props-label">Text</label>
+                          <input type="text" class="form-control form-control-sm" id="se-prop-text" onchange="StickerSystem.seUpdateProp('text', this.value)">
+                        </div>
+                        <div class="fe-props-section">
+                          <label class="fe-props-label">Position (%)</label>
+                          <div class="d-flex gap-2">
+                            <div class="input-group input-group-sm flex-fill">
+                              <span class="input-group-text" style="font-size:0.65rem;padding:1px 4px;">X</span>
+                              <input type="number" class="form-control form-control-sm" id="se-prop-x" onchange="StickerSystem.seUpdateProp('x', parseFloat(this.value))" step="0.5">
                             </div>
+                            <div class="input-group input-group-sm flex-fill">
+                              <span class="input-group-text" style="font-size:0.65rem;padding:1px 4px;">Y</span>
+                              <input type="number" class="form-control form-control-sm" id="se-prop-y" onchange="StickerSystem.seUpdateProp('y', parseFloat(this.value))" step="0.5">
+                            </div>
+                          </div>
+                        </div>
+                        <div class="fe-props-section">
+                          <label class="fe-props-label">Font Size</label>
+                          <div class="d-flex align-items-center gap-2">
+                            <input type="range" class="form-range flex-grow-1" id="se-prop-fontsize" min="4" max="24" step="1" value="8" oninput="StickerSystem.seUpdateProp('fontSize', parseInt(this.value)); document.getElementById('se-prop-fontsize-val').textContent=this.value+'px';">
+                            <span class="badge bg-secondary" id="se-prop-fontsize-val" style="min-width:32px;">8px</span>
+                          </div>
+                        </div>
+                        <div class="fe-props-section">
+                          <div class="d-flex gap-1">
+                            <button class="fe-format-btn" id="se-prop-bold" onclick="StickerSystem.seToggleBold()" title="Bold"><i class="fas fa-bold"></i></button>
+                            <div class="fe-toolbar-sep" style="margin:0 4px;"></div>
+                            <button class="fe-format-btn" onclick="StickerSystem.seUpdateProp('textAlign','left')" id="se-align-left"><i class="fas fa-align-left"></i></button>
+                            <button class="fe-format-btn" onclick="StickerSystem.seUpdateProp('textAlign','center')" id="se-align-center"><i class="fas fa-align-center"></i></button>
+                            <button class="fe-format-btn" onclick="StickerSystem.seUpdateProp('textAlign','right')" id="se-align-right"><i class="fas fa-align-right"></i></button>
                           </div>
                         </div>
                       </div>
@@ -3300,157 +3357,208 @@
     </div>
 
     <!-- Label Editor Overlay (Full Screen) -->
+    <!-- ====== FREEFORM LABEL EDITOR OVERLAY ====== -->
     <div class="label-editor-overlay" id="labelEditorOverlay">
-      <div class="label-editor-toolbar">
-        <h5 id="editor-title">Create New Label Template</h5>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-primary btn-sm" onclick="LabelSystem.editorPreview()" id="editor-preview-btn" disabled>
-            <i class="fas fa-eye me-1"></i>Preview PDF
+      <!-- Top Toolbar -->
+      <div class="fe-toolbar">
+        <div class="fe-toolbar-left">
+          <button class="fe-toolbar-btn fe-close-btn" onclick="LabelSystem.closeEditor()" title="Close">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <input type="text" class="fe-title-input" id="editor-label-name" placeholder="Untitled Label" spellcheck="false">
+        </div>
+        <div class="fe-toolbar-center">
+          <!-- Zoom controls -->
+          <div class="fe-zoom-group">
+            <button class="fe-toolbar-btn" onclick="LabelSystem.feZoom(-1)" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+            <span class="fe-zoom-label" id="fe-zoom-label">100%</span>
+            <button class="fe-toolbar-btn" onclick="LabelSystem.feZoom(1)" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+            <button class="fe-toolbar-btn" onclick="LabelSystem.feZoomFit()" title="Fit to View"><i class="fas fa-expand"></i></button>
+          </div>
+          <div class="fe-toolbar-sep"></div>
+          <!-- Toggle controls -->
+          <button class="fe-toolbar-btn fe-toggle active" id="fe-toggle-grid" onclick="LabelSystem.feToggleGrid()" title="Toggle Grid">
+            <i class="fas fa-th"></i>
+          </button>
+          <button class="fe-toolbar-btn fe-toggle active" id="fe-toggle-snap" onclick="LabelSystem.feToggleSnap()" title="Toggle Snap">
+            <i class="fas fa-magnet"></i>
+          </button>
+          <button class="fe-toolbar-btn fe-toggle active" id="fe-toggle-rulers" onclick="LabelSystem.feToggleRulers()" title="Toggle Rulers">
+            <i class="fas fa-ruler-combined"></i>
+          </button>
+          <div class="fe-toolbar-sep"></div>
+          <!-- Undo/Redo -->
+          <button class="fe-toolbar-btn" onclick="LabelSystem.feUndo()" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+          <button class="fe-toolbar-btn" onclick="LabelSystem.feRedo()" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+        </div>
+        <div class="fe-toolbar-right">
+          <button class="btn btn-outline-primary btn-sm" onclick="LabelSystem.editorPreview()" id="editor-preview-btn">
+            <i class="fas fa-eye me-1"></i>Preview
           </button>
           <button class="btn btn-primary btn-sm" onclick="LabelSystem.editorSave()" id="editor-save-btn">
             <i class="fas fa-save me-1"></i>Save
           </button>
-          <button class="btn btn-outline-secondary btn-sm" onclick="LabelSystem.closeEditor()">
-            <i class="fas fa-times me-1"></i>Close
-          </button>
         </div>
       </div>
       <div id="editor-alert" class="alert alert-danger m-2" style="display:none;"></div>
-      <div class="label-editor-body">
-        <!-- Left Panel: Settings + Available Fields -->
-        <div class="label-editor-left">
-          <div class="panel-section">
-            <h6>Template Settings</h6>
-            <div class="mb-2">
-              <label class="form-label small">Label Name</label>
-              <input type="text" class="form-control form-control-sm" id="editor-label-name" placeholder="e.g. Tire Check-In" required>
+
+      <!-- Main Editor Body -->
+      <div class="fe-body">
+        <!-- Left Sidebar: Settings + Fields -->
+        <div class="fe-sidebar-left" id="fe-sidebar-left">
+          <div class="fe-sidebar-section">
+            <div class="fe-section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+              <span><i class="fas fa-cog me-2"></i>Settings</span>
+              <i class="fas fa-chevron-down fe-chevron"></i>
             </div>
-            <div class="mb-2">
-              <label class="form-label small">Paper Size</label>
-              <select class="form-select form-select-sm" id="editor-paper-size">
-                <option value="29mmx90mm" selected>Brother DK1201 (90×29mm)</option>
-                <option value="Brother-QL800">Brother QL-800 (62×29mm)</option>
-                <option value="Dymo-TwinTurbo">Dymo Twin Turbo (89×36mm)</option>
-                <option value="Dymo-30252">Dymo 30252 (89×28mm)</option>
-                <option value="Brother-DK2205">Brother DK-2205 (62mm cont.)</option>
-                <option value="Zebra-2x1">Zebra 2×1" (51×25mm)</option>
-              </select>
-            </div>
-            <div class="mb-2">
-              <label class="form-label small">Copies</label>
-              <input type="number" class="form-control form-control-sm" id="editor-copies" value="1" min="1" max="100">
+            <div class="fe-section-body">
+              <div class="mb-2">
+                <label class="form-label small mb-1">Paper Size</label>
+                <select class="form-select form-select-sm" id="editor-paper-size">
+                  <option value="29mmx90mm" selected>Brother DK1201 (90×29mm)</option>
+                  <option value="Brother-QL800">Brother QL-800 (62×29mm)</option>
+                  <option value="Dymo-TwinTurbo">Dymo Twin Turbo (89×36mm)</option>
+                  <option value="Dymo-30252">Dymo 30252 (89×28mm)</option>
+                  <option value="Brother-DK2205">Brother DK-2205 (62mm cont.)</option>
+                  <option value="Zebra-2x1">Zebra 2×1" (51×25mm)</option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small mb-1">Copies</label>
+                <input type="number" class="form-control form-control-sm" id="editor-copies" value="1" min="1" max="100">
+              </div>
             </div>
           </div>
-          <div class="panel-section" style="flex-grow:1; overflow:auto;">
-            <h6>Available Fields</h6>
-            <ul class="label-field-add-list" id="editor-available-fields">
+          <div class="fe-sidebar-section">
+            <div class="fe-section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+              <span><i class="fas fa-plus-circle me-2"></i>Add Fields</span>
+              <i class="fas fa-chevron-down fe-chevron"></i>
+            </div>
+            <div class="fe-section-body">
+              <div class="fe-field-chips" id="editor-available-fields">
+                <!-- Populated by JS -->
+              </div>
+              <div class="input-group input-group-sm mt-2">
+                <input type="text" class="form-control" id="editor-custom-field-name" placeholder="Custom field...">
+                <button class="btn btn-outline-primary" onclick="LabelSystem.editorAddCustomField()"><i class="fas fa-plus"></i></button>
+              </div>
+            </div>
+          </div>
+          <div class="fe-sidebar-section" style="flex:1; min-height:0;">
+            <div class="fe-section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+              <span><i class="fas fa-layer-group me-2"></i>Layers <span class="badge bg-secondary ms-1" id="editor-field-count">0</span></span>
+              <i class="fas fa-chevron-down fe-chevron"></i>
+            </div>
+            <div class="fe-section-body fe-layers-list" id="editor-fields-list">
               <!-- Populated by JS -->
-            </ul>
-            <hr>
-            <h6>Custom Field</h6>
-            <div class="input-group input-group-sm">
-              <input type="text" class="form-control" id="editor-custom-field-name" placeholder="Field name...">
-              <button class="btn btn-outline-primary" onclick="LabelSystem.editorAddCustomField()">Add</button>
             </div>
           </div>
         </div>
 
-        <!-- Center Panel: Canvas + Field lists -->
-        <div class="label-editor-center">
-          <h6 class="text-muted mb-2" id="editor-canvas-title">Label Preview</h6>
-          <div class="label-canvas-wrapper" id="editor-canvas" style="width:400px; height:187px;">
-            <div class="text-center text-muted" style="padding-top:80px;" id="editor-canvas-empty">
-              Add fields from the left panel
-            </div>
-            <!-- Fields rendered by JS -->
-          </div>
-          <small class="text-muted mt-2">Drag fields to reposition &bull; Click field to edit properties</small>
+        <!-- Center: Canvas viewport -->
+        <div class="fe-canvas-viewport" id="fe-canvas-viewport">
+          <!-- Canvas rendered by CanvasEditor -->
+        </div>
 
-          <div class="label-editor-bottom mt-3">
-            <!-- Fields List -->
-            <div class="label-fields-list-panel">
-              <div class="panel-header">Fields on Label (<span id="editor-field-count">0</span>)</div>
-              <div class="panel-body" id="editor-fields-list">
-                <!-- Populated by JS -->
+        <!-- Right Sidebar: Properties -->
+        <div class="fe-sidebar-right" id="fe-sidebar-right">
+          <div id="editor-props-panel">
+            <div class="fe-props-empty" id="fe-props-empty">
+              <i class="fas fa-mouse-pointer"></i>
+              <p>Select an element to edit its properties</p>
+              <small>Click on the canvas, or use the layers panel</small>
+            </div>
+            <div id="fe-props-content" style="display:none;">
+              <div class="fe-props-header">
+                <span id="editor-prop-field-name">Field Name</span>
+                <button class="btn btn-sm btn-outline-danger" onclick="LabelSystem.editorDeleteSelectedField()" title="Delete"><i class="fas fa-trash"></i></button>
               </div>
-            </div>
-
-            <!-- Field Properties -->
-            <div class="label-field-props-panel" id="editor-props-panel" style="display:none;">
-              <div class="panel-header">Field Properties: <span id="editor-prop-field-name"></span></div>
-              <div class="panel-body">
-                <div class="mb-2">
-                  <label class="form-label small">Preview Value</label>
-                  <input type="text" class="form-control form-control-sm" id="prop-value" onchange="LabelSystem.editorUpdateFieldProp('value', this.value)">
-                </div>
-                <div class="form-check form-switch mb-2">
-                  <input class="form-check-input" type="checkbox" id="prop-show-in-form" onchange="LabelSystem.editorUpdateFieldProp('showInForm', this.checked)" checked>
-                  <label class="form-check-label small" for="prop-show-in-form">Show in Form (users prompted to fill this)</label>
-                </div>
-                <div class="mb-2">
-                  <label class="form-label small">Position</label>
-                  <div class="d-flex gap-2">
-                    <div class="flex-fill">
-                      <label class="form-label" style="font-size:0.7rem">X</label>
+              <div class="fe-props-section">
+                <label class="fe-props-label">Text</label>
+                <input type="text" class="form-control form-control-sm" id="prop-value" onchange="LabelSystem.editorUpdateFieldProp('value', this.value)">
+              </div>
+              <div class="fe-props-section">
+                <label class="fe-props-label">Position (px)</label>
+                <div class="d-flex gap-2">
+                  <div class="flex-fill">
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text" style="font-size:0.7rem;padding:2px 6px;">X</span>
                       <input type="number" class="form-control form-control-sm" id="prop-x" onchange="LabelSystem.editorUpdateFieldProp('x', parseInt(this.value))">
                     </div>
-                    <div class="flex-fill">
-                      <label class="form-label" style="font-size:0.7rem">Y</label>
+                  </div>
+                  <div class="flex-fill">
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text" style="font-size:0.7rem;padding:2px 6px;">Y</span>
                       <input type="number" class="form-control form-control-sm" id="prop-y" onchange="LabelSystem.editorUpdateFieldProp('y', parseInt(this.value))">
                     </div>
                   </div>
                 </div>
-                <div class="mb-2">
-                  <label class="form-label small">Font Family</label>
-                  <select class="form-select form-select-sm" id="prop-font-family" onchange="LabelSystem.editorUpdateFieldProp('fontFamily', this.value)">
-                    <option>Arial</option>
-                    <option>Helvetica</option>
-                    <option>Times New Roman</option>
-                    <option>Courier New</option>
-                    <option>Verdana</option>
-                    <option>Georgia</option>
-                    <option>Tahoma</option>
-                    <option>Trebuchet MS</option>
-                    <option>Impact</option>
-                    <option>Comic Sans MS</option>
-                  </select>
+              </div>
+              <div class="fe-props-section">
+                <label class="fe-props-label">Font</label>
+                <select class="form-select form-select-sm mb-2" id="prop-font-family" onchange="LabelSystem.editorUpdateFieldProp('fontFamily', this.value)">
+                  <option>Arial</option>
+                  <option>Helvetica</option>
+                  <option>Times New Roman</option>
+                  <option>Courier New</option>
+                  <option>Verdana</option>
+                  <option>Georgia</option>
+                  <option>Tahoma</option>
+                  <option>Trebuchet MS</option>
+                  <option>Impact</option>
+                </select>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <input type="range" class="form-range flex-grow-1" id="prop-font-size" min="6" max="48" step="1" value="12" oninput="LabelSystem.editorUpdateFieldProp('fontSize', parseInt(this.value)); document.getElementById('prop-font-size-val').textContent=this.value;">
+                  <span class="badge bg-secondary" id="prop-font-size-val" style="min-width:32px;">12</span>
                 </div>
-                <div class="mb-2">
-                  <label class="form-label small">Font Size: <span id="prop-font-size-val">12</span>px</label>
-                  <input type="range" class="form-range" id="prop-font-size" min="6" max="32" step="1" value="12" oninput="LabelSystem.editorUpdateFieldProp('fontSize', parseInt(this.value)); document.getElementById('prop-font-size-val').textContent=this.value;">
+                <div class="d-flex gap-1">
+                  <button type="button" class="fe-format-btn" id="prop-bold" onclick="LabelSystem.editorToggleBold()" title="Bold"><i class="fas fa-bold"></i></button>
+                  <div class="fe-toolbar-sep" style="margin:0 4px;"></div>
+                  <button type="button" class="fe-format-btn" onclick="LabelSystem.editorUpdateFieldProp('textAlign','left')" id="prop-align-left" title="Align Left"><i class="fas fa-align-left"></i></button>
+                  <button type="button" class="fe-format-btn" onclick="LabelSystem.editorUpdateFieldProp('textAlign','center')" id="prop-align-center" title="Align Center"><i class="fas fa-align-center"></i></button>
+                  <button type="button" class="fe-format-btn" onclick="LabelSystem.editorUpdateFieldProp('textAlign','right')" id="prop-align-right" title="Align Right"><i class="fas fa-align-right"></i></button>
                 </div>
-                <div class="mb-2">
-                  <label class="form-label small">Text Alignment</label>
-                  <div class="btn-group btn-group-sm w-100" role="group">
-                    <button type="button" class="btn btn-outline-secondary" onclick="LabelSystem.editorUpdateFieldProp('textAlign','left')" id="prop-align-left"><i class="fas fa-align-left"></i></button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="LabelSystem.editorUpdateFieldProp('textAlign','center')" id="prop-align-center"><i class="fas fa-align-center"></i></button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="LabelSystem.editorUpdateFieldProp('textAlign','right')" id="prop-align-right"><i class="fas fa-align-right"></i></button>
-                  </div>
+              </div>
+              <div class="fe-props-section">
+                <label class="fe-props-label">Color</label>
+                <div class="d-flex gap-2 align-items-center">
+                  <input type="color" class="form-control form-control-color" id="prop-color" value="#000000" style="width:40px;height:30px;padding:2px;" onchange="LabelSystem.editorUpdateFieldProp('color', this.value)">
+                  <span class="small text-muted" id="prop-color-hex">#000000</span>
                 </div>
-                <div class="mb-2">
-                  <label class="form-label small">Text Color</label>
-                  <input type="color" class="form-control form-control-sm form-control-color" id="prop-color" value="#000000" style="width:100%;" onchange="LabelSystem.editorUpdateFieldProp('color', this.value)">
+              </div>
+              <div class="fe-props-section">
+                <label class="fe-props-label">Rotation</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="range" class="form-range flex-grow-1" id="prop-rotation" min="0" max="360" step="1" value="0" oninput="LabelSystem.editorUpdateFieldProp('rotation', parseInt(this.value)); document.getElementById('prop-rotation-val').textContent=this.value+'°';">
+                  <span class="badge bg-secondary" id="prop-rotation-val" style="min-width:38px;">0°</span>
                 </div>
-                <div class="mb-2">
-                  <label class="form-label small">Rotation: <span id="prop-rotation-val">0°</span></label>
-                  <input type="range" class="form-range" id="prop-rotation" min="0" max="270" step="90" value="0" oninput="LabelSystem.editorUpdateFieldProp('rotation', parseInt(this.value)); document.getElementById('prop-rotation-val').textContent=this.value+'°';">
-                  <div class="d-flex justify-content-between" style="font-size:0.65rem; color:#999;">
-                    <span>0°</span><span>90°</span><span>180°</span><span>270°</span>
-                  </div>
+                <div class="fe-rotation-presets mt-1">
+                  <button class="fe-preset-btn" onclick="LabelSystem.editorUpdateFieldProp('rotation',0)">0°</button>
+                  <button class="fe-preset-btn" onclick="LabelSystem.editorUpdateFieldProp('rotation',90)">90°</button>
+                  <button class="fe-preset-btn" onclick="LabelSystem.editorUpdateFieldProp('rotation',180)">180°</button>
+                  <button class="fe-preset-btn" onclick="LabelSystem.editorUpdateFieldProp('rotation',270)">270°</button>
                 </div>
-                <div class="mb-2">
-                  <label class="form-label small">Quick Position</label>
-                  <div class="quick-pos-grid" id="quick-pos-grid">
-                    <!-- Populated by JS -->
-                  </div>
+              </div>
+              <div class="fe-props-section">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="prop-show-in-form" onchange="LabelSystem.editorUpdateFieldProp('showInForm', this.checked)" checked>
+                  <label class="form-check-label small" for="prop-show-in-form">Show in create form</label>
                 </div>
-                <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="LabelSystem.editorDeleteSelectedField()">
-                  <i class="fas fa-trash me-1"></i>Delete Field
-                </button>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Bottom Status Bar -->
+      <div class="fe-statusbar">
+        <span id="fe-status-paper">90 × 29 mm</span>
+        <span class="fe-statusbar-sep">|</span>
+        <span id="fe-status-fields">0 fields</span>
+        <span class="fe-statusbar-sep">|</span>
+        <span id="fe-status-pos">—</span>
+        <span style="flex:1;"></span>
+        <span class="fe-statusbar-hint">Drag to move • Handles to resize • Double-click to edit text • Arrow keys to nudge • Del to delete</span>
       </div>
     </div>
 
@@ -6878,6 +6986,7 @@
     <script src="../assets/js/admin-features.js"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <script src="../assets/js/canvas-editor.js"></script>
     <script src="../assets/js/admin-labels.js"></script>
   </body>
 </html>
