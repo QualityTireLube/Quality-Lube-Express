@@ -2106,14 +2106,14 @@ const STICKER_LAYOUT = {
   qrCodeSize: 14, // mm
   qrCodePosition: { x: 50, y: 78 }, // percentage of available area
   elements: [
-    { id: 'header',         label: 'Header',          content: 'Next Service Due',  x: 50, y: 10, fontSize: 1.25, bold: true,  align: 'center' },
-    { id: 'serviceDate',    label: 'Service Date',    content: '{serviceDate}',     x: 10, y: 18, fontSize: 1.0,  bold: false, align: 'left' },
-    { id: 'serviceMileage', label: 'Service Mileage', content: '{serviceMileage}',  x: 90, y: 18, fontSize: 1.0,  bold: false, align: 'right' },
-    { id: 'oilType',        label: 'Oil Type',        content: '{oilType}',         x: 50, y: 24, fontSize: 1.0,  bold: false, align: 'center' },
-    { id: 'companyName',    label: 'Company Name',    content: 'Quality Lube Express', x: 50, y: 32, fontSize: 1.25, bold: true,  align: 'center' },
-    { id: 'address',        label: 'Address',         content: '3617 HWY 19 Zachary LA 70791', x: 50, y: 37, fontSize: 0.7, bold: false, align: 'center' },
-    { id: 'message',        label: 'Thank You',       content: 'THANK YOU',          x: 50, y: 44, fontSize: 1.25, bold: true,  align: 'center' },
-    { id: 'decodedDetails', label: 'Vehicle Details',  content: '{decodedDetails}',  x: 50, y: 50, fontSize: 0.7,  bold: false, align: 'center' }
+    { id: 'header',         label: 'Header',          content: 'Next Service Due',  x: 50, y: 20, fontSize: 1.25, bold: true,  align: 'center' },
+    { id: 'serviceDate',    label: 'Service Date',    content: '{serviceDate}',     x: 10, y: 28, fontSize: 1.0,  bold: false, align: 'left' },
+    { id: 'serviceMileage', label: 'Service Mileage', content: '{serviceMileage}',  x: 90, y: 28, fontSize: 1.0,  bold: false, align: 'right' },
+    { id: 'oilType',        label: 'Oil Type',        content: '{oilType}',         x: 50, y: 34, fontSize: 1.0,  bold: false, align: 'center' },
+    { id: 'companyName',    label: 'Company Name',    content: 'Quality Lube Express', x: 50, y: 42, fontSize: 1.25, bold: true,  align: 'center' },
+    { id: 'address',        label: 'Address',         content: '3617 HWY 19 Zachary LA 70791', x: 50, y: 47, fontSize: 0.7, bold: false, align: 'center' },
+    { id: 'message',        label: 'Thank You',       content: 'THANK YOU',          x: 50, y: 54, fontSize: 1.25, bold: true,  align: 'center' },
+    { id: 'decodedDetails', label: 'Vehicle Details',  content: '{decodedDetails}',  x: 50, y: 60, fontSize: 0.7,  bold: false, align: 'center' }
   ]
 };
 
