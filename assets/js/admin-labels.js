@@ -2107,12 +2107,12 @@ const STICKER_LAYOUT = {
   qrCodePosition: { x: 50, y: 78 }, // percentage of available area
   elements: [
     { id: 'header',         label: 'Header',          content: 'Next Service Due',  x: 50, y: 25, fontSize: 1.50, bold: true,  align: 'center' },
-    { id: 'serviceDate',    label: 'Service Date',    content: '{serviceDate}',     x: 10, y: 33, fontSize: 1.25,  bold: false, align: 'left' },
-    { id: 'serviceMileage', label: 'Service Mileage', content: '{serviceMileage}',  x: 90, y: 33, fontSize: 1.25,  bold: false, align: 'right' },
-    { id: 'oilType',        label: 'Oil Type',        content: '{oilType}',         x: 50, y: 39, fontSize: 1.25,  bold: false, align: 'center' },
+    { id: 'serviceDate',    label: 'Service Date',    content: '{serviceDate}',     x: 10, y: 34, fontSize: 1.25,  bold: false, align: 'left' },
+    { id: 'serviceMileage', label: 'Service Mileage', content: '{serviceMileage}',  x: 90, y: 34, fontSize: 1.25,  bold: false, align: 'right' },
+    { id: 'oilType',        label: 'Oil Type',        content: '{oilType}',         x: 50, y: 41, fontSize: 1.25,  bold: false, align: 'center' },
     { id: 'companyName',    label: 'Company Name',    content: 'Quality Lube Express', x: 50, y: 47, fontSize: 1.50, bold: true,  align: 'center' },
-    { id: 'address',        label: 'Address',         content: '3617 HWY 19 Zachary LA 70791', x: 50, y: 52, fontSize: 1.00, bold: false, align: 'center' },
-    { id: 'message',        label: 'Thank You',       content: 'THANK YOU',          x: 50, y: 59, fontSize: 1.50, bold: true,  align: 'center' },
+    { id: 'address',        label: 'Address',         content: '3617 HWY 19 Zachary LA 70791', x: 50, y: 54, fontSize: 1.00, bold: false, align: 'center' },
+    { id: 'message',        label: 'Thank You',       content: 'THANK YOU',          x: 50, y: 60, fontSize: 1.50, bold: true,  align: 'center' },
     { id: 'decodedDetails', label: 'Vehicle Details',  content: '{decodedDetails}',  x: 50, y: 65, fontSize: 0.7,  bold: false, align: 'center' }
   ]
 };
