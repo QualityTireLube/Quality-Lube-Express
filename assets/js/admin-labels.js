@@ -45,6 +45,7 @@ const AVAILABLE_FIELDS = [
   'Part Number',
   'Vendor Part Number',
   'Vendor',
+  'Vendor Invoice Number',
   'Bin/Location',
   'Copies to be Printed'
 ];
@@ -133,6 +134,12 @@ function getPredefinedTemplates() {
     {
       id: generateId(), labelName: 'Parts Return',
       fields: [createField('Created By', 15), createField('Created Date', 35), createField('Invoice #', 55), createField('Part Number', 75), createField('Vendor', 95)],
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
+    },
+    {
+      id: generateId(), labelName: 'Parts Core Return',
+      fields: [createField('Created By', 10), createField('Created Date', 25), createField('Part Number', 40), createField('Vendor Invoice Number', 55), createField('Vendor', 70), createField('Copies to be Printed', 85)],
       paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
       copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
     }
@@ -255,6 +262,7 @@ const LabelPdfGenerator = {
       'Part Number': 'PN-123456',
       'Vendor Part Number': 'VPN-789',
       'Vendor': 'ABC Supply Co.',
+      'Vendor Invoice Number': 'VI-2024-001',
       'Bin/Location': 'A1-B2',
       'Copies to be Printed': '1'
     };
@@ -608,6 +616,7 @@ const LabelSystem = {
     // Action buttons matching screenshot style
     const editBtn = '<button class="ls-action-btn" title="Edit" onclick="event.stopPropagation(); LabelSystem.openEditor(\'' + template.id + '\')"><i class="fas fa-sliders-h"></i></button>';
     const printBtn = !isArchived ? '<button class="ls-action-btn" title="Print" onclick="event.stopPropagation(); LabelSystem.useTemplate(\'' + template.id + '\')"><i class="fas fa-print"></i></button>' : '';
+    const downloadBtn = '<button class="ls-action-btn" title="Download PDF" onclick="event.stopPropagation(); LabelSystem.downloadTemplatePdf(\'' + template.id + '\')"><i class="fas fa-download"></i></button>';
     const archiveBtn = !isArchived
       ? '<button class="ls-action-btn" title="Archive" onclick="event.stopPropagation(); LabelSystem.archiveTemplate(\'' + template.id + '\')"><i class="fas fa-archive"></i></button>'
       : '<button class="ls-action-btn" title="Restore" onclick="event.stopPropagation(); LabelSystem.restoreTemplate(\'' + template.id + '\')"><i class="fas fa-undo"></i></button>';
@@ -622,7 +631,7 @@ const LabelSystem = {
       '<td>' + this.escHtml(createdBy) + '</td>' +
       '<td>' + status + '</td>' +
       '<td>' + created + '</td>' +
-      '<td>' + editBtn + printBtn + archiveBtn + deleteBtn + '</td>' +
+      '<td>' + editBtn + printBtn + downloadBtn + archiveBtn + deleteBtn + '</td>' +
     '</tr>';
   },
 
@@ -1999,6 +2008,7 @@ const LabelSystem = {
     this.refreshClients();
     this.refreshLiveLogs();
     this.startLiveLogAutoRefresh();
+    StickerSystem.renderStickerSettings();
   },
 
   updateStats() {
@@ -2165,6 +2175,7 @@ const StickerSystem = {
   init() {
     if (!this.initialized) {
       this.initialized = true;
+      this.loadStickerSettings();
       const dateEl = document.getElementById('sticker-date');
       if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
     }
@@ -2773,36 +2784,370 @@ const StickerSystem = {
     const empty = document.getElementById('stickers-empty');
     if (!tbody) return;
 
-    if (this.stickers.length === 0) {
+    const activeStickers = this.stickers.filter(s => !s.archived);
+    const archivedStickers = this.stickers.filter(s => s.archived);
+
+    if (activeStickers.length === 0) {
       tbody.innerHTML = '';
       if (table) table.style.display = 'none';
       if (empty) empty.style.display = 'block';
-      return;
+    } else {
+      if (table) table.style.display = 'table';
+      if (empty) empty.style.display = 'none';
+      tbody.innerHTML = activeStickers.map(s => this._renderStickerRow(s, false)).join('');
     }
-    if (table) table.style.display = 'table';
-    if (empty) empty.style.display = 'none';
 
-    tbody.innerHTML = this.stickers.map(s => {
-      const oilName = s.oilTypeName || (OIL_TYPES[s.oilTypeKey] ? OIL_TYPES[s.oilTypeKey].name : s.oilTypeKey);
-      const created = s.createdDate ? new Date(s.createdDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' }) : '\u2014';
-      const vehicleTxt = s.vehicleDetails || '';
-      const statusBadge = s.printed
-        ? '<span class="ls-status-badge printed">Printed</span>'
-        : '<span class="ls-status-badge not-printed">Not Printed</span>';
+    // Also render archived stickers in the archived tab
+    const archivedTbody = document.getElementById('archived-stickers-table-body');
+    const archivedTable = document.getElementById('archived-stickers-table');
+    const archivedEmpty = document.getElementById('archived-stickers-empty');
+    if (archivedTbody) {
+      if (archivedStickers.length === 0) {
+        archivedTbody.innerHTML = '';
+        if (archivedTable) archivedTable.style.display = 'none';
+        if (archivedEmpty) archivedEmpty.style.display = 'block';
+      } else {
+        if (archivedTable) archivedTable.style.display = 'table';
+        if (archivedEmpty) archivedEmpty.style.display = 'none';
+        archivedTbody.innerHTML = archivedStickers.map(s => this._renderStickerRow(s, true)).join('');
+      }
+    }
 
-      return '<tr>' +
-        '<td><strong>' + this.esc(s.vin || '\u2014') + '</strong></td>' +
-        '<td>' + this.esc(oilName) + '</td>' +
-        '<td>' + this.esc(vehicleTxt || '\u2014') + '</td>' +
-        '<td>' + (s.mileage || 0).toLocaleString() + '</td>' +
-        '<td>' + statusBadge + '</td>' +
-        '<td>' + created + '</td>' +
-        '<td>' +
-          '<button class="ls-action-btn" title="Print" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')"><i class="fas fa-print"></i></button>' +
-          '<button class="ls-action-btn danger" title="Delete" onclick="StickerSystem.deleteSticker(\'' + s.id + '\')"><i class="fas fa-trash"></i></button>' +
-        '</td>' +
-      '</tr>';
-    }).join('');
+    // Update archived sticker count badge
+    const countEl = document.getElementById('ls-archived-stickers-count');
+    if (countEl) countEl.textContent = archivedStickers.length;
+  },
+
+  _renderStickerRow(s, isArchived) {
+    const oilName = s.oilTypeName || (OIL_TYPES[s.oilTypeKey] ? OIL_TYPES[s.oilTypeKey].name : s.oilTypeKey);
+    const created = s.createdDate ? new Date(s.createdDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' }) : '\u2014';
+    const vehicleTxt = s.vehicleDetails || '';
+    const statusBadge = s.printed
+      ? '<span class="ls-status-badge printed">Printed</span>'
+      : '<span class="ls-status-badge not-printed">Not Printed</span>';
+    const archivedBadge = isArchived ? '<span class="ls-status-badge inactive ms-1">Archived</span>' : '';
+
+    const qrBtn = '<button class="ls-action-btn" title="QR Code" onclick="StickerSystem.showQrCode(\'' + s.id + '\')"><i class="fas fa-qrcode"></i></button>';
+    const vinBtn = '<button class="ls-action-btn" title="Vehicle Details" onclick="StickerSystem.showVinDetails(\'' + s.id + '\')"><i class="fas fa-car"></i></button>';
+    const printBtn = '<button class="ls-action-btn" title="Print" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')"><i class="fas fa-print"></i></button>';
+    const archiveBtn = !isArchived
+      ? '<button class="ls-action-btn" title="Archive" onclick="StickerSystem.archiveSticker(\'' + s.id + '\')"><i class="fas fa-archive"></i></button>'
+      : '<button class="ls-action-btn" title="Restore" onclick="StickerSystem.restoreSticker(\'' + s.id + '\')"><i class="fas fa-undo"></i></button>';
+    const deleteBtn = isArchived
+      ? '<button class="ls-action-btn danger" title="Delete" onclick="StickerSystem.deleteSticker(\'' + s.id + '\')"><i class="fas fa-trash"></i></button>'
+      : '';
+
+    return '<tr>' +
+      '<td><strong>' + this.esc(s.vin || '\u2014') + '</strong></td>' +
+      '<td>' + this.esc(oilName) + '</td>' +
+      '<td>' + this.esc(vehicleTxt || '\u2014') + '</td>' +
+      '<td>' + (s.mileage || 0).toLocaleString() + '</td>' +
+      '<td>' + statusBadge + archivedBadge + '</td>' +
+      '<td>' + created + '</td>' +
+      '<td>' + qrBtn + vinBtn + printBtn + archiveBtn + deleteBtn + '</td>' +
+    '</tr>';
+  },
+
+  // ---- Archive / Restore ----
+  async archiveSticker(id) {
+    try {
+      await this.getDb().collection('static_stickers').doc(id).update({
+        archived: true, lastUpdated: new Date().toISOString()
+      });
+      await this.loadStickers();
+    } catch (err) {
+      console.error('Archive sticker failed:', err);
+      alert('Failed to archive sticker');
+    }
+  },
+
+  async restoreSticker(id) {
+    try {
+      await this.getDb().collection('static_stickers').doc(id).update({
+        archived: false, lastUpdated: new Date().toISOString()
+      });
+      await this.loadStickers();
+    } catch (err) {
+      console.error('Restore sticker failed:', err);
+      alert('Failed to restore sticker');
+    }
+  },
+
+  // ---- QR Code Viewer ----
+  async showQrCode(id) {
+    const sticker = this.stickers.find(s => s.id === id);
+    if (!sticker || !sticker.vin) return;
+    const modal = document.getElementById('stickerQrModal');
+    if (!modal) return;
+    document.getElementById('qr-modal-vin').textContent = sticker.vin;
+    const container = document.getElementById('qr-modal-canvas');
+    container.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary" role="status"></div></div>';
+    try {
+      const dataUrl = await this.generateQrDataUrl(sticker.vin, 200);
+      container.innerHTML = '<img src="' + dataUrl + '" alt="QR Code" style="width:200px; height:200px; image-rendering:pixelated;">';
+    } catch (e) {
+      container.innerHTML = '<p class="text-danger">Failed to generate QR code</p>';
+    }
+    new bootstrap.Modal(modal).show();
+  },
+
+  // ---- VIN Details Viewer ----
+  showVinDetails(id) {
+    const sticker = this.stickers.find(s => s.id === id);
+    if (!sticker) return;
+    const modal = document.getElementById('stickerVinModal');
+    if (!modal) return;
+
+    const decoded = sticker.decodedVin || {};
+    const oilName = sticker.oilTypeName || (OIL_TYPES[sticker.oilTypeKey] ? OIL_TYPES[sticker.oilTypeKey].name : sticker.oilTypeKey || '\u2014');
+    const nextDate = sticker.nextServiceDate || '\u2014';
+    const nextMileage = sticker.nextServiceMileage || '\u2014';
+    const mileage = sticker.mileage ? sticker.mileage.toLocaleString() : '\u2014';
+
+    const infoRow = (label, value) => value ? '<tr><td class="fw-bold pe-3 text-muted small text-nowrap">' + label + '</td><td>' + this.esc(String(value)) + '</td></tr>' : '';
+
+    document.getElementById('vin-modal-content').innerHTML =
+      '<div class="row g-3">' +
+        '<div class="col-md-6">' +
+          '<div class="card h-100"><div class="card-body">' +
+            '<h6 class="card-title mb-3"><i class="fas fa-car me-2 text-primary"></i>Vehicle Information</h6>' +
+            '<table class="table table-sm table-borderless mb-0">' +
+              infoRow('VIN', sticker.vin) +
+              infoRow('Year', decoded.year) +
+              infoRow('Make', decoded.make) +
+              infoRow('Model', decoded.model) +
+              infoRow('Trim', decoded.trim) +
+              infoRow('Body Type', decoded.bodyType) +
+              infoRow('Drive Type', decoded.driveType) +
+            '</table>' +
+          '</div></div>' +
+        '</div>' +
+        '<div class="col-md-6">' +
+          '<div class="card h-100"><div class="card-body">' +
+            '<h6 class="card-title mb-3"><i class="fas fa-cogs me-2 text-primary"></i>Engine &amp; Service</h6>' +
+            '<table class="table table-sm table-borderless mb-0">' +
+              infoRow('Engine', decoded.engineL ? decoded.engineL + 'L' : '') +
+              infoRow('Cylinders', decoded.engineCylinders) +
+              infoRow('Fuel Type', decoded.fuelType) +
+              infoRow('Transmission', decoded.transmission) +
+              '<tr><td colspan="2"><hr class="my-2"></td></tr>' +
+              infoRow('Oil Type', oilName) +
+              infoRow('Current Mileage', mileage + ' mi') +
+              infoRow('Next Service Date', nextDate) +
+              infoRow('Next Service Mileage', nextMileage) +
+            '</table>' +
+          '</div></div>' +
+        '</div>' +
+      '</div>';
+
+    new bootstrap.Modal(modal).show();
+  },
+
+  // ---- Sticker Settings ----
+  loadStickerSettings() {
+    try {
+      const saved = localStorage.getItem('stickerSettings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.layout) Object.assign(STICKER_LAYOUT, parsed.layout);
+        if (parsed.oilTypes) {
+          // Merge custom oil types
+          Object.keys(parsed.oilTypes).forEach(k => { OIL_TYPES[k] = parsed.oilTypes[k]; });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load sticker settings:', e);
+    }
+  },
+
+  saveStickerSettings() {
+    try {
+      const settings = {
+        layout: {
+          fontSize: STICKER_LAYOUT.fontSize,
+          fontFamily: STICKER_LAYOUT.fontFamily,
+          margins: { ...STICKER_LAYOUT.margins },
+          qrCodeSize: STICKER_LAYOUT.qrCodeSize,
+          qrCodePosition: { ...STICKER_LAYOUT.qrCodePosition },
+          elements: STICKER_LAYOUT.elements.map(el => ({ ...el }))
+        },
+        oilTypes: { ...OIL_TYPES }
+      };
+      localStorage.setItem('stickerSettings', JSON.stringify(settings));
+      alert('Sticker settings saved!');
+    } catch (e) {
+      alert('Failed to save sticker settings');
+    }
+  },
+
+  resetStickerSettings() {
+    if (!confirm('Reset all sticker settings to defaults? This will remove any custom oil types.')) return;
+    localStorage.removeItem('stickerSettings');
+    location.reload();
+  },
+
+  renderStickerSettings() {
+    // Oil Types Table
+    const oilTbody = document.getElementById('sticker-oil-types-tbody');
+    if (oilTbody) {
+      oilTbody.innerHTML = Object.entries(OIL_TYPES).map(([key, ot]) =>
+        '<tr>' +
+          '<td>' + this.esc(ot.name) + '</td>' +
+          '<td>' + ot.durationDays + ' days</td>' +
+          '<td>' + ot.mileageInterval.toLocaleString() + ' mi</td>' +
+          '<td>' +
+            '<button class="ls-action-btn" title="Edit" onclick="StickerSystem.editOilType(\'' + key + '\')"><i class="fas fa-edit"></i></button>' +
+            (Object.keys(OIL_TYPES).length > 1 ? '<button class="ls-action-btn danger" title="Delete" onclick="StickerSystem.deleteOilType(\'' + key + '\')"><i class="fas fa-trash"></i></button>' : '') +
+          '</td>' +
+        '</tr>'
+      ).join('');
+    }
+
+    // Layout Settings
+    const fsEl = document.getElementById('sticker-set-fontsize');
+    if (fsEl) fsEl.value = STICKER_LAYOUT.fontSize;
+    const ffEl = document.getElementById('sticker-set-fontfamily');
+    if (ffEl) ffEl.value = STICKER_LAYOUT.fontFamily;
+    const qrSizeEl = document.getElementById('sticker-set-qrsize');
+    if (qrSizeEl) qrSizeEl.value = STICKER_LAYOUT.qrCodeSize;
+    const qrXEl = document.getElementById('sticker-set-qrx');
+    if (qrXEl) qrXEl.value = STICKER_LAYOUT.qrCodePosition.x;
+    const qrYEl = document.getElementById('sticker-set-qry');
+    if (qrYEl) qrYEl.value = STICKER_LAYOUT.qrCodePosition.y;
+    ['top', 'bottom', 'left', 'right'].forEach(side => {
+      const el = document.getElementById('sticker-set-margin-' + side);
+      if (el) el.value = STICKER_LAYOUT.margins[side];
+    });
+
+    // Layout Elements
+    this.renderLayoutElements();
+  },
+
+  renderLayoutElements() {
+    const container = document.getElementById('sticker-layout-elements');
+    if (!container) return;
+    container.innerHTML = STICKER_LAYOUT.elements.map((el, idx) =>
+      '<div class="sticker-element-row">' +
+        '<div class="d-flex justify-content-between align-items-center">' +
+          '<strong class="small">' + this.esc(el.label) + '</strong>' +
+          '<div class="d-flex gap-1 align-items-center">' +
+            '<span class="badge bg-light text-dark" style="font-size:0.65rem;">(' + el.x + '%, ' + el.y + '%)</span>' +
+            '<button class="ls-action-btn" title="Edit Element" onclick="StickerSystem.editLayoutElement(' + idx + ')"><i class="fas fa-edit"></i></button>' +
+            (el.id.startsWith('custom_') ? '<button class="ls-action-btn danger" title="Delete" onclick="StickerSystem.deleteLayoutElement(' + idx + ')"><i class="fas fa-trash"></i></button>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="text-muted" style="font-size:0.7rem;">Content: ' + this.esc(el.content) + ' &bull; Size: ' + el.fontSize + 'x &bull; ' + (el.bold ? 'Bold' : 'Normal') + ' &bull; ' + el.align + '</div>' +
+      '</div>'
+    ).join('');
+  },
+
+  // Oil Type CRUD
+  addOilType() {
+    const name = prompt('Oil Type Name (e.g. "Euro Synthetic"):');
+    if (!name || !name.trim()) return;
+    const days = parseInt(prompt('Service interval in days (e.g. 180):'));
+    if (isNaN(days) || days < 1) return;
+    const miles = parseInt(prompt('Mileage interval (e.g. 7000):'));
+    if (isNaN(miles) || miles < 1) return;
+    const key = 'custom_' + name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+    OIL_TYPES[key] = { name: name.trim(), durationDays: days, mileageInterval: miles };
+    this.renderStickerSettings();
+    this._rebuildOilTypeSelect();
+  },
+
+  editOilType(key) {
+    const ot = OIL_TYPES[key];
+    if (!ot) return;
+    const name = prompt('Oil Type Name:', ot.name);
+    if (!name || !name.trim()) return;
+    const days = parseInt(prompt('Service interval in days:', ot.durationDays));
+    if (isNaN(days) || days < 1) return;
+    const miles = parseInt(prompt('Mileage interval:', ot.mileageInterval));
+    if (isNaN(miles) || miles < 1) return;
+    OIL_TYPES[key] = { name: name.trim(), durationDays: days, mileageInterval: miles };
+    this.renderStickerSettings();
+    this._rebuildOilTypeSelect();
+  },
+
+  deleteOilType(key) {
+    if (Object.keys(OIL_TYPES).length <= 1) return alert('Must have at least one oil type.');
+    if (!confirm('Delete oil type "' + OIL_TYPES[key].name + '"?')) return;
+    delete OIL_TYPES[key];
+    this.renderStickerSettings();
+    this._rebuildOilTypeSelect();
+  },
+
+  _rebuildOilTypeSelect() {
+    const select = document.getElementById('sticker-oil-type');
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = '<option value="">Select oil type...</option>' +
+      Object.entries(OIL_TYPES).map(([key, ot]) =>
+        '<option value="' + key + '" data-days="' + ot.durationDays + '" data-miles="' + ot.mileageInterval + '">' +
+          ot.name + ' (' + ot.durationDays + 'd / ' + ot.mileageInterval.toLocaleString() + ' mi)' +
+        '</option>'
+      ).join('');
+    if (current && OIL_TYPES[current]) select.value = current;
+  },
+
+  // Layout Element editing
+  editLayoutElement(idx) {
+    const el = STICKER_LAYOUT.elements[idx];
+    if (!el) return;
+    const content = prompt('Content (use {serviceDate}, {serviceMileage}, {oilType}, {decodedDetails} for dynamic):', el.content);
+    if (content === null) return;
+    const x = parseFloat(prompt('X Position (0-100%):', el.x));
+    if (isNaN(x)) return;
+    const y = parseFloat(prompt('Y Position (0-100%):', el.y));
+    if (isNaN(y)) return;
+    const fontSize = parseFloat(prompt('Font Size Multiplier (e.g. 1.25):', el.fontSize));
+    if (isNaN(fontSize) || fontSize <= 0) return;
+    const bold = confirm('Bold text?');
+    const align = prompt('Text Alignment (left, center, right):', el.align) || 'center';
+    if (!['left', 'center', 'right'].includes(align)) return alert('Invalid alignment');
+
+    el.content = content;
+    el.x = Math.max(0, Math.min(100, x));
+    el.y = Math.max(0, Math.min(100, y));
+    el.fontSize = fontSize;
+    el.bold = bold;
+    el.align = align;
+    this.renderLayoutElements();
+  },
+
+  addLayoutElement() {
+    const label = prompt('Element Label (e.g. "Phone Number"):');
+    if (!label || !label.trim()) return;
+    const content = prompt('Content text:', '');
+    if (content === null) return;
+    STICKER_LAYOUT.elements.push({
+      id: 'custom_' + Date.now(),
+      label: label.trim(),
+      content: content,
+      x: 50, y: 70,
+      fontSize: 1.0, bold: false, align: 'center'
+    });
+    this.renderLayoutElements();
+  },
+
+  deleteLayoutElement(idx) {
+    const el = STICKER_LAYOUT.elements[idx];
+    if (!el || !el.id.startsWith('custom_')) return;
+    if (!confirm('Delete "' + el.label + '" element?')) return;
+    STICKER_LAYOUT.elements.splice(idx, 1);
+    this.renderLayoutElements();
+  },
+
+  updateStickerLayoutSetting(prop, value) {
+    if (prop === 'fontSize') STICKER_LAYOUT.fontSize = parseInt(value) || 8;
+    else if (prop === 'fontFamily') STICKER_LAYOUT.fontFamily = value;
+    else if (prop === 'qrCodeSize') STICKER_LAYOUT.qrCodeSize = parseInt(value) || 14;
+    else if (prop === 'qrCodeX') STICKER_LAYOUT.qrCodePosition.x = parseFloat(value) || 50;
+    else if (prop === 'qrCodeY') STICKER_LAYOUT.qrCodePosition.y = parseFloat(value) || 80;
+    else if (prop.startsWith('margin-')) {
+      const side = prop.replace('margin-', '');
+      STICKER_LAYOUT.margins[side] = parseFloat(value) || 2;
+    }
   },
 
   async reprintSticker(id) {
