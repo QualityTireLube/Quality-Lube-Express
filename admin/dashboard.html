@@ -1710,6 +1710,71 @@
         background: #f0f4ff;
       }
 
+      /* User Management Styles */
+      .user-avatar-sm {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #d32f2f;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+      .user-avatar-sm.bg-secondary {
+        background: #999;
+      }
+      .user-avatar-lg {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #d32f2f;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+      #users-tab .card {
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      #users-tab .card-header {
+        border-bottom: 1px solid #e0e0e0;
+      }
+      #users-tab .table th {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #666;
+        border-bottom-width: 1px;
+      }
+      #users-tab .table td {
+        vertical-align: middle;
+      }
+      #approve-tab-checkboxes .form-check,
+      #edit-tab-checkboxes .form-check {
+        padding: 6px 8px 6px 32px;
+        border: 1px solid #eee;
+        border-radius: 6px;
+        margin-bottom: 4px;
+        transition: background 0.15s;
+      }
+      #approve-tab-checkboxes .form-check:hover,
+      #edit-tab-checkboxes .form-check:hover {
+        background: #f8f9fa;
+      }
+      #approve-tab-checkboxes .form-check-input:checked + .form-check-label,
+      #edit-tab-checkboxes .form-check-input:checked + .form-check-label {
+        font-weight: 600;
+      }
+
       /* Label Sub-Nav Header (kept for manager actions) */
       .label-manager-header {
         display: none;
@@ -2396,6 +2461,12 @@
             <i class="fas fa-tags me-2"></i>Labels
           </a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#users-tab">
+            <i class="fas fa-user-shield me-2"></i>Users
+            <span class="badge bg-warning text-dark ms-2" id="pending-users-count" style="display:none;">0</span>
+          </a>
+        </li>
       </ul>
 
       <!-- Tab Content -->
@@ -2918,6 +2989,94 @@
               <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="browser-notifications">
                 <label class="form-check-label" for="browser-notifications">Browser notifications</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div class="tab-pane fade" id="users-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0"><i class="fas fa-user-shield me-2 text-muted"></i>User Management</h5>
+            <span class="badge bg-secondary" id="total-users-badge">0 users</span>
+          </div>
+
+          <!-- Pending Approvals -->
+          <div class="card mb-4 border-warning">
+            <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="fas fa-clock me-2 text-warning"></i>Pending Approvals</h6>
+              <span class="badge bg-warning text-dark" id="pending-approvals-header-count">0</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Employee</th>
+                      <th>Requested</th>
+                      <th class="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pending-users-tbody"></tbody>
+                </table>
+              </div>
+              <div id="pending-users-empty" class="text-center py-4 text-muted" style="display:none;">
+                <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                <p class="mb-0">No pending approvals</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Approved Users -->
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="fas fa-user-check me-2 text-success"></i>Active Users</h6>
+              <span class="badge bg-success" id="approved-users-header-count">0</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Employee</th>
+                      <th>Role</th>
+                      <th>Tab Access</th>
+                      <th class="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="approved-users-tbody"></tbody>
+                </table>
+              </div>
+              <div id="approved-users-empty" class="text-center py-4 text-muted" style="display:none;">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <p class="mb-0">No approved users yet</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Denied Users -->
+          <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="fas fa-user-times me-2 text-danger"></i>Denied / Revoked</h6>
+              <span class="badge bg-danger" id="denied-users-header-count">0</span>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Employee</th>
+                      <th>Date</th>
+                      <th>Reason</th>
+                      <th class="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="denied-users-tbody"></tbody>
+                </table>
+              </div>
+              <div id="denied-users-empty" class="text-center py-4 text-muted" style="display:none;">
+                <i class="fas fa-ban fa-2x mb-2"></i>
+                <p class="mb-0">No denied users</p>
               </div>
             </div>
           </div>
@@ -4130,6 +4289,96 @@
       <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2Onp+PfXFxgI2Xk4N0bXOAipOOgXRvcX2Ii4mAdnBxe4SGhH53c3R7gIKAfXl3d3t+f358enl5e31+fXx7e3t8fX19fHt7e3x9fX18fHx8fX19fXx8fH19fX19fHx9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fHx8fH19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fQ==" type="audio/wav">
     </audio>
 
+    <!-- Approve User Modal -->
+    <div class="modal fade" id="approveUserModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-success bg-opacity-10">
+            <h5 class="modal-title"><i class="fas fa-user-check me-2 text-success"></i>Approve User</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="approve-user-uid">
+            <div class="mb-3">
+              <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded">
+                <div class="user-avatar-lg" id="approve-user-avatar"></div>
+                <div>
+                  <h6 class="mb-0" id="approve-user-name"></h6>
+                  <small class="text-muted" id="approve-user-email"></small>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Role</label>
+              <select class="form-select" id="approve-user-role" onchange="UserManagement.handleRoleChange('approve')">
+                <option value="employee">Employee</option>
+                <option value="admin">Admin (Full Access)</option>
+              </select>
+              <small class="text-muted">Admins automatically get access to all tabs including User Management.</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Tab Access</label>
+              <div class="d-flex justify-content-end mb-2">
+                <button class="btn btn-sm btn-outline-secondary" onclick="UserManagement.toggleSelectAll('approve')">Toggle All</button>
+              </div>
+              <div id="approve-tab-checkboxes" class="ps-1"></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-success" onclick="UserManagement.confirmApprove()">
+              <i class="fas fa-check me-1"></i>Approve User
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-pen me-2"></i>Edit User Access</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="edit-user-uid">
+            <div class="mb-3">
+              <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded">
+                <div class="user-avatar-lg" id="edit-user-avatar"></div>
+                <div>
+                  <h6 class="mb-0" id="edit-user-name"></h6>
+                  <small class="text-muted" id="edit-user-email"></small>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Role</label>
+              <select class="form-select" id="edit-user-role" onchange="UserManagement.handleRoleChange('edit')">
+                <option value="employee">Employee</option>
+                <option value="admin">Admin (Full Access)</option>
+              </select>
+              <small class="text-muted">Admins automatically get access to all tabs including User Management.</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Tab Access</label>
+              <div class="d-flex justify-content-end mb-2">
+                <button class="btn btn-sm btn-outline-secondary" onclick="UserManagement.toggleSelectAll('edit')">Toggle All</button>
+              </div>
+              <div id="edit-tab-checkboxes" class="ps-1"></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="UserManagement.confirmEdit()">
+              <i class="fas fa-save me-1"></i>Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -4153,7 +4402,12 @@
       const app = firebase.initializeApp(firebaseConfig);
       const auth = firebase.auth();
       const db = firebase.firestore();
+    </script>
 
+    <!-- User Management System (needs auth/db globals) -->
+    <script src="../assets/js/admin-users.js"></script>
+
+    <script>
       let allSubmissions = [];
       let allServices = [];
       let unsubscribe = null;
@@ -4161,11 +4415,37 @@
       let visitorSessionsCache = {};
       let sessionsLoaded = false;
 
-      // Auth Guard
-      auth.onAuthStateChanged((user) => {
+      // Auth Guard — checks approval status and enforces tab access
+      auth.onAuthStateChanged(async (user) => {
         if (!user) {
           window.location.href = '../login.html';
-        } else {
+          return;
+        }
+        
+        try {
+          // Check or auto-provision user in admin_users
+          const userDoc = await UserManagement.checkOrProvision(user);
+          
+          if (!userDoc) {
+            // User is pending or denied — sign out and redirect
+            await auth.signOut();
+            window.location.href = '../login.html?status=pending';
+            return;
+          }
+
+          // Enforce tab-level access
+          UserManagement.enforceTabAccess(userDoc);
+
+          // Initialize user management (loads user list for the Users tab)
+          await UserManagement.init(userDoc);
+
+          // Normal dashboard init
+          initLiveSubmissions();
+          loadServices();
+          requestNotificationPermission();
+        } catch (err) {
+          console.error('[Auth Guard] Error checking user status:', err);
+          // On error, still allow login for legacy compatibility
           initLiveSubmissions();
           loadServices();
           requestNotificationPermission();
@@ -7494,6 +7774,11 @@
                   if (typeof LabelSystem !== 'undefined') {
                       LabelSystem.loadTemplates();
                       LabelSystem.testPrintClientConnection();
+                  }
+              }
+              if (targetUrl === '#users-tab') {
+                  if (typeof UserManagement !== 'undefined') {
+                      UserManagement.loadUsers();
                   }
               }
             })
