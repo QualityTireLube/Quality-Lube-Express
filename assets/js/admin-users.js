@@ -66,9 +66,13 @@ const UserManagement = (() => {
     const approved = allUsers.filter(u => u.status === 'approved');
     const denied = allUsers.filter(u => u.status === 'denied');
 
+    const admins = approved.filter(u => u.role === 'admin');
+    const employees = approved.filter(u => u.role !== 'admin');
+
     const el = (id, text) => { const e = document.getElementById(id); if (e) e.textContent = text; };
     el('pending-approvals-header-count', pending.length);
-    el('approved-users-header-count', approved.length);
+    el('admin-users-header-count', admins.length);
+    el('employee-users-header-count', employees.length);
     el('denied-users-header-count', denied.length);
     el('total-users-badge', `${allUsers.length} user${allUsers.length !== 1 ? 's' : ''}`);
   }
@@ -111,25 +115,30 @@ const UserManagement = (() => {
     `).join('');
   }
 
-  /** ---- Approved Users Section ---- */
+  /** ---- Approved Users — split by role ---- */
   function renderApprovedUsers() {
-    const tbody = document.getElementById('approved-users-tbody');
-    if (!tbody) return;
     const approved = allUsers.filter(u => u.status === 'approved');
-    const empty = document.getElementById('approved-users-empty');
+    const admins = approved.filter(u => u.role === 'admin');
+    const employees = approved.filter(u => u.role !== 'admin');
 
-    if (approved.length === 0) {
+    _renderRoleGroup('admin-users', admins);
+    _renderRoleGroup('employee-users', employees);
+  }
+
+  function _renderRoleGroup(prefix, users) {
+    const tbody = document.getElementById(`${prefix}-tbody`);
+    if (!tbody) return;
+    const empty = document.getElementById(`${prefix}-empty`);
+
+    if (users.length === 0) {
       tbody.innerHTML = '';
       if (empty) empty.style.display = 'block';
       return;
     }
     if (empty) empty.style.display = 'none';
 
-    tbody.innerHTML = approved.map(u => {
+    tbody.innerHTML = users.map(u => {
       const isMe = currentUser && u.id === currentUser.uid;
-      const roleBadge = u.role === 'admin'
-        ? '<span class="badge bg-danger">Admin</span>'
-        : '<span class="badge bg-info">Employee</span>';
       const tabBadges = (u.allowedTabs || []).map(tid => {
         const tab = ALL_TABS.find(t => t.id === tid);
         return tab ? `<span class="badge bg-secondary me-1 mb-1">${tab.label}</span>` : '';
@@ -139,7 +148,7 @@ const UserManagement = (() => {
         <tr>
           <td>
             <div class="d-flex align-items-center gap-2">
-              <div class="user-avatar-sm">${(u.displayName || u.email)[0].toUpperCase()}</div>
+              <div class="user-avatar-sm${u.role === 'admin' ? ' bg-admin' : ''}">${(u.displayName || u.email)[0].toUpperCase()}</div>
               <div>
                 <div class="fw-semibold">
                   ${escHtml(u.displayName || 'No Name')}
@@ -149,8 +158,7 @@ const UserManagement = (() => {
               </div>
             </div>
           </td>
-          <td>${roleBadge}</td>
-          <td><div class="d-flex flex-wrap">${tabBadges || '<span class="text-muted">—</span>'}</div></td>
+          <td><div class="d-flex flex-wrap">${tabBadges || '<span class="text-muted">All Tabs</span>'}</div></td>
           <td class="text-end">
             <button class="btn btn-sm btn-outline-primary me-1" onclick="UserManagement.showEditModal('${u.id}')" title="Edit Access">
               <i class="fas fa-pen"></i>
