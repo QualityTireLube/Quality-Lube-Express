@@ -296,6 +296,7 @@ const LabelSystem = {
   // State
   templates: [],
   currentView: 'manager',
+  currentLsTab: 'stickers', // new tab system
   editorTemplate: null,       // template being edited (null = new)
   editorFields: [],
   editorSelectedField: null,
@@ -483,133 +484,170 @@ const LabelSystem = {
   // ============================================================
   showView(viewName) {
     this.currentView = viewName;
-    document.querySelectorAll('.label-view').forEach(v => v.classList.remove('active'));
-    const target = document.getElementById('label-view-' + viewName);
-    if (target) target.classList.add('active');
+    // Hide all label-view panels
+    document.querySelectorAll('#labels-tab .label-view').forEach(v => v.classList.remove('active'));
 
-    // Update nav buttons
-    ['manager', 'creator', 'stickers', 'settings'].forEach(v => {
-      const btn = document.getElementById('label-nav-' + v);
-      if (btn) {
-        btn.className = v === viewName ? 'btn btn-primary btn-sm' : 'btn btn-outline-secondary btn-sm';
-      }
-    });
-
-    // Show/hide manager-specific actions
-    const managerActions = document.getElementById('label-manager-actions');
-    if (managerActions) managerActions.style.display = viewName === 'manager' ? 'flex' : 'none';
-
+    // For old views (creator, settings) — show them directly
     if (viewName === 'creator') {
+      const target = document.getElementById('label-view-creator');
+      if (target) target.classList.add('active');
+      // Deactivate ls-tabs
+      document.querySelectorAll('.ls-tab').forEach(t => t.classList.remove('active'));
       this.initCreator();
+      return;
     }
     if (viewName === 'settings') {
+      const target = document.getElementById('label-view-settings');
+      if (target) target.classList.add('active');
+      document.querySelectorAll('.ls-tab').forEach(t => t.classList.remove('active'));
       this.renderSettings();
+      return;
     }
-    if (viewName === 'stickers') {
+
+    // For new tab views - delegate to showLsTab
+    if (['stickers', 'restocking', 'archived', 'templates'].includes(viewName)) {
+      this.showLsTab(viewName);
+      return;
+    }
+    // Default: show templates tab
+    this.showLsTab('templates');
+  },
+
+  // ===== New Tab System =====
+  showLsTab(tabName) {
+    this.currentLsTab = tabName;
+    // Hide all label-view panels
+    document.querySelectorAll('#labels-tab .label-view').forEach(v => v.classList.remove('active'));
+    // Show the target panel
+    const target = document.getElementById('ls-view-' + tabName);
+    if (target) target.classList.add('active');
+
+    // Update tab buttons
+    document.querySelectorAll('.ls-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.lsView === tabName);
+    });
+
+    // Init StickerSystem when stickers tab is shown
+    if (tabName === 'stickers') {
       StickerSystem.init();
     }
+    // Re-render table data
+    this.renderAllTables();
   },
 
   // ============================================================
-  // TEMPLATE MANAGER RENDERING
+  // TEMPLATE TABLE RENDERING (replaces card-based renderManager)
   // ============================================================
   renderManager() {
+    this.renderAllTables();
+  },
+
+  renderAllTables() {
     const active = this.templates.filter(t => !t.archived);
     const archived = this.templates.filter(t => t.archived);
 
-    document.getElementById('active-template-count').textContent = active.length;
-    document.getElementById('archived-template-count').textContent = archived.length;
+    // Categorize active templates
+    const restocking = active.filter(t => {
+      const name = (t.labelName || '').toLowerCase();
+      return name.includes('restock') || name.includes('check-in') || name.includes('checkin');
+    });
 
-    // Active grid
-    const activeGrid = document.getElementById('active-templates-grid');
-    const activeEmpty = document.getElementById('active-empty');
-    if (active.length === 0) {
-      activeGrid.innerHTML = '';
-      activeEmpty.style.display = 'block';
-    } else {
-      activeEmpty.style.display = 'none';
-      activeGrid.innerHTML = active.map(t => this.renderTemplateCard(t, false)).join('');
-    }
+    // Update tab badge counts
+    const restockingCount = document.getElementById('ls-restocking-count');
+    const archivedCount = document.getElementById('ls-archived-count');
+    const templatesCount = document.getElementById('ls-templates-count');
+    if (restockingCount) restockingCount.textContent = restocking.length;
+    if (archivedCount) archivedCount.textContent = archived.length > 99 ? '99+' : archived.length;
+    if (templatesCount) templatesCount.textContent = active.length;
 
-    // Archived grid
-    const archivedGrid = document.getElementById('archived-templates-grid');
-    const archivedEmpty = document.getElementById('archived-empty');
-    if (archived.length === 0) {
-      archivedGrid.innerHTML = '';
-      archivedEmpty.style.display = 'block';
-    } else {
-      archivedEmpty.style.display = 'none';
-      archivedGrid.innerHTML = archived.map(t => this.renderTemplateCard(t, true)).join('');
-    }
+    // Render restocking table
+    this._renderTemplateTable('restocking-table-body', restocking, 'restocking-empty', false);
+    // Render archived table
+    this._renderTemplateTable('archived-table-body', archived, 'archived-empty', true);
+    // Render all active templates table
+    this._renderTemplateTable('templates-table-body', active, 'templates-empty', false);
+
+    // Show/hide tables vs empty states
+    const restockingTable = document.getElementById('restocking-table');
+    if (restockingTable) restockingTable.style.display = restocking.length ? 'table' : 'none';
+    const archivedTable = document.getElementById('archived-table');
+    if (archivedTable) archivedTable.style.display = archived.length ? 'table' : 'none';
+    const templatesTable = document.getElementById('templates-table');
+    if (templatesTable) templatesTable.style.display = active.length ? 'table' : 'none';
   },
 
-  renderTemplateCard(template, isArchived) {
-    const pc = PAPER_SIZES[template.paperSize];
-    const paperName = pc ? pc.name : template.paperSize;
-    const fieldsHtml = (template.fields || []).slice(0, 6).map(f =>
-      '<span class="label-field-chip">' + this.escHtml(f.name) + '</span>'
-    ).join('');
-    const moreFields = (template.fields || []).length > 6
-      ? '<span class="label-field-chip">+' + ((template.fields || []).length - 6) + ' more</span>' : '';
+  _renderTemplateTable(tbodyId, templates, emptyId, isArchived) {
+    const tbody = document.getElementById(tbodyId);
+    const empty = document.getElementById(emptyId);
+    if (!tbody) return;
 
-    const created = template.createdDate ? new Date(template.createdDate).toLocaleDateString() : '—';
-    const updated = template.updatedDate ? '<p><strong>Updated:</strong> ' + new Date(template.updatedDate).toLocaleDateString() + '</p>' : '';
+    if (templates.length === 0) {
+      tbody.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
 
-    const archiveAction = !isArchived
-      ? '<a href="#" onclick="LabelSystem.archiveTemplate(\'' + template.id + '\');return false;"><i class="fas fa-archive"></i>Archive</a>'
-      : '<a href="#" onclick="LabelSystem.restoreTemplate(\'' + template.id + '\');return false;"><i class="fas fa-undo"></i>Restore</a>';
+    tbody.innerHTML = templates.map(t => this._renderTemplateRow(t, isArchived)).join('');
+  },
 
-    const deleteAction = isArchived
-      ? '<div class="dropdown-divider"></div><a href="#" class="text-danger" onclick="LabelSystem.deleteTemplate(\'' + template.id + '\');return false;"><i class="fas fa-trash"></i>Delete Permanently</a>'
+  _renderTemplateRow(template, isArchived) {
+    const created = template.createdDate ? new Date(template.createdDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' }) : '\u2014';
+    const createdBy = template.createdBy || '\u2014';
+    const name = this.escHtml(template.labelName || 'Untitled');
+
+    // Determine category
+    const lowerName = (template.labelName || '').toLowerCase();
+    let category = 'General';
+    let categoryClass = 'general';
+    if (lowerName.includes('tire')) { category = 'Tire'; categoryClass = 'tire'; }
+    else if (lowerName.includes('part')) { category = 'Parts'; categoryClass = 'parts'; }
+
+    const status = isArchived ? '<span class="ls-status-badge inactive">Inactive</span>' : '<span class="ls-status-badge active">Active</span>';
+
+    // Action buttons matching screenshot style
+    const editBtn = '<button class="ls-action-btn" title="Edit" onclick="event.stopPropagation(); LabelSystem.openEditor(\'' + template.id + '\')"><i class="fas fa-sliders-h"></i></button>';
+    const printBtn = !isArchived ? '<button class="ls-action-btn" title="Print" onclick="event.stopPropagation(); LabelSystem.useTemplate(\'' + template.id + '\')"><i class="fas fa-print"></i></button>' : '';
+    const archiveBtn = !isArchived
+      ? '<button class="ls-action-btn" title="Archive" onclick="event.stopPropagation(); LabelSystem.archiveTemplate(\'' + template.id + '\')"><i class="fas fa-archive"></i></button>'
+      : '<button class="ls-action-btn" title="Restore" onclick="event.stopPropagation(); LabelSystem.restoreTemplate(\'' + template.id + '\')"><i class="fas fa-undo"></i></button>';
+    const deleteBtn = isArchived
+      ? '<button class="ls-action-btn danger" title="Delete" onclick="event.stopPropagation(); LabelSystem.deleteTemplate(\'' + template.id + '\')"><i class="fas fa-trash"></i></button>'
       : '';
 
-    return '<div class="label-template-card' + (isArchived ? ' archived' : '') + '">' +
-      '<div class="label-card-header">' +
-        '<h5>' + this.escHtml(template.labelName) + '</h5>' +
-        '<div class="label-card-menu">' +
-          '<button class="btn btn-sm btn-light" onclick="LabelSystem.toggleCardMenu(this)"><i class="fas fa-ellipsis-v"></i></button>' +
-          '<div class="label-card-dropdown">' +
-            '<a href="#" onclick="LabelSystem.previewTemplatePdf(\'' + template.id + '\');return false;"><i class="fas fa-eye"></i>Preview PDF</a>' +
-            '<a href="#" onclick="LabelSystem.downloadTemplatePdf(\'' + template.id + '\');return false;"><i class="fas fa-download"></i>Download PDF</a>' +
-            '<div class="dropdown-divider"></div>' +
-            '<a href="#" onclick="LabelSystem.duplicateTemplate(\'' + template.id + '\');return false;"><i class="fas fa-copy"></i>Duplicate</a>' +
-            '<a href="#" onclick="LabelSystem.openEditor(\'' + template.id + '\');return false;"><i class="fas fa-edit"></i>Edit</a>' +
-            '<div class="dropdown-divider"></div>' +
-            archiveAction +
-            deleteAction +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-      (isArchived ? '<span class="badge bg-secondary mb-2">Archived</span>' : '') +
-      '<div class="label-card-info">' +
-        '<p><strong>Paper Size:</strong> ' + this.escHtml(paperName) + '</p>' +
-        '<p><strong>Fields:</strong> ' + (template.fields || []).length + '</p>' +
-        '<p><strong>Copies:</strong> ' + (template.copies || 1) + '</p>' +
-        '<p><strong>Created by:</strong> ' + this.escHtml(template.createdBy || '—') + '</p>' +
-        '<p><strong>Created:</strong> ' + created + '</p>' +
-        updated +
-      '</div>' +
-      '<div class="label-card-fields">' + fieldsHtml + moreFields + '</div>' +
-      '<div class="label-card-actions">' +
-        '<button class="btn btn-outline-primary btn-sm" onclick="LabelSystem.openEditor(\'' + template.id + '\')"><i class="fas fa-edit me-1"></i>Edit</button>' +
-        (!isArchived ? '<button class="btn btn-success btn-sm" onclick="LabelSystem.useTemplate(\'' + template.id + '\')"><i class="fas fa-print me-1"></i>Print</button>' : '') +
-        '<div>' +
-          (!isArchived ? '<button class="btn btn-outline-secondary btn-sm me-1" title="Archive" onclick="LabelSystem.archiveTemplate(\'' + template.id + '\')"><i class="fas fa-archive"></i></button>' : '') +
-          (isArchived ? '<button class="btn btn-outline-success btn-sm me-1" title="Restore" onclick="LabelSystem.restoreTemplate(\'' + template.id + '\')"><i class="fas fa-undo"></i></button>' : '') +
-          (isArchived ? '<button class="btn btn-outline-danger btn-sm" title="Delete" onclick="LabelSystem.deleteTemplate(\'' + template.id + '\')"><i class="fas fa-trash"></i></button>' : '') +
-        '</div>' +
-      '</div>' +
-    '</div>';
+    return '<tr onclick="LabelSystem.openEditor(\'' + template.id + '\')">' +
+      '<td><strong>' + name + '</strong></td>' +
+      '<td><span class="ls-category-badge ' + categoryClass + '">' + category + '</span></td>' +
+      '<td>' + (template.version || '1.0') + '</td>' +
+      '<td>' + this.escHtml(createdBy) + '</td>' +
+      '<td>' + status + '</td>' +
+      '<td>' + created + '</td>' +
+      '<td>' + editBtn + printBtn + archiveBtn + deleteBtn + '</td>' +
+    '</tr>';
   },
 
-  toggleCardMenu(btn) {
-    const dropdown = btn.nextElementSibling;
-    // Close all others
-    document.querySelectorAll('.label-card-dropdown.show').forEach(d => {
-      if (d !== dropdown) d.classList.remove('show');
+  // ===== Search / Filter =====
+  filterRestocking(query) {
+    this._filterTable('restocking-table-body', query);
+  },
+  filterArchived(query) {
+    this._filterTable('archived-table-body', query);
+  },
+  filterTemplates(query) {
+    this._filterTable('templates-table-body', query);
+  },
+  filterStickers(query) {
+    this._filterTable('stickers-table-body', query);
+  },
+  _filterTable(tbodyId, query) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    const q = (query || '').toLowerCase();
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = q === '' || text.includes(q) ? '' : 'none';
     });
-    dropdown.classList.toggle('show');
-    event.stopPropagation();
   },
 
   async previewTemplatePdf(id) {
@@ -2730,45 +2768,40 @@ const StickerSystem = {
 
   // ---- Render Sticker List ----
   renderStickerList() {
-    const grid = document.getElementById('stickers-grid');
+    const tbody = document.getElementById('stickers-table-body');
+    const table = document.getElementById('stickers-table');
     const empty = document.getElementById('stickers-empty');
-    if (!grid || !empty) return;
+    if (!tbody) return;
 
     if (this.stickers.length === 0) {
-      grid.style.display = 'none';
-      empty.style.display = 'block';
+      tbody.innerHTML = '';
+      if (table) table.style.display = 'none';
+      if (empty) empty.style.display = 'block';
       return;
     }
-    grid.style.display = 'grid';
-    empty.style.display = 'none';
+    if (table) table.style.display = 'table';
+    if (empty) empty.style.display = 'none';
 
-    grid.innerHTML = this.stickers.map(s => {
+    tbody.innerHTML = this.stickers.map(s => {
       const oilName = s.oilTypeName || (OIL_TYPES[s.oilTypeKey] ? OIL_TYPES[s.oilTypeKey].name : s.oilTypeKey);
-      const created = s.createdDate ? new Date(s.createdDate).toLocaleDateString() : '\u2014';
+      const created = s.createdDate ? new Date(s.createdDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' }) : '\u2014';
       const vehicleTxt = s.vehicleDetails || '';
-      const tplName = s.templateId && STICKER_TEMPLATES[s.templateId] ? STICKER_TEMPLATES[s.templateId].name : '';
-      const tplColor = s.templateId && STICKER_TEMPLATES[s.templateId] ? STICKER_TEMPLATES[s.templateId].color : '#6c757d';
-      return '<div class="label-template-card">' +
-        '<div class="label-card-header">' +
-          '<h5><i class="fas fa-oil-can me-1"></i>' + this.esc(s.vin || '') + '</h5>' +
-        '</div>' +
-        '<div class="d-flex gap-1 mb-2">' +
-          (s.printed ? '<span class="badge bg-success">Printed</span>' : '<span class="badge bg-warning text-dark">Not Printed</span>') +
-          (s.qrEnabled !== false ? '<span class="badge bg-info">QR</span>' : '') +
-          (tplName ? '<span class="badge" style="background:' + tplColor + ';">' + this.esc(tplName.replace(' Sticker', '')) + '</span>' : '') +
-        '</div>' +
-        '<div class="label-card-info">' +
-          '<p><strong>Oil Type:</strong> ' + this.esc(oilName) + '</p>' +
-          '<p><strong>Mileage:</strong> ' + (s.mileage || 0).toLocaleString() + '</p>' +
-          '<p><strong>Next Service:</strong> ' + this.esc(s.nextServiceDate || '') + ' / ' + this.esc(s.nextServiceMileage || '') + ' mi</p>' +
-          (vehicleTxt ? '<p><strong>Vehicle:</strong> ' + this.esc(vehicleTxt) + '</p>' : '') +
-          '<p><strong>Created:</strong> ' + created + '</p>' +
-        '</div>' +
-        '<div class="label-card-actions">' +
-          '<button class="btn btn-outline-primary btn-sm" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')"><i class="fas fa-print me-1"></i>Print</button>' +
-          '<button class="btn btn-outline-danger btn-sm" onclick="StickerSystem.deleteSticker(\'' + s.id + '\')"><i class="fas fa-trash me-1"></i>Delete</button>' +
-        '</div>' +
-      '</div>';
+      const statusBadge = s.printed
+        ? '<span class="ls-status-badge printed">Printed</span>'
+        : '<span class="ls-status-badge not-printed">Not Printed</span>';
+
+      return '<tr>' +
+        '<td><strong>' + this.esc(s.vin || '\u2014') + '</strong></td>' +
+        '<td>' + this.esc(oilName) + '</td>' +
+        '<td>' + this.esc(vehicleTxt || '\u2014') + '</td>' +
+        '<td>' + (s.mileage || 0).toLocaleString() + '</td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td>' + created + '</td>' +
+        '<td>' +
+          '<button class="ls-action-btn" title="Print" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')"><i class="fas fa-print"></i></button>' +
+          '<button class="ls-action-btn danger" title="Delete" onclick="StickerSystem.deleteSticker(\'' + s.id + '\')"><i class="fas fa-trash"></i></button>' +
+        '</td>' +
+      '</tr>';
     }).join('');
   },
 
