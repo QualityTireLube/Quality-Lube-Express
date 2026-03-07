@@ -4089,18 +4089,10 @@
                   </div>
                 </div>
               </div>
-              <!-- Right: Canvas preview -->
-              <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-                <div class="se-canvas-area" style="flex:1;border:1px solid #e0e0e0;border-radius:6px;overflow:hidden;">
-                  <div class="se-canvas-toolbar">
-                    <span class="small text-muted fw-semibold"><i class="fas fa-eye me-1"></i>Live Preview</span>
-                    <span style="flex:1;"></span>
-                    <button class="fe-toolbar-btn" onclick="LabelSystem._csmZoomFit()" title="Fit to view"><i class="fas fa-expand"></i></button>
-                    <span class="fe-zoom-label" id="csm-zoom-label">100%</span>
-                  </div>
-                  <div class="se-canvas-wrapper" id="csm-canvas-viewport" style="min-height:260px;">
-                    <!-- Canvas rendered by JS -->
-                  </div>
+              <!-- Right: Canvas preview (bare, no toolbar) -->
+              <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;">
+                <div id="csm-canvas-viewport" style="width:100%;min-height:200px;background:#e8e8e8;border-radius:6px;overflow:hidden;position:relative;">
+                  <!-- Canvas rendered by JS -->
                 </div>
               </div>
             </div>

@@ -2618,18 +2618,7 @@ const LabelSystem = {
       onSelectionChange() {},
       onElementsChange() {}
     });
-    // Sync zoom label
-    if (this._csmEditor._updateZoomLabel) {
-      this._csmEditor._updateZoomLabel = () => {
-        const lbl = document.getElementById('csm-zoom-label');
-        if (lbl) lbl.textContent = Math.round((self._csmEditor.zoom || 1) * 100) + '%';
-      };
-    }
     this._csmUpdateCanvas();
-  },
-
-  _csmZoomFit() {
-    if (this._csmEditor && this._csmEditor.zoomFit) this._csmEditor.zoomFit();
   },
 
   _csmBuildData() {
