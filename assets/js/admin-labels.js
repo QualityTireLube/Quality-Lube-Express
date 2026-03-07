@@ -2590,17 +2590,20 @@ const LabelSystem = {
 
     const paper = STICKER_PAPER_SIZES['GODEX'];
     const data = this._csmBuildData();
+    const paperAspect = paper.height / paper.width; // portrait ~1.378 for GODEX
 
-    // Compute canvas size to fill the preview box width
-    const boxW = viewport.parentElement ? (viewport.parentElement.clientWidth - 24) : 280;
-    const canvasW = Math.max(boxW, 180);
-    const canvasH = Math.round(canvasW * (paper.height / paper.width));
+    // Cap height to match the left form column height (~260px)
+    // then derive width from the aspect ratio so the full sticker is always visible
+    const maxH = 260;
+    const maxW = viewport.parentElement ? (viewport.parentElement.clientWidth - 24) : 260;
+    const canvasH = Math.min(maxH, Math.round(maxW * paperAspect));
+    const canvasW = Math.round(canvasH / paperAspect);
 
     // Reuse or create the canvas element
     let canvas = viewport.querySelector('canvas');
     if (!canvas) {
       canvas = document.createElement('canvas');
-      canvas.style.cssText = 'display:block;width:100%;height:auto;border-radius:4px;';
+      canvas.style.cssText = 'display:block;border-radius:4px;';
       viewport.innerHTML = '';
       viewport.appendChild(canvas);
     }
@@ -2614,32 +2617,30 @@ const LabelSystem = {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Paper background
+    // Paper background + border
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvasW, canvasH);
     ctx.strokeStyle = '#cccccc';
     ctx.lineWidth = 1;
     ctx.strokeRect(0.5, 0.5, canvasW - 1, canvasH - 1);
 
-    // Scale factor: canvas pixels per mm
-    const scale = canvasW / paper.width;
+    // Font size formula: fontSize(pt) * 0.35(pt→mm) * scale(mm→canvasPx)
+    // DPI factors cancel, so: basePt * elScale * 0.35 * (canvasW / paper.width)
+    const mmToCanvasPx = canvasW / paper.width;
 
     // Draw each sticker element
     for (const el of STICKER_LAYOUT.elements) {
       let text = el.content;
       text = text
-        .replace('{serviceDate}',   data.nextServiceDate   || '')
+        .replace('{serviceDate}',    data.nextServiceDate   || '')
         .replace('{serviceMileage}', data.nextServiceMileage ? data.nextServiceMileage + ' mi' : '')
-        .replace('{oilType}',       data.oilTypeName       || '')
-        .replace('{decodedDetails}', data.vehicleDetails   || '');
+        .replace('{oilType}',        data.oilTypeName       || '')
+        .replace('{decodedDetails}', data.vehicleDetails    || '');
       if (!text) continue;
 
-      // Position: percentages → canvas px
       const x = (el.x / 100) * canvasW;
       const y = (el.y / 100) * canvasH;
-
-      // Font size: pt-equivalent scaled by canvas scale
-      const fontSizePx = Math.max(STICKER_LAYOUT.fontSize * el.fontSize * scale * 0.35 * (96 / 25.4), 6);
+      const fontSizePx = Math.max(STICKER_LAYOUT.fontSize * el.fontSize * 0.35 * mmToCanvasPx, 5);
 
       ctx.font = (el.bold ? 'bold ' : '') + fontSizePx + 'px ' + (STICKER_LAYOUT.fontFamily || 'Helvetica');
       ctx.fillStyle = '#000000';
