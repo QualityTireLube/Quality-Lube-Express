@@ -3184,10 +3184,10 @@
 
           <!-- ===== Tab Bar (matches screenshot) ===== -->
           <div class="ls-tabs" id="lsTabs">
-            <button class="ls-tab" data-ls-view="create-labels" onclick="LabelSystem.showLsTab('create-labels')">
+            <button class="ls-tab active" data-ls-view="create-labels" onclick="LabelSystem.showLsTab('create-labels')">
               <i class="fas fa-plus-circle"></i> CREATE LABELS
             </button>
-            <button class="ls-tab active" data-ls-view="stickers" onclick="LabelSystem.showLsTab('stickers')">
+            <button class="ls-tab" data-ls-view="stickers" onclick="LabelSystem.showLsTab('stickers')">
               <i class="fas fa-sticky-note"></i> STATIC STICKERS
             </button>
             <button class="ls-tab" data-ls-view="restocking" onclick="LabelSystem.showLsTab('restocking')">
@@ -3207,7 +3207,7 @@
           <!-- ===== Content Panels ===== -->
 
           <!-- PANEL: Static Stickers -->
-          <div class="ls-content-area label-view active" id="ls-view-stickers">
+          <div class="ls-content-area label-view" id="ls-view-stickers">
             <div class="ls-section-header">
               <div>
                 <h5>Static Stickers</h5>
@@ -3593,7 +3593,7 @@
           </div>
 
           <!-- PANEL: Create Labels -->
-          <div class="ls-content-area label-view" id="ls-view-create-labels">
+          <div class="ls-content-area label-view active" id="ls-view-create-labels">
 
             <!-- Action Bar -->
             <div class="d-flex justify-content-end align-items-center gap-2 mb-4">

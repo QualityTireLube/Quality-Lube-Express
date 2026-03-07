@@ -304,7 +304,7 @@ const LabelSystem = {
   // State
   templates: [],
   currentView: 'manager',
-  currentLsTab: 'stickers', // new tab system
+  currentLsTab: 'create-labels', // new tab system
   editorTemplate: null,       // template being edited (null = new)
   editorFields: [],
   editorSelectedField: null,
@@ -517,8 +517,8 @@ const LabelSystem = {
       this.showLsTab(viewName);
       return;
     }
-    // Default: show templates tab
-    this.showLsTab('templates');
+    // Default: show create-labels tab
+    this.showLsTab('create-labels');
   },
 
   // ===== New Tab System =====
