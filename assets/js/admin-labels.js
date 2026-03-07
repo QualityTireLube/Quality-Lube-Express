@@ -2938,6 +2938,7 @@ const LabelSystem = {
       serviceDate: serviceDate,
       vehicleInfo: vehicleInfoText,
       decodedDetails: decoded ? [decoded.year, decoded.make, decoded.model, decoded.engineL ? decoded.engineL + 'L' : '', decoded.engineCylinders ? decoded.engineCylinders + ' cyl' : ''].filter(Boolean).join(' ') : '',
+      createdDate: new Date().toISOString(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       printed: false,
       archived: false
