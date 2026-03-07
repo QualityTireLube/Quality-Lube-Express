@@ -2406,16 +2406,89 @@ const LabelSystem = {
     }
   },
 
-  clmPrint() {
+  clmPrintPdf() {
     const template = this.clmSelectedTemplate;
     if (!template) return;
-    const paper = this._clmGetPaper();
+    const pdfBtn = document.getElementById('clm-pdf-btn');
+    if (pdfBtn) { pdfBtn.disabled = true; pdfBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>PDF'; }
     LabelPdfGenerator.generateLabelPdf(template, this.clmLabelData, 1).then(pdfBytes => {
       LabelPdfGenerator.openPdfInNewTab(pdfBytes);
     }).catch(err => {
       const alertEl = document.getElementById('clm-alert');
-      if (alertEl) { alertEl.textContent = 'Print failed: ' + err.message; alertEl.style.display = 'block'; }
+      if (alertEl) { alertEl.textContent = 'PDF failed: ' + err.message; alertEl.style.display = 'block'; }
+    }).finally(() => {
+      if (pdfBtn) { pdfBtn.disabled = false; pdfBtn.innerHTML = '<i class="fas fa-file-pdf me-1"></i>PDF'; }
     });
+  },
+
+  async clmPrintToClient() {
+    const template = this.clmSelectedTemplate;
+    if (!template) return;
+    const printBtn = document.getElementById('clm-print-btn');
+    if (printBtn) { printBtn.disabled = true; printBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>PRINT'; }
+
+    try {
+      // Save first so the label exists in the list
+      await this.saveCreatedLabel(template, this.clmLabelData);
+      if (this.currentLsTab === 'create-labels') this.renderCreateLabelsView();
+
+      const paper = this._clmGetPaper();
+      const pdfBytes = await LabelPdfGenerator.generateLabelPdf(template, this.clmLabelData, 1);
+
+      if (this.testMode) {
+        this.addTestLog('success', 'LABEL PRINT INTERCEPTED — Template: "' + template.labelName + '"');
+        LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+        this.closeCreateLabelModal();
+        return;
+      }
+
+      const printClientUrl = this.getPrintClientUrl();
+      const printerSelect = document.getElementById('label-inline-printer-select');
+      const printerId = printerSelect ? printerSelect.value : '';
+      const selectedOption = printerSelect ? printerSelect.options[printerSelect.selectedIndex] : null;
+      const printerName = selectedOption ? selectedOption.textContent.split(' (')[0] : (printerId || 'default');
+      const systemName = selectedOption ? (selectedOption.dataset.systemName || printerName) : printerName;
+      const paperKey = paper ? paper.key || template.paperSize : template.paperSize;
+
+      if (!printerId) {
+        LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+        this.closeCreateLabelModal();
+        alert('No printer selected in Label Settings. PDF opened for manual printing.');
+        return;
+      }
+
+      const base64Pdf = this.uint8ArrayToBase64(pdfBytes);
+      const response = await fetch(printClientUrl + '/api/print/jobs', {
+        method: 'POST',
+        headers: this.getPrintClientHeaders(true),
+        mode: 'cors',
+        body: JSON.stringify({
+          printerId, printerName: systemName, copies: 1,
+          pdfData: base64Pdf,
+          templateName: template.labelName,
+          paperSize: paperKey,
+          labelData: this.clmLabelData
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const jobId = result.jobId || result.id || '';
+        alert('Label sent to printer' + (jobId ? ' (Job: ' + jobId + ')' : '') + '\nPrinter: ' + printerName);
+        this.closeCreateLabelModal();
+      } else {
+        const errData = await response.json().catch(() => null);
+        LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+        this.closeCreateLabelModal();
+        alert('Print failed: ' + (errData && errData.error ? errData.error : 'HTTP ' + response.status) + '\nPDF opened for manual printing.');
+      }
+    } catch (err) {
+      console.error('Label print to client failed:', err);
+      const alertEl = document.getElementById('clm-alert');
+      if (alertEl) { alertEl.textContent = 'Print failed: ' + (err.message || err); alertEl.style.display = 'block'; }
+    } finally {
+      if (printBtn) { printBtn.disabled = false; printBtn.innerHTML = '<i class="fas fa-print me-1"></i>PRINT'; }
+    }
   },
 
   // ---- Save Created Label ----
@@ -2672,7 +2745,8 @@ const LabelSystem = {
         '<div class="mt-1"><small class="text-muted" style="font-size:0.72rem;"><i class="fas fa-clock me-1"></i>Created ' + this.escHtml(dateStr) + '</small></div>' +
       '</div>' +
       '<div class="d-flex gap-1 flex-shrink-0 align-self-center">' +
-        (!isArchived ? '<button class="btn btn-sm btn-outline-primary" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')" title="Print"><i class="fas fa-print"></i></button>' : '') +
+        (!isArchived ? '<button class="btn btn-sm btn-outline-secondary" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')" title="Open PDF"><i class="fas fa-file-pdf"></i></button>' : '') +
+        (!isArchived ? '<button class="btn btn-sm btn-outline-primary" onclick="LabelSystem.printStickerToClient(\'' + s.id + '\')" title="Send to print client"><i class="fas fa-print"></i></button>' : '') +
         (!isArchived
           ? '<button class="btn btn-sm btn-outline-secondary" onclick="LabelSystem.archiveSticker(\'' + s.id + '\')" title="Archive"><i class="fas fa-archive"></i></button>'
           : '<button class="btn btn-sm btn-outline-success" onclick="LabelSystem.unarchiveSticker(\'' + s.id + '\')" title="Restore"><i class="fas fa-undo"></i></button>') +
@@ -2904,7 +2978,8 @@ const LabelSystem = {
     this._csmUpdateCanvas();
   },
 
-  async createStickerSimple() {
+  async createStickerSimple(mode) {
+    // mode: 'save' (default) or 'print' (save + send to print client)
     const vin = (document.getElementById('csm-vin') || {}).value || '';
     const mileage = (document.getElementById('csm-mileage') || {}).value || '';
     const oilKey = this._csmSelectedOil;
@@ -2972,13 +3047,93 @@ const LabelSystem = {
       archived: false
     };
 
+    const saveBtn = document.getElementById('csm-save-btn');
+    const printBtn = document.getElementById('csm-print-btn');
+    const activeBtn = mode === 'print' ? printBtn : saveBtn;
+    if (activeBtn) { activeBtn.disabled = true; activeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>' + (mode === 'print' ? 'Printing...' : 'Saving...'); }
+
     try {
-      await StickerSystem.getDb().collection('static_stickers').add(stickerData);
-      this.closeCreateStickerModal();
+      const docRef = await StickerSystem.getDb().collection('static_stickers').add(stickerData);
       await StickerSystem.loadStickers();
-      if (this.currentLsTab === 'create-labels') this._renderClStickerList();
+
+      if (mode === 'print') {
+        // Send to print client using the freshly saved sticker
+        const savedSticker = { id: docRef.id, ...stickerData };
+        this.closeCreateStickerModal();
+        if (this.currentLsTab === 'create-labels') this._renderClStickerList();
+        await this.printStickerToClient(docRef.id, savedSticker);
+      } else {
+        this.closeCreateStickerModal();
+        if (this.currentLsTab === 'create-labels') this._renderClStickerList();
+      }
     } catch (err) {
       if (alertEl) { alertEl.textContent = 'Failed to save sticker: ' + err.message; alertEl.style.display = 'block'; }
+    } finally {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save me-1"></i>SAVE'; }
+      if (printBtn) { printBtn.disabled = false; printBtn.innerHTML = '<i class="fas fa-print me-1"></i>PRINT'; }
+    }
+  },
+
+  async printStickerToClient(stickerId, stickerDataOverride) {
+    const sticker = stickerDataOverride || (StickerSystem.stickers || []).find(s => s.id === stickerId);
+    if (!sticker) { alert('Sticker not found.'); return; }
+
+    try {
+      const pdfBytes = await StickerSystem.generateStickerPdf(sticker, 1);
+
+      if (LabelSystem.testMode) {
+        LabelSystem.addTestLog('success', 'STICKER PRINT INTERCEPTED — VIN: ' + sticker.vin + ' | Oil: ' + sticker.oilTypeName);
+        LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+        return;
+      }
+
+      const printClientUrl = LabelSystem.getPrintClientUrl();
+      const printerSelect = document.getElementById('sticker-printer-select');
+      const printerId = printerSelect ? printerSelect.value : '';
+      const selectedOption = printerSelect ? printerSelect.options[printerSelect.selectedIndex] : null;
+      const printerName = selectedOption ? selectedOption.textContent.split(' (')[0] : (printerId || 'default');
+      const systemName = selectedOption ? (selectedOption.dataset.systemName || printerName) : printerName;
+      const paperEl = document.getElementById('sticker-paper-size');
+      const paperKey = paperEl ? paperEl.value : 'GODEX';
+
+      if (!printerId) {
+        // No printer configured — fall back to PDF
+        LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+        alert('No printer selected in Sticker Settings. PDF opened for manual printing.');
+        return;
+      }
+
+      const base64Pdf = LabelSystem.uint8ArrayToBase64(pdfBytes);
+      const response = await fetch(printClientUrl + '/api/print/jobs', {
+        method: 'POST',
+        headers: LabelSystem.getPrintClientHeaders(true),
+        mode: 'cors',
+        body: JSON.stringify({
+          printerId, printerName: systemName, copies: 1,
+          pdfData: base64Pdf,
+          templateName: 'Oil Change Sticker - ' + sticker.vin,
+          paperSize: paperKey,
+          labelData: { vin: sticker.vin, oilType: sticker.oilTypeName, mileage: sticker.mileage, templateId: sticker.templateId }
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const jobId = result.jobId || result.id || '';
+        alert('Sticker sent to printer' + (jobId ? ' (Job: ' + jobId + ')' : '') + '\nPrinter: ' + printerName);
+        await StickerSystem.getDb().collection('static_stickers').doc(stickerId).update({ printed: true }).catch(() => {});
+      } else {
+        const errData = await response.json().catch(() => null);
+        LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+        alert('Print failed: ' + (errData && errData.error ? errData.error : 'HTTP ' + response.status) + '\nPDF opened for manual printing.');
+      }
+    } catch (err) {
+      console.error('Print sticker failed:', err);
+      try {
+        const pdfBytes = await StickerSystem.generateStickerPdf(sticker, 1);
+        LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+        alert('Print client unreachable. PDF opened for manual printing.');
+      } catch (e) { alert('Failed to generate PDF: ' + (e.message || e)); }
     }
   }
 };

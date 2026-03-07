@@ -4102,7 +4102,10 @@
             <i class="fas fa-arrow-left me-1"></i>BACK TO TEMPLATES
           </button>
           <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary btn-sm" onclick="LabelSystem.clmPrint()" id="clm-print-btn">
+            <button class="btn btn-outline-secondary btn-sm" onclick="LabelSystem.clmPrintPdf()" id="clm-pdf-btn" title="Open as PDF">
+              <i class="fas fa-file-pdf me-1"></i>PDF
+            </button>
+            <button class="btn btn-outline-primary btn-sm" onclick="LabelSystem.clmPrintToClient()" id="clm-print-btn" title="Send to print client">
               <i class="fas fa-print me-1"></i>PRINT
             </button>
             <button class="btn btn-primary btn-sm" onclick="LabelSystem.clmSave()" id="clm-save-btn">
@@ -4163,7 +4166,12 @@
           </div>
           <div class="modal-footer border-0">
             <button type="button" class="btn btn-link text-secondary" data-bs-dismiss="modal">CANCEL</button>
-            <button type="button" class="btn btn-primary fw-bold" onclick="LabelSystem.createStickerSimple()">CREATE STICKER</button>
+            <button type="button" class="btn btn-outline-primary fw-bold" onclick="LabelSystem.createStickerSimple('save')" id="csm-save-btn">
+              <i class="fas fa-save me-1"></i>SAVE
+            </button>
+            <button type="button" class="btn btn-primary fw-bold" onclick="LabelSystem.createStickerSimple('print')" id="csm-print-btn">
+              <i class="fas fa-print me-1"></i>PRINT
+            </button>
           </div>
         </div>
       </div>
