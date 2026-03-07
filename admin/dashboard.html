@@ -3184,6 +3184,9 @@
 
           <!-- ===== Tab Bar (matches screenshot) ===== -->
           <div class="ls-tabs" id="lsTabs">
+            <button class="ls-tab" data-ls-view="create-labels" onclick="LabelSystem.showLsTab('create-labels')">
+              <i class="fas fa-plus-circle"></i> CREATE LABELS
+            </button>
             <button class="ls-tab active" data-ls-view="stickers" onclick="LabelSystem.showLsTab('stickers')">
               <i class="fas fa-sticky-note"></i> STATIC STICKERS
             </button>
@@ -3198,9 +3201,6 @@
             <button class="ls-tab" data-ls-view="templates" onclick="LabelSystem.showLsTab('templates')">
               <i class="fas fa-layer-group"></i> LABEL TEMPLATES
               <span class="ls-tab-badge blue" id="ls-templates-count">0</span>
-            </button>
-            <button class="ls-tab" data-ls-view="create-labels" onclick="LabelSystem.showLsTab('create-labels')">
-              <i class="fas fa-plus-circle"></i> CREATE LABELS
             </button>
           </div>
 
