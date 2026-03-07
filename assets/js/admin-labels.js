@@ -2925,19 +2925,47 @@ const LabelSystem = {
 
     if (alertEl) alertEl.style.display = 'none';
     const oilType = OIL_TYPES[oilKey];
-    const serviceDate = new Date().toISOString().split('T')[0];
+    const mileageInt = parseInt(mileage) || 0;
+    const serviceDateStr = new Date().toISOString().split('T')[0];
+    const serviceDateObj = new Date(serviceDateStr);
     const decoded = this._csmDecodedVin;
-    const vehicleInfoText = decoded
+
+    // Compute next-service values the same way the Sticker Editor does
+    const nextServiceDate = oilType
+      ? new Date(serviceDateObj.getTime() + oilType.durationDays * 86400000).toLocaleDateString()
+      : '';
+    const nextServiceMileage = oilType
+      ? (mileageInt + oilType.mileageInterval).toLocaleString()
+      : '';
+
+    // Build vehicle details string (year make model engine)
+    const vehicleDetailsParts = decoded
+      ? [decoded.year, decoded.make, decoded.model,
+         decoded.engineL ? decoded.engineL + 'L' : '',
+         decoded.engineCylinders ? decoded.engineCylinders + ' cyl' : ''].filter(Boolean)
+      : [];
+    const vehicleDetails = vehicleDetailsParts.join(' ');
+    const vehicleInfo = decoded
       ? [decoded.year, decoded.make, decoded.model].filter(Boolean).join(' ')
       : vin.toUpperCase();
+
     const stickerData = {
       vin: vin.toUpperCase(),
-      mileage: parseInt(mileage),
+      mileage: mileageInt,
       oilTypeKey: oilKey,
       oilTypeName: oilType ? oilType.name : oilKey,
-      serviceDate: serviceDate,
-      vehicleInfo: vehicleInfoText,
-      decodedDetails: decoded ? [decoded.year, decoded.make, decoded.model, decoded.engineL ? decoded.engineL + 'L' : '', decoded.engineCylinders ? decoded.engineCylinders + ' cyl' : ''].filter(Boolean).join(' ') : '',
+      serviceDate: serviceDateStr,
+      nextServiceDate,
+      nextServiceMileage,
+      vehicleInfo,
+      vehicleDetails,
+      decodedDetails: vehicleDetails,
+      decodedVin: decoded || {},
+      companyName: 'Quality Lube Express',
+      address: '3617 HWY 19 Zachary LA 70791',
+      qrCode: vin.toUpperCase(),
+      qrEnabled: true,
+      templateId: 'oil_' + oilKey,
       createdDate: new Date().toISOString(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       printed: false,
