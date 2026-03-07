@@ -2446,6 +2446,7 @@ const LabelSystem = {
       category: template.labelName.toLowerCase().includes('tire') ? 'tire'
                : template.labelName.toLowerCase().includes('part') ? 'parts' : 'other',
       fields: labelData,
+      archived: false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       createdBy: createdBy
     };
@@ -2461,10 +2462,41 @@ const LabelSystem = {
     }
   },
 
+  _labelFieldTags(fields) {
+    if (!fields || typeof fields !== 'object') return '';
+    const skip = new Set(['created by', 'created date', 'copies to be printed']);
+    return Object.entries(fields)
+      .filter(([k, v]) => v && String(v).trim() && !skip.has(k.toLowerCase()))
+      .map(([k, v]) => '<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:#f0f4ff;border:1px solid #d0daf5;font-size:0.73rem;color:#374ab5;margin:2px 2px 2px 0;">' +
+        this.escHtml(k) + ': <strong>' + this.escHtml(String(v)) + '</strong></span>')
+      .join('');
+  },
+
+  _labelCardHtml(label, isArchived) {
+    const ts = label.createdAt && label.createdAt.toDate ? label.createdAt.toDate() : new Date(label.createdAt || 0);
+    const dateStr = ts ? ts.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) + ' ' +
+      ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+    const fieldTags = this._labelFieldTags(label.fields);
+    return '<div class="d-flex align-items-start justify-content-between py-2 border-bottom gap-2">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<strong class="small">' + this.escHtml(label.templateName || label.labelName) + '</strong>' +
+        (fieldTags ? '<div class="mt-1">' + fieldTags + '</div>' : '') +
+        '<div class="mt-1"><small class="text-muted">By ' + this.escHtml(label.createdBy || '') + ' &bull; ' + this.escHtml(dateStr) + '</small></div>' +
+      '</div>' +
+      '<div class="d-flex gap-1 flex-shrink-0">' +
+        (!isArchived ? '<button class="btn btn-sm btn-outline-primary" onclick="LabelSystem.reprintLabel(\'' + label.id + '\')" title="Reprint"><i class="fas fa-print"></i></button>' : '') +
+        (!isArchived
+          ? '<button class="btn btn-sm btn-outline-secondary" onclick="LabelSystem.archiveLabel(\'' + label.id + '\')" title="Archive"><i class="fas fa-archive"></i></button>'
+          : '<button class="btn btn-sm btn-outline-success" onclick="LabelSystem.unarchiveLabel(\'' + label.id + '\')" title="Restore"><i class="fas fa-undo"></i></button>') +
+        '<button class="btn btn-sm btn-outline-danger" onclick="LabelSystem.deleteSavedLabel(\'' + label.id + '\')" title="Delete"><i class="fas fa-trash"></i></button>' +
+      '</div>' +
+    '</div>';
+  },
+
   renderSavedLabels(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    const labels = this.savedLabels || [];
+    const labels = (this.savedLabels || []).filter(l => !l.archived);
     if (labels.length === 0) {
       container.innerHTML = '<div class="text-center py-4 text-muted border rounded">' +
         '<p class="mb-1 fw-semibold">No labels found</p>' +
@@ -2482,23 +2514,67 @@ const LabelSystem = {
     Object.entries(grouped).forEach(([cat, items]) => {
       if (items.length === 0) return;
       html += '<div class="mb-3"><h6 class="text-muted small text-uppercase fw-bold mb-2">' + this.escHtml(groupLabels[cat] || cat) + '</h6>';
-      items.forEach(label => {
-        const ts = label.createdAt && label.createdAt.toDate ? label.createdAt.toDate() : new Date(label.createdAt || 0);
-        const dateStr = ts ? ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-        html += '<div class="d-flex align-items-center justify-content-between py-2 border-bottom">' +
-          '<div>' +
-            '<strong class="small">' + this.escHtml(label.templateName || label.labelName) + '</strong>' +
-            '<br><small class="text-muted">By ' + this.escHtml(label.createdBy || '') + ' &bull; ' + this.escHtml(dateStr) + '</small>' +
-          '</div>' +
-          '<div class="d-flex gap-2">' +
-            '<button class="btn btn-sm btn-outline-primary" onclick="LabelSystem.reprintLabel(\'' + label.id + '\')" title="Reprint"><i class="fas fa-print"></i></button>' +
-            '<button class="btn btn-sm btn-outline-danger" onclick="LabelSystem.deleteSavedLabel(\'' + label.id + '\')" title="Delete"><i class="fas fa-trash"></i></button>' +
-          '</div>' +
-        '</div>';
-      });
+      items.forEach(label => { html += this._labelCardHtml(label, false); });
       html += '</div>';
     });
     container.innerHTML = html;
+  },
+
+  renderArchivedLabels(query) {
+    const container = document.getElementById('cl-archived-list');
+    if (!container) return;
+    let labels = (this.savedLabels || []).filter(l => l.archived);
+    if (query && query.trim()) {
+      const q = query.trim().toLowerCase();
+      labels = labels.filter(l => {
+        if ((l.templateName || l.labelName || '').toLowerCase().includes(q)) return true;
+        if ((l.createdBy || '').toLowerCase().includes(q)) return true;
+        if (l.fields) {
+          return Object.values(l.fields).some(v => String(v || '').toLowerCase().includes(q));
+        }
+        return false;
+      });
+    }
+    if (labels.length === 0) {
+      container.innerHTML = '<div class="text-center py-4 text-muted border rounded">' +
+        '<p class="mb-1 fw-semibold">' + (query ? 'No results for "' + this.escHtml(query) + '"' : 'No archived labels') + '</p>' +
+        '</div>';
+      return;
+    }
+    const grouped = { tire: [], parts: [], other: [] };
+    labels.forEach(l => {
+      const cat = l.category || 'other';
+      if (grouped[cat]) grouped[cat].push(l); else grouped.other.push(l);
+    });
+    const groupLabels = { tire: 'Tire Labels', parts: 'Parts Labels', other: 'Other Labels' };
+    let html = '';
+    Object.entries(grouped).forEach(([cat, items]) => {
+      if (items.length === 0) return;
+      html += '<div class="mb-3"><h6 class="text-muted small text-uppercase fw-bold mb-2">' + this.escHtml(groupLabels[cat] || cat) + '</h6>';
+      items.forEach(label => { html += this._labelCardHtml(label, true); });
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  },
+
+  async archiveLabel(labelId) {
+    try {
+      await this.getDb().collection('saved_labels').doc(labelId).update({ archived: true });
+      const lbl = (this.savedLabels || []).find(l => l.id === labelId);
+      if (lbl) lbl.archived = true;
+      this.renderSavedLabels('cl-labels-list');
+      this.renderArchivedLabels(document.getElementById('cl-archive-search') ? document.getElementById('cl-archive-search').value : '');
+    } catch (err) { alert('Archive failed: ' + err.message); }
+  },
+
+  async unarchiveLabel(labelId) {
+    try {
+      await this.getDb().collection('saved_labels').doc(labelId).update({ archived: false });
+      const lbl = (this.savedLabels || []).find(l => l.id === labelId);
+      if (lbl) lbl.archived = false;
+      this.renderSavedLabels('cl-labels-list');
+      this.renderArchivedLabels(document.getElementById('cl-archive-search') ? document.getElementById('cl-archive-search').value : '');
+    } catch (err) { alert('Restore failed: ' + err.message); }
   },
 
   async deleteSavedLabel(labelId) {
@@ -2507,6 +2583,7 @@ const LabelSystem = {
       await this.getDb().collection('saved_labels').doc(labelId).delete();
       this.savedLabels = (this.savedLabels || []).filter(l => l.id !== labelId);
       this.renderSavedLabels('cl-labels-list');
+      this.renderArchivedLabels(document.getElementById('cl-archive-search') ? document.getElementById('cl-archive-search').value : '');
     } catch (err) {
       alert('Delete failed: ' + err.message);
     }
@@ -2526,13 +2603,22 @@ const LabelSystem = {
 
   // ---- Create Labels View ----
   async renderCreateLabelsView() {
-    // Load stickers
     StickerSystem.init && StickerSystem.init();
-    // Load saved labels
     await this.loadSavedLabels();
     this.renderSavedLabels('cl-labels-list');
-    // Also render sticker list into the create-labels panel
+    this.renderArchivedLabels('');
     this._renderClStickerList();
+    // Default to active tab
+    this._showClSubTab('active');
+  },
+
+  _showClSubTab(tab) {
+    ['active', 'archived'].forEach(t => {
+      const btn = document.getElementById('cl-subtab-' + t);
+      const panel = document.getElementById('cl-subpanel-' + t);
+      if (btn) btn.classList.toggle('active', t === tab);
+      if (panel) panel.style.display = t === tab ? 'block' : 'none';
+    });
   },
 
   _renderClStickerList() {

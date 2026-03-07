@@ -2202,6 +2202,16 @@
         background: #e3f2fd;
       }
 
+      /* Create-labels sub-tab active state */
+      #cl-subtab-active.active, #cl-subtab-archived.active {
+        color: #1976d2 !important;
+        border-bottom-color: #1976d2 !important;
+      }
+      #cl-subtab-active:not(.active), #cl-subtab-archived:not(.active) {
+        color: #757575 !important;
+        border-bottom-color: transparent !important;
+      }
+
       /* Tire size format chips */
       .tire-format-chips {
         display: flex;
@@ -3616,8 +3626,35 @@
                 <i class="fas fa-cog me-1"></i>PRINT SETTINGS
               </button>
             </div>
-            <div id="cl-labels-list">
-              <!-- Rendered by JS -->
+
+            <!-- Sub-tab bar: Active / Archived -->
+            <div style="display:flex;gap:0;border-bottom:2px solid #e0e0e0;margin-bottom:14px;">
+              <button id="cl-subtab-active" onclick="LabelSystem._showClSubTab('active')"
+                style="padding:6px 18px;border:none;background:none;cursor:pointer;font-size:0.85rem;font-weight:600;color:#1976d2;border-bottom:2px solid #1976d2;margin-bottom:-2px;">
+                Active
+              </button>
+              <button id="cl-subtab-archived" onclick="LabelSystem._showClSubTab('archived')"
+                style="padding:6px 18px;border:none;background:none;cursor:pointer;font-size:0.85rem;font-weight:600;color:#757575;border-bottom:2px solid transparent;margin-bottom:-2px;">
+                <i class="fas fa-archive me-1" style="font-size:0.8rem;"></i>Archived
+              </button>
+            </div>
+
+            <!-- Active Labels Panel -->
+            <div id="cl-subpanel-active">
+              <div id="cl-labels-list"><!-- Rendered by JS --></div>
+            </div>
+
+            <!-- Archived Labels Panel -->
+            <div id="cl-subpanel-archived" style="display:none;">
+              <div class="mb-3">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                  <input type="text" id="cl-archive-search" class="form-control border-start-0"
+                    placeholder="Search archived labels by name, field value, or creator…"
+                    oninput="LabelSystem.renderArchivedLabels(this.value)">
+                </div>
+              </div>
+              <div id="cl-archived-list"><!-- Rendered by JS --></div>
             </div>
 
           </div>
