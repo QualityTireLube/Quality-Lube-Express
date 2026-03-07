@@ -2521,8 +2521,11 @@ const LabelSystem = {
     document.querySelectorAll('.csm-oil-btn').forEach(b => { b.classList.remove('btn-primary', 'active'); b.classList.add('btn-outline-secondary'); });
     this._csmSelectedOil = null;
     this._csmDecodedVin = null;
+    this._csmEditor = null;
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
+    // Init canvas after modal animation completes
+    modal.addEventListener('shown.bs.modal', () => { this._csmInitCanvas(); }, { once: true });
   },
 
   closeCreateStickerModal() {
@@ -2573,10 +2576,102 @@ const LabelSystem = {
       if (textEl) textEl.textContent = vehicleText;
       if (vehicleInfo) vehicleInfo.style.display = 'block';
       if (statusEl) { statusEl.textContent = 'VIN decoded successfully'; statusEl.className = 'text-success small'; }
+      this._csmUpdateCanvas();
     } catch (err) {
       const statusEl = document.getElementById('csm-vin-status');
       if (statusEl) { statusEl.textContent = 'Decode failed — check your connection'; statusEl.className = 'text-danger small'; }
     }
+  },
+
+  // ---- Modal Sticker Canvas ----
+
+  _csmInitCanvas() {
+    const viewport = document.getElementById('csm-canvas-viewport');
+    if (!viewport) return;
+    const paper = STICKER_PAPER_SIZES['GODEX'];
+    const canvasElements = STICKER_LAYOUT.elements.map(el => ({
+      id: el.id,
+      name: el.label || el.id,
+      text: el.content,
+      _type: 'sticker',
+      x: el.x,
+      y: el.y,
+      position: { x: el.x, y: el.y },
+      fontSize: Math.round(STICKER_LAYOUT.fontSize * el.fontSize),
+      fontFamily: STICKER_LAYOUT.fontFamily || 'Helvetica',
+      textAlign: el.align || 'center',
+      color: '#000000',
+      bold: !!el.bold,
+      rotation: 0,
+      showInForm: true
+    }));
+    const self = this;
+    if (!this._csmEditor) {
+      this._csmEditor = Object.create(CanvasEditor);
+    }
+    this._csmEditor.init(viewport, {
+      paperWidth: paper.width,
+      paperHeight: paper.height,
+      elements: canvasElements,
+      showGrid: false,
+      showRulers: false,
+      onSelectionChange() {},
+      onElementsChange() {}
+    });
+    // Sync zoom label
+    if (this._csmEditor._updateZoomLabel) {
+      this._csmEditor._updateZoomLabel = () => {
+        const lbl = document.getElementById('csm-zoom-label');
+        if (lbl) lbl.textContent = Math.round((self._csmEditor.zoom || 1) * 100) + '%';
+      };
+    }
+    this._csmUpdateCanvas();
+  },
+
+  _csmZoomFit() {
+    if (this._csmEditor && this._csmEditor.zoomFit) this._csmEditor.zoomFit();
+  },
+
+  _csmBuildData() {
+    const vin = (document.getElementById('csm-vin') || {}).value || '';
+    const oilKey = this._csmSelectedOil || '';
+    const mileageStr = (document.getElementById('csm-mileage') || {}).value || '';
+    const oilType = OIL_TYPES[oilKey];
+    const mileage = parseInt(mileageStr) || 0;
+    const today = new Date();
+    let nextServiceDate = '';
+    let nextServiceMileage = '';
+    if (oilType) {
+      const d = new Date(today);
+      d.setDate(d.getDate() + oilType.durationDays);
+      nextServiceDate = d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+      nextServiceMileage = mileage ? (mileage + oilType.mileageInterval).toLocaleString() : '';
+    }
+    const decoded = this._csmDecodedVin;
+    const vehicleDetails = decoded
+      ? [decoded.year, decoded.make, decoded.model].filter(Boolean).join(' ')
+      : (vin || '');
+    return {
+      nextServiceDate,
+      nextServiceMileage,
+      oilTypeName: oilType ? oilType.name : '',
+      vehicleDetails
+    };
+  },
+
+  _csmUpdateCanvas() {
+    if (!this._csmEditor || !this._csmEditor.elements) return;
+    const data = this._csmBuildData();
+    this._csmEditor.elements.forEach(el => {
+      let text = (STICKER_LAYOUT.elements.find(e => e.id === el.id) || {}).content || el.text || '';
+      text = text
+        .replace('{serviceDate}', data.nextServiceDate || '')
+        .replace('{serviceMileage}', data.nextServiceMileage ? data.nextServiceMileage + ' mi' : '')
+        .replace('{oilType}', data.oilTypeName || '')
+        .replace('{decodedDetails}', data.vehicleDetails || '');
+      el.text = text;
+    });
+    this._csmEditor.render();
   },
 
   csmSelectOil(btn) {
@@ -2587,6 +2682,7 @@ const LabelSystem = {
     btn.classList.remove('btn-outline-secondary');
     btn.classList.add('btn-primary', 'active');
     this._csmSelectedOil = btn.dataset.oil;
+    this._csmUpdateCanvas();
   },
 
   async createStickerSimple() {

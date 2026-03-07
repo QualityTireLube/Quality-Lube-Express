@@ -3981,7 +3981,7 @@
     </div>
 
     <!-- ===== Create Label Modal ===== -->
-    <div class="label-editor-overlay" id="createLabelModal" style="display:none;flex-direction:column;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;overflow-y:auto;">
+    <div class="label-editor-overlay" id="createLabelModal" style="display:none;flex-direction:column;background:rgba(0,0,0,0.55);align-items:center;overflow-y:auto;padding:40px 20px;">
 
       <!-- Step 1: Template Picker -->
       <div id="clm-step-select" style="width:100%;max-width:680px;margin:auto;background:#fff;border-radius:12px;padding:32px 32px 24px;box-shadow:0 8px 40px rgba(0,0,0,0.18);">
@@ -4050,39 +4050,58 @@
 
     <!-- ===== Create Oil Sticker Modal ===== -->
     <div class="modal fade" id="createStickerModal" tabindex="-1">
-      <div class="modal-dialog modal-lg">
+      <div class="modal-dialog modal-xl">
         <div class="modal-content">
           <div class="modal-header border-0 pb-0">
             <h5 class="modal-title fw-bold">Create New Oil Change Sticker</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body pt-3">
             <div id="csm-alert" class="alert alert-danger" style="display:none;"></div>
-            <div class="row g-3 mb-3">
-              <div class="col-md-6">
-                <div class="form-floating">
-                  <input type="text" class="form-control" id="csm-vin" maxlength="17" placeholder="VIN Number" oninput="LabelSystem.csmOnVinInput(this.value)" style="font-family:monospace;text-transform:uppercase;">
-                  <label for="csm-vin">VIN Number <span class="text-danger">*</span></label>
+            <!-- Two-column: form left, canvas right -->
+            <div class="d-flex gap-4" style="min-height:320px;">
+              <!-- Left: Form inputs -->
+              <div style="flex:1;min-width:0;">
+                <div class="mb-3">
+                  <div class="form-floating mb-1">
+                    <input type="text" class="form-control" id="csm-vin" maxlength="17" placeholder="VIN Number" oninput="LabelSystem.csmOnVinInput(this.value)" style="font-family:monospace;text-transform:uppercase;">
+                    <label for="csm-vin">VIN Number <span class="text-danger">*</span></label>
+                  </div>
+                  <small id="csm-vin-status" class="text-muted">0/17 characters</small>
+                  <div id="csm-vehicle-info" class="alert alert-success py-1 px-2 mt-1 mb-0" style="display:none;font-size:0.8rem;">
+                    <i class="fas fa-car me-1"></i><span id="csm-vehicle-text"></span>
+                  </div>
                 </div>
-                <small id="csm-vin-status" class="text-muted">0/17 characters</small>
-                <div id="csm-vehicle-info" class="alert alert-success py-1 px-2 mt-1 mb-0" style="display:none;font-size:0.8rem;">
-                  <i class="fas fa-car me-1"></i><span id="csm-vehicle-text"></span>
+                <div class="mb-3">
+                  <div class="form-floating">
+                    <input type="number" class="form-control" id="csm-mileage" placeholder="Current Mileage" min="0" oninput="LabelSystem._csmUpdateCanvas()">
+                    <label for="csm-mileage">Current Mileage <span class="text-danger">*</span></label>
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label fw-semibold mb-2">Oil Type <span class="text-danger">*</span></label>
+                  <div class="d-flex flex-wrap gap-2" id="csm-oil-types">
+                    <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="conv" onclick="LabelSystem.csmSelectOil(this)">Conventional Oil</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="super" onclick="LabelSystem.csmSelectOil(this)">Super Synthetic</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="mobil1" onclick="LabelSystem.csmSelectOil(this)">Mobil 1</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="rotella" onclick="LabelSystem.csmSelectOil(this)">Rotella</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="delvac" onclick="LabelSystem.csmSelectOil(this)">Delvac 1</button>
+                  </div>
                 </div>
               </div>
-              <div class="col-md-6">
-                <div class="form-floating">
-                  <input type="number" class="form-control" id="csm-mileage" placeholder="Current Mileage" min="0">
-                  <label for="csm-mileage">Current Mileage</label>
+              <!-- Right: Canvas preview -->
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+                <div class="se-canvas-area" style="flex:1;border:1px solid #e0e0e0;border-radius:6px;overflow:hidden;">
+                  <div class="se-canvas-toolbar">
+                    <span class="small text-muted fw-semibold"><i class="fas fa-eye me-1"></i>Live Preview</span>
+                    <span style="flex:1;"></span>
+                    <button class="fe-toolbar-btn" onclick="LabelSystem._csmZoomFit()" title="Fit to view"><i class="fas fa-expand"></i></button>
+                    <span class="fe-zoom-label" id="csm-zoom-label">100%</span>
+                  </div>
+                  <div class="se-canvas-wrapper" id="csm-canvas-viewport" style="min-height:260px;">
+                    <!-- Canvas rendered by JS -->
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div>
-              <label class="form-label fw-semibold mb-2">Oil Type</label>
-              <div class="d-flex flex-wrap gap-2" id="csm-oil-types">
-                <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="conv" onclick="LabelSystem.csmSelectOil(this)">Conventional Oil</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="super" onclick="LabelSystem.csmSelectOil(this)">Super Synthetic</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="mobil1" onclick="LabelSystem.csmSelectOil(this)">Mobil 1</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="rotella" onclick="LabelSystem.csmSelectOil(this)">Rotella</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="delvac" onclick="LabelSystem.csmSelectOil(this)">Delvac 1</button>
               </div>
             </div>
           </div>
