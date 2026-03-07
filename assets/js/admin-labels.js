@@ -2257,19 +2257,23 @@ const LabelSystem = {
     }
     manualFields.forEach(field => {
       const val = this.clmLabelData[field.name] || '';
-      let placeholder = '', hint = '';
-      if (field.name.toLowerCase().includes('tire') || field.name.toLowerCase() === 'tire size') {
-        placeholder = this.clmTireSizeFormat === 'metric' ? 'e.g., 225/65R17' : 'e.g., 31x10.5R15';
+      const isTireField = field.name.toLowerCase().includes('tire size') || field.name.toLowerCase() === 'tire size';
+      let hint = '';
+      if (isTireField) {
         hint = this.clmTireSizeFormat === 'metric'
-          ? '<small class="text-muted">Width/Aspect Ratio + R + Wheel Diameter (e.g., 225/65R17)</small>'
-          : '<small class="text-muted">Diameter x Width + R + Rim Diameter (e.g., 31x10.5R15)</small>';
+          ? '<small class="text-muted">Width / Aspect Ratio + R + Wheel Diameter &nbsp;<span class="badge bg-light text-secondary border">e.g. 225/65R17</span></small>'
+          : '<small class="text-muted">Diameter x Width.Frac + R + Rim &nbsp;<span class="badge bg-light text-secondary border">e.g. 31x10.5R15</span></small>';
       }
+      const safeFieldName = this.escHtml(field.name);
+      const safeFieldId   = this.escHtml(field.name.replace(/\s+/g, '_'));
+      const handler = isTireField
+        ? 'oninput="LabelSystem.clmTireSizeInput(\'' + safeFieldName + '\', this)"'
+        : 'oninput="LabelSystem.clmFieldChanged(\'' + safeFieldName + '\', this.value)"';
       html += '<div class="mb-2">' +
         '<div class="form-floating">' +
-        '<input type="text" class="form-control form-control-sm" id="clm-field-' + this.escHtml(field.name.replace(/\s+/g,'_')) + '" ' +
-        'value="' + this.escHtml(val) + '" placeholder="' + this.escHtml(field.name) + '" ' +
-        'oninput="LabelSystem.clmFieldChanged(\'' + this.escHtml(field.name) + '\', this.value)">' +
-        '<label>' + this.escHtml(field.name) + '</label>' +
+        '<input type="text" class="form-control form-control-sm" id="clm-field-' + safeFieldId + '" ' +
+        'value="' + this.escHtml(val) + '" placeholder="' + safeFieldName + '" ' + handler + '>' +
+        '<label>' + safeFieldName + '</label>' +
         '</div>' + hint + '</div>';
     });
     container.innerHTML = html;
@@ -2292,6 +2296,66 @@ const LabelSystem = {
   clmSetTireFormat(fmt) {
     this.clmTireSizeFormat = fmt;
     this._renderClmForm();
+  },
+
+  // Auto-formatter for tire size fields
+  _clmFormatTireSize(raw, format) {
+    if (!raw) return '';
+
+    if (format === 'metric') {
+      // Metric: 225/65R17  (3 digits / 2 digits R 2 digits)
+      const d = raw.replace(/\D/g, '').slice(0, 7);
+      const width  = d.slice(0, 3);
+      const aspect = d.slice(3, 5);
+      const rim    = d.slice(5, 7);
+      if (!aspect.length) return width;
+      if (!rim.length)    return width + '/' + aspect;
+      return width + '/' + aspect + 'R' + rim;
+
+    } else {
+      // Standard: 31x10.5R15  (2-digit diameter, x, width[.decimal], R, 2-digit rim)
+      const upper   = raw.toUpperCase();
+      const cleaned = upper.replace(/[^0-9.XR]/g, '');
+      const xIdx    = cleaned.indexOf('X');
+
+      if (xIdx === -1) {
+        // No x yet — accumulate diameter, then auto-insert x when digits exceed 2
+        const digits = cleaned.replace(/[^0-9]/g, '');
+        const dia    = digits.slice(0, 2);
+        const extra  = digits.slice(2); // these belong after the x
+        if (!extra) return dia;
+        return dia + 'x' + extra.slice(0, 6); // keep typing
+      }
+
+      // x present
+      const dia  = cleaned.slice(0, Math.min(xIdx, 2));
+      const rest = cleaned.slice(xIdx + 1);
+      const rIdx = rest.indexOf('R');
+
+      if (rIdx === -1) {
+        // No R yet — width still being typed (may include decimal)
+        return dia + 'x' + rest.replace(/[^0-9.]/g, '');
+      }
+
+      const width = rest.slice(0, rIdx).replace(/[^0-9.]/g, '');
+      const rim   = rest.slice(rIdx + 1).replace(/\D/g, '').slice(0, 2);
+      return dia + 'x' + width + 'R' + rim;
+    }
+  },
+
+  clmTireSizeInput(fieldName, inputEl) {
+    const raw       = inputEl.value;
+    const formatted = this._clmFormatTireSize(raw, this.clmTireSizeFormat);
+    // Only update if different to avoid cursor-jump on non-tire keystrokes
+    if (formatted !== raw) {
+      const cursorWasAtEnd = inputEl.selectionStart === raw.length;
+      inputEl.value = formatted;
+      if (cursorWasAtEnd) {
+        inputEl.selectionStart = inputEl.selectionEnd = formatted.length;
+      }
+    }
+    this.clmLabelData[fieldName] = formatted;
+    this._updateClmPreview();
   },
 
   clmSetFieldRotation(fieldName, degrees) {
@@ -2592,12 +2656,10 @@ const LabelSystem = {
     const data = this._csmBuildData();
     const paperAspect = paper.height / paper.width; // portrait ~1.378 for GODEX
 
-    // Cap height to match the left form column height (~260px)
-    // then derive width from the aspect ratio so the full sticker is always visible
-    const maxH = 260;
-    const maxW = viewport.parentElement ? (viewport.parentElement.clientWidth - 24) : 260;
-    const canvasH = Math.min(maxH, Math.round(maxW * paperAspect));
-    const canvasW = Math.round(canvasH / paperAspect);
+    // Fixed canvas width to match the right column (196px border box → 192px inner)
+    // Height derived from paper aspect ratio so the full sticker is always visible
+    const canvasW = 192;
+    const canvasH = Math.round(canvasW * paperAspect);
 
     // Reuse or create the canvas element
     let canvas = viewport.querySelector('canvas');
@@ -2617,12 +2679,9 @@ const LabelSystem = {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Paper background + border
+    // Paper background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvasW, canvasH);
-    ctx.strokeStyle = '#cccccc';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0.5, 0.5, canvasW - 1, canvasH - 1);
 
     // Font size formula: fontSize(pt) * 0.35(pt→mm) * scale(mm→canvasPx)
     // DPI factors cancel, so: basePt * elScale * 0.35 * (canvasW / paper.width)
