@@ -4050,7 +4050,7 @@
 
     <!-- ===== Create Oil Sticker Modal ===== -->
     <div class="modal fade" id="createStickerModal" tabindex="-1">
-      <div class="modal-dialog modal-xl">
+      <div class="modal-dialog" style="max-width:560px;">
         <div class="modal-content">
           <div class="modal-header border-0 pb-0">
             <h5 class="modal-title fw-bold">Create New Oil Change Sticker</h5>
@@ -4059,28 +4059,24 @@
           <div class="modal-body pt-3">
             <div id="csm-alert" class="alert alert-danger" style="display:none;"></div>
             <!-- Two-column: form left, canvas right -->
-            <div class="d-flex gap-4" style="min-height:320px;">
+            <div class="d-flex gap-3" style="align-items:flex-start;">
               <!-- Left: Form inputs -->
               <div style="flex:1;min-width:0;">
-                <div class="mb-3">
-                  <div class="form-floating mb-1">
-                    <input type="text" class="form-control" id="csm-vin" maxlength="17" placeholder="VIN Number" oninput="LabelSystem.csmOnVinInput(this.value)" style="font-family:monospace;text-transform:uppercase;">
-                    <label for="csm-vin">VIN Number <span class="text-danger">*</span></label>
-                  </div>
+                <div class="mb-2">
+                  <label class="form-label small mb-1 fw-semibold">VIN Number <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" id="csm-vin" maxlength="17" placeholder="Enter 17-character VIN" oninput="LabelSystem.csmOnVinInput(this.value)" style="font-family:monospace;text-transform:uppercase;letter-spacing:0.05em;">
                   <small id="csm-vin-status" class="text-muted">0/17 characters</small>
-                  <div id="csm-vehicle-info" class="alert alert-success py-1 px-2 mt-1 mb-0" style="display:none;font-size:0.8rem;">
+                  <div id="csm-vehicle-info" class="alert alert-success py-1 px-2 mt-1 mb-0" style="display:none;font-size:0.78rem;">
                     <i class="fas fa-car me-1"></i><span id="csm-vehicle-text"></span>
                   </div>
                 </div>
-                <div class="mb-3">
-                  <div class="form-floating">
-                    <input type="number" class="form-control" id="csm-mileage" placeholder="Current Mileage" min="0" oninput="LabelSystem._csmUpdateCanvas()">
-                    <label for="csm-mileage">Current Mileage <span class="text-danger">*</span></label>
-                  </div>
+                <div class="mb-2">
+                  <label class="form-label small mb-1 fw-semibold">Current Mileage <span class="text-danger">*</span></label>
+                  <input type="number" class="form-control form-control-sm" id="csm-mileage" placeholder="e.g. 65000" min="0" oninput="LabelSystem._csmRenderPreview()">
                 </div>
                 <div>
-                  <label class="form-label fw-semibold mb-2">Oil Type <span class="text-danger">*</span></label>
-                  <div class="d-flex flex-wrap gap-2" id="csm-oil-types">
+                  <label class="form-label small mb-1 fw-semibold">Oil Type <span class="text-danger">*</span></label>
+                  <div class="d-flex flex-wrap gap-1" id="csm-oil-types">
                     <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="conv" onclick="LabelSystem.csmSelectOil(this)">Conventional Oil</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="super" onclick="LabelSystem.csmSelectOil(this)">Super Synthetic</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm csm-oil-btn" data-oil="mobil1" onclick="LabelSystem.csmSelectOil(this)">Mobil 1</button>
@@ -4091,7 +4087,7 @@
               </div>
               <!-- Right: Canvas preview -->
               <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;width:200px;">
-                <h6 class="text-center mb-2 fw-semibold">Label Preview</h6>
+                <h6 class="text-center mb-2 fw-semibold" style="font-size:0.82rem;">Label Preview</h6>
                 <div id="csm-canvas-viewport" style="position:relative;overflow:hidden;border:2px dashed #ccc;border-radius:6px;background:#fff;width:196px;">
                   <!-- Canvas sized & rendered by JS -->
                 </div>
