@@ -2589,6 +2589,14 @@ const LabelSystem = {
     const viewport = document.getElementById('csm-canvas-viewport');
     if (!viewport) return;
     const paper = STICKER_PAPER_SIZES['GODEX'];
+
+    // Size the viewport to the paper's aspect ratio so clientWidth/clientHeight
+    // are valid when CanvasEditor.render() reads them
+    const availW = Math.max((viewport.parentElement ? viewport.parentElement.clientWidth : 0) - 32, 180);
+    const paperAspect = paper.height / paper.width; // mm ratio
+    viewport.style.width  = availW + 'px';
+    viewport.style.height = Math.round(availW * paperAspect) + 'px';
+
     const canvasElements = STICKER_LAYOUT.elements.map(el => ({
       id: el.id,
       name: el.label || el.id,
@@ -2605,7 +2613,7 @@ const LabelSystem = {
       rotation: 0,
       showInForm: true
     }));
-    const self = this;
+
     if (!this._csmEditor) {
       this._csmEditor = Object.create(CanvasEditor);
     }
@@ -2618,8 +2626,9 @@ const LabelSystem = {
       onSelectionChange() {},
       onElementsChange() {}
     });
-    // Zoom to fill the preview box
-    if (this._csmEditor.zoomFit) this._csmEditor.zoomFit();
+
+    // Re-fit now that the wrapper has explicit dimensions
+    if (this._csmEditor.fitToView) this._csmEditor.fitToView();
     this._csmUpdateCanvas();
   },
 
