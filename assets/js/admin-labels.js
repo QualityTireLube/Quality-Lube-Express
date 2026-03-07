@@ -2557,7 +2557,8 @@ const LabelSystem = {
         '<div class="mt-1"><small class="text-muted">By ' + this.escHtml(label.createdBy || '') + ' &bull; ' + this.escHtml(dateStr) + '</small></div>' +
       '</div>' +
       '<div class="d-flex gap-1 flex-shrink-0">' +
-        (!isArchived ? '<button class="btn btn-sm btn-outline-primary" onclick="LabelSystem.reprintLabel(\'' + label.id + '\')" title="Reprint"><i class="fas fa-print"></i></button>' : '') +
+        (!isArchived ? '<button class="btn btn-sm btn-outline-secondary" onclick="LabelSystem.reprintLabel(\'' + label.id + '\')" title="Open PDF"><i class="fas fa-file-pdf"></i></button>' : '') +
+        (!isArchived ? '<button class="btn btn-sm btn-outline-primary" onclick="LabelSystem.printLabelToClient(\'' + label.id + '\')" title="Send to print client"><i class="fas fa-print"></i></button>' : '') +
         (!isArchived
           ? '<button class="btn btn-sm btn-outline-secondary" onclick="LabelSystem.archiveLabel(\'' + label.id + '\')" title="Archive"><i class="fas fa-archive"></i></button>'
           : '<button class="btn btn-sm btn-outline-success" onclick="LabelSystem.unarchiveLabel(\'' + label.id + '\')" title="Restore"><i class="fas fa-undo"></i></button>') +
@@ -2671,7 +2672,67 @@ const LabelSystem = {
     const paper = PAPER_SIZES[paperKey] || Object.values(PAPER_SIZES)[0];
     LabelPdfGenerator.generateLabelPdf(template, label.fields, paper, 1).then(pdfBytes => {
       LabelPdfGenerator.openPdfInNewTab(pdfBytes);
-    });
+    }).catch(err => { alert('PDF failed: ' + err.message); });
+  },
+
+  async printLabelToClient(labelId) {
+    const label = (this.savedLabels || []).find(l => l.id === labelId);
+    if (!label) return;
+    const template = this.templates.find(t => t.id === label.templateId);
+    if (!template) { alert('Template not found — it may have been deleted.'); return; }
+
+    try {
+      const paperKey = template.paperSize || (typeof DEFAULT_PAPER_SIZE !== 'undefined' ? DEFAULT_PAPER_SIZE : '');
+      const paper = PAPER_SIZES[paperKey] || Object.values(PAPER_SIZES)[0];
+      const pdfBytes = await LabelPdfGenerator.generateLabelPdf(template, label.fields, paper, 1);
+
+      if (this.testMode) {
+        this.addTestLog('success', 'LABEL PRINT INTERCEPTED — Template: "' + template.labelName + '"');
+        this.addTestLog('info', 'Fields: ' + JSON.stringify(label.fields));
+        LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+        return;
+      }
+
+      const printClientUrl = this.getPrintClientUrl();
+      const printerSelect = document.getElementById('label-inline-printer-select');
+      const printerId = printerSelect ? printerSelect.value : '';
+      const selectedOption = printerSelect ? printerSelect.options[printerSelect.selectedIndex] : null;
+      const printerName = selectedOption ? selectedOption.textContent.split(' (')[0] : (printerId || 'default');
+      const systemName = selectedOption ? (selectedOption.dataset.systemName || printerName) : printerName;
+
+      if (!printerId) {
+        LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+        alert('No printer selected in Label Settings. PDF opened for manual printing.');
+        return;
+      }
+
+      const base64Pdf = this.uint8ArrayToBase64(pdfBytes);
+      const response = await fetch(printClientUrl + '/api/print/jobs', {
+        method: 'POST',
+        headers: this.getPrintClientHeaders(true),
+        mode: 'cors',
+        body: JSON.stringify({
+          printerId, printerName: systemName, copies: 1,
+          pdfData: base64Pdf,
+          templateName: template.labelName,
+          paperSize: paperKey,
+          labelData: label.fields
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const jobId = result.jobId || result.id || '';
+        alert('Label sent to printer' + (jobId ? ' (Job: ' + jobId + ')' : '') + '\nPrinter: ' + printerName);
+      } else {
+        const errData = await response.json().catch(() => null);
+        LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+        alert('Print failed: ' + (errData && errData.error ? errData.error : 'HTTP ' + response.status) + '\nPDF opened for manual printing.');
+      }
+    } catch (err) {
+      console.error('Print label to client failed:', err);
+      alert('Print client unreachable: ' + (err.message || err));
+    }
   },
 
   // ---- Create Labels View ----
