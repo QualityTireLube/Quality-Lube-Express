@@ -513,7 +513,7 @@ const LabelSystem = {
     }
 
     // For new tab views - delegate to showLsTab
-    if (['stickers', 'restocking', 'archived', 'templates'].includes(viewName)) {
+    if (['stickers', 'restocking', 'archived', 'templates', 'create-labels'].includes(viewName)) {
       this.showLsTab(viewName);
       return;
     }
@@ -538,6 +538,10 @@ const LabelSystem = {
     // Init StickerSystem when stickers tab is shown
     if (tabName === 'stickers') {
       StickerSystem.init();
+    }
+    // Render Create Labels view when that tab is shown
+    if (tabName === 'create-labels') {
+      this.renderCreateLabelsView();
     }
     // Re-render table data
     this.renderAllTables();
@@ -2108,6 +2112,495 @@ const LabelSystem = {
   escHtml(str) {
     if (!str) return '';
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  },
+
+  // ============================================================
+  // CREATE LABELS TAB — MODAL & VIEW LOGIC
+  // ============================================================
+
+  openPrintQueue() {
+    window.open('https://us-central1-qualityexpress-c19f2.cloudfunctions.net/printApi/api/print/printers', '_blank');
+  },
+
+  openStickerPrintSettings() {
+    StickerSystem.showCreateForm && StickerSystem.showCreateForm();
+    this.showLsTab('stickers');
+  },
+
+  openLabelPrintSettings() {
+    this.showView('settings');
+  },
+
+  // ---- Create Label Modal ----
+
+  openCreateLabelModal() {
+    const modal = document.getElementById('createLabelModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    this.clmSelectedTemplate = null;
+    this.clmLabelData = {};
+    this.clmTireSizeFormat = 'metric';
+    document.getElementById('clm-step-select').style.display = 'block';
+    document.getElementById('clm-step-fill').style.display = 'none';
+    this._renderClmTemplates();
+  },
+
+  closeCreateLabelModal() {
+    const modal = document.getElementById('createLabelModal');
+    if (modal) modal.style.display = 'none';
+  },
+
+  _renderClmTemplates() {
+    const active = this.templates.filter(t => !t.archived);
+    const tire = active.filter(t => t.labelName.toLowerCase().includes('tire'));
+    const parts = active.filter(t => t.labelName.toLowerCase().includes('part'));
+    const other = active.filter(t => !tire.includes(t) && !parts.includes(t));
+    const container = document.getElementById('clm-templates-container');
+    if (!container) return;
+    let html = '';
+    if (active.length === 0) {
+      html = '<div class="label-empty-state"><i class="fas fa-tags d-block"></i><h6>No templates found</h6><p>Import or create templates first</p></div>';
+    } else {
+      if (tire.length > 0) {
+        html += '<div class="label-creator-category"><h6>&#x1F6DE; Tire Templates (' + tire.length + ')</h6><div class="label-creator-chips">';
+        tire.forEach(t => { html += '<span class="label-template-chip" onclick="LabelSystem.clmSelectTemplate(\'' + t.id + '\')">' + this.escHtml(t.labelName) + '</span>'; });
+        html += '</div></div>';
+      }
+      if (parts.length > 0) {
+        html += '<div class="label-creator-category"><h6>&#x1F527; Parts Templates (' + parts.length + ')</h6><div class="label-creator-chips">';
+        parts.forEach(t => { html += '<span class="label-template-chip secondary" onclick="LabelSystem.clmSelectTemplate(\'' + t.id + '\')">' + this.escHtml(t.labelName) + '</span>'; });
+        html += '</div></div>';
+      }
+      if (other.length > 0) {
+        html += '<div class="label-creator-category"><h6>&#x1F4CB; Other Templates (' + other.length + ')</h6><div class="label-creator-chips">';
+        other.forEach(t => { html += '<span class="label-template-chip default" onclick="LabelSystem.clmSelectTemplate(\'' + t.id + '\')">' + this.escHtml(t.labelName) + '</span>'; });
+        html += '</div></div>';
+      }
+    }
+    container.innerHTML = html;
+  },
+
+  clmSelectTemplate(templateId) {
+    const template = this.templates.find(t => t.id === templateId);
+    if (!template) return;
+    this.clmSelectedTemplate = template;
+
+    document.getElementById('clm-step-select').style.display = 'none';
+    document.getElementById('clm-step-fill').style.display = 'block';
+    document.getElementById('clm-template-name').textContent = template.labelName;
+    document.getElementById('clm-alert').style.display = 'none';
+
+    const userName = localStorage.getItem('userName') || (firebase.auth().currentUser ? firebase.auth().currentUser.displayName || firebase.auth().currentUser.email : 'Unknown User');
+    const now = new Date();
+    const data = {};
+    template.fields.forEach(field => {
+      switch (field.name.toLowerCase()) {
+        case 'created by': data[field.name] = userName; break;
+        case 'created date': data[field.name] = now.toLocaleDateString(); break;
+        case 'copies to be printed': data[field.name] = '1'; break;
+        default: data[field.name] = '';
+      }
+    });
+    this.clmLabelData = data;
+
+    const chipsHtml = template.fields
+      .filter(f => f.name === 'Created By' || f.name === 'Created Date')
+      .map(f => '<span class="auto-chip">' + this.escHtml(data[f.name] || '') + '</span>')
+      .join('');
+    document.getElementById('clm-auto-chips').innerHTML = chipsHtml;
+
+    const paperSelect = document.getElementById('clm-paper-size');
+    if (paperSelect) {
+      paperSelect.innerHTML = '';
+      Object.entries(PAPER_SIZES).forEach(([key, ps]) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = ps.name + ' (' + ps.width + '\u00d7' + ps.height + 'mm)';
+        paperSelect.appendChild(opt);
+      });
+      paperSelect.value = template.paperSize || (typeof DEFAULT_PAPER_SIZE !== 'undefined' ? DEFAULT_PAPER_SIZE : '');
+    }
+
+    this._clmPopulatePrinters();
+    this._renderClmForm();
+    this._renderClmRotationControls();
+    this._updateClmPreview();
+  },
+
+  clmBackToSelect() {
+    document.getElementById('clm-step-select').style.display = 'block';
+    document.getElementById('clm-step-fill').style.display = 'none';
+    this.clmSelectedTemplate = null;
+  },
+
+  _clmPopulatePrinters() {
+    const sel = document.getElementById('clm-printer-select');
+    if (!sel) return;
+    sel.innerHTML = '';
+    if (this.printClientPrinters && this.printClientPrinters.length > 0) {
+      this.printClientPrinters.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.systemName || p.name;
+        opt.textContent = p.name;
+        sel.appendChild(opt);
+      });
+    } else {
+      sel.innerHTML = '<option value="" disabled selected>Connect to print server first</option>';
+    }
+  },
+
+  _renderClmForm() {
+    const template = this.clmSelectedTemplate;
+    if (!template) return;
+    const container = document.getElementById('clm-fields-form');
+    if (!container) return;
+    const autoFields = new Set(['Created By', 'Created Date', 'Copies to be Printed']);
+    const manualFields = template.fields.filter(f => !autoFields.has(f.name));
+    if (manualFields.length === 0) {
+      container.innerHTML = '<p class="text-muted small">All fields are auto-filled.</p>';
+      return;
+    }
+    const isTire = template.labelName.toLowerCase().includes('tire');
+    let html = '';
+    if (isTire) {
+      html += '<div class="mb-2"><label class="form-label small fw-semibold">Tire Size Format:</label>' +
+        '<div class="d-flex gap-2">' +
+        '<button type="button" class="btn btn-sm ' + (this.clmTireSizeFormat === 'metric' ? 'btn-primary' : 'btn-outline-secondary') + '" onclick="LabelSystem.clmSetTireFormat(\'metric\')">Metric</button>' +
+        '<button type="button" class="btn btn-sm ' + (this.clmTireSizeFormat === 'standard' ? 'btn-primary' : 'btn-outline-secondary') + '" onclick="LabelSystem.clmSetTireFormat(\'standard\')">Standard</button>' +
+        '</div></div>';
+    }
+    manualFields.forEach(field => {
+      const val = this.clmLabelData[field.name] || '';
+      let placeholder = '', hint = '';
+      if (field.name.toLowerCase().includes('tire') || field.name.toLowerCase() === 'tire size') {
+        placeholder = this.clmTireSizeFormat === 'metric' ? 'e.g., 225/65R17' : 'e.g., 31x10.5R15';
+        hint = this.clmTireSizeFormat === 'metric'
+          ? '<small class="text-muted">Width/Aspect Ratio + R + Wheel Diameter (e.g., 225/65R17)</small>'
+          : '<small class="text-muted">Diameter x Width + R + Rim Diameter (e.g., 31x10.5R15)</small>';
+      }
+      html += '<div class="mb-2">' +
+        '<div class="form-floating">' +
+        '<input type="text" class="form-control form-control-sm" id="clm-field-' + this.escHtml(field.name.replace(/\s+/g,'_')) + '" ' +
+        'value="' + this.escHtml(val) + '" placeholder="' + this.escHtml(field.name) + '" ' +
+        'oninput="LabelSystem.clmFieldChanged(\'' + this.escHtml(field.name) + '\', this.value)">' +
+        '<label>' + this.escHtml(field.name) + '</label>' +
+        '</div>' + hint + '</div>';
+    });
+    container.innerHTML = html;
+  },
+
+  _renderClmRotationControls() {
+    const template = this.clmSelectedTemplate;
+    const container = document.getElementById('clm-rotation-controls');
+    if (!container || !template) return;
+    container.innerHTML = template.fields.map(f => {
+      const rot = (f.rotation !== undefined ? f.rotation : 0);
+      return '<div class="d-flex align-items-center gap-2 mb-1">' +
+        '<small class="text-muted" style="width:90px;overflow:hidden;white-space:nowrap;">' + this.escHtml(f.name) + '</small>' +
+        '<select class="form-select form-select-sm" style="width:80px;" onchange="LabelSystem.clmSetFieldRotation(\'' + this.escHtml(f.name) + '\', parseInt(this.value))">' +
+        [0, 90, 180, 270].map(r => '<option value="' + r + '"' + (rot === r ? ' selected' : '') + '>' + r + '°</option>').join('') +
+        '</select></div>';
+    }).join('');
+  },
+
+  clmSetTireFormat(fmt) {
+    this.clmTireSizeFormat = fmt;
+    this._renderClmForm();
+  },
+
+  clmSetFieldRotation(fieldName, degrees) {
+    const template = this.clmSelectedTemplate;
+    if (!template) return;
+    const field = template.fields.find(f => f.name === fieldName);
+    if (field) field.rotation = degrees;
+    this._updateClmPreview();
+  },
+
+  clmFieldChanged(fieldName, value) {
+    this.clmLabelData[fieldName] = value;
+    this._updateClmPreview();
+  },
+
+  clmPaperSizeChanged(value) {
+    this._updateClmPreview();
+    this._updateClmPreviewInfo();
+  },
+
+  _updateClmPreview() {
+    const template = this.clmSelectedTemplate;
+    if (!template) return;
+    const paperKey = (document.getElementById('clm-paper-size') || {}).value || '';
+    const paper = PAPER_SIZES[paperKey] || Object.values(PAPER_SIZES)[0];
+    const box = document.getElementById('clm-preview-box');
+    if (!box) return;
+    LabelPdfGenerator.generatePreviewImage(template, this.clmLabelData, paper).then(dataUrl => {
+      box.innerHTML = '<img src="' + dataUrl + '" style="max-width:100%;max-height:280px;border:1px solid #ddd;">';
+    }).catch(() => {
+      box.innerHTML = '<p class="text-muted small">Preview unavailable</p>';
+    });
+    this._updateClmPreviewInfo();
+  },
+
+  _updateClmPreviewInfo() {
+    const paperKey = (document.getElementById('clm-paper-size') || {}).value || '';
+    const paper = PAPER_SIZES[paperKey];
+    const infoEl = document.getElementById('clm-preview-info');
+    if (infoEl && paper) {
+      const pxW = Math.round((paper.width / 25.4) * 96);
+      const pxH = Math.round((paper.height / 25.4) * 96);
+      infoEl.textContent = 'Size: ' + pxW + ' x ' + pxH + ' pixels\nThis preview updates in real-time as you fill the form';
+    }
+  },
+
+  clmPrint() {
+    const template = this.clmSelectedTemplate;
+    if (!template) return;
+    const paperKey = (document.getElementById('clm-paper-size') || {}).value || '';
+    const paper = PAPER_SIZES[paperKey] || Object.values(PAPER_SIZES)[0];
+    const copies = parseInt((document.getElementById('clm-copies') || {}).value) || 1;
+    LabelPdfGenerator.generateLabelPdf(template, this.clmLabelData, paper, copies).then(pdfBytes => {
+      LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+    }).catch(err => {
+      const alertEl = document.getElementById('clm-alert');
+      if (alertEl) { alertEl.textContent = 'Print failed: ' + err.message; alertEl.style.display = 'block'; }
+    });
+  },
+
+  // ---- Save Created Label ----
+  async clmSave() {
+    const template = this.clmSelectedTemplate;
+    if (!template) return;
+    const saveBtn = document.getElementById('clm-save-btn');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...'; }
+    try {
+      await this.saveCreatedLabel(template, this.clmLabelData);
+      this.closeCreateLabelModal();
+      if (this.currentLsTab === 'create-labels') this.renderCreateLabelsView();
+    } catch (err) {
+      const alertEl = document.getElementById('clm-alert');
+      if (alertEl) { alertEl.textContent = 'Save failed: ' + err.message; alertEl.style.display = 'block'; }
+    } finally {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="fas fa-save me-1"></i>SAVE'; }
+    }
+  },
+
+  async saveCreatedLabel(template, labelData) {
+    const user = firebase.auth().currentUser;
+    const createdBy = (user ? (user.displayName || user.email) : localStorage.getItem('userName')) || 'Unknown';
+    const doc = {
+      templateId: template.id,
+      templateName: template.labelName,
+      labelName: template.labelName,
+      category: template.labelName.toLowerCase().includes('tire') ? 'tire'
+               : template.labelName.toLowerCase().includes('part') ? 'parts' : 'other',
+      fields: labelData,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy: createdBy
+    };
+    await this.getDb().collection('saved_labels').add(doc);
+  },
+
+  async loadSavedLabels() {
+    try {
+      const snap = await this.getDb().collection('saved_labels').orderBy('createdAt', 'desc').get();
+      this.savedLabels = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (err) {
+      this.savedLabels = [];
+    }
+  },
+
+  renderSavedLabels(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const labels = this.savedLabels || [];
+    if (labels.length === 0) {
+      container.innerHTML = '<div class="text-center py-4 text-muted border rounded">' +
+        '<p class="mb-1 fw-semibold">No labels found</p>' +
+        '<p class="small mb-0">Click the "Create Label" button above to create your first label</p>' +
+        '</div>';
+      return;
+    }
+    const grouped = { tire: [], parts: [], other: [] };
+    labels.forEach(l => {
+      const cat = l.category || 'other';
+      if (grouped[cat]) grouped[cat].push(l); else grouped.other.push(l);
+    });
+    const groupLabels = { tire: 'Tire Labels', parts: 'Parts Labels', other: 'Other Labels' };
+    let html = '';
+    Object.entries(grouped).forEach(([cat, items]) => {
+      if (items.length === 0) return;
+      html += '<div class="mb-3"><h6 class="text-muted small text-uppercase fw-bold mb-2">' + this.escHtml(groupLabels[cat] || cat) + '</h6>';
+      items.forEach(label => {
+        const ts = label.createdAt && label.createdAt.toDate ? label.createdAt.toDate() : new Date(label.createdAt || 0);
+        const dateStr = ts ? ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+        html += '<div class="d-flex align-items-center justify-content-between py-2 border-bottom">' +
+          '<div>' +
+            '<strong class="small">' + this.escHtml(label.templateName || label.labelName) + '</strong>' +
+            '<br><small class="text-muted">By ' + this.escHtml(label.createdBy || '') + ' &bull; ' + this.escHtml(dateStr) + '</small>' +
+          '</div>' +
+          '<div class="d-flex gap-2">' +
+            '<button class="btn btn-sm btn-outline-primary" onclick="LabelSystem.reprintLabel(\'' + label.id + '\')" title="Reprint"><i class="fas fa-print"></i></button>' +
+            '<button class="btn btn-sm btn-outline-danger" onclick="LabelSystem.deleteSavedLabel(\'' + label.id + '\')" title="Delete"><i class="fas fa-trash"></i></button>' +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  },
+
+  async deleteSavedLabel(labelId) {
+    if (!confirm('Delete this saved label?')) return;
+    try {
+      await this.getDb().collection('saved_labels').doc(labelId).delete();
+      this.savedLabels = (this.savedLabels || []).filter(l => l.id !== labelId);
+      this.renderSavedLabels('cl-labels-list');
+    } catch (err) {
+      alert('Delete failed: ' + err.message);
+    }
+  },
+
+  async reprintLabel(labelId) {
+    const label = (this.savedLabels || []).find(l => l.id === labelId);
+    if (!label) return;
+    const template = this.templates.find(t => t.id === label.templateId);
+    if (!template) { alert('Template not found — it may have been deleted.'); return; }
+    const paperKey = template.paperSize || (typeof DEFAULT_PAPER_SIZE !== 'undefined' ? DEFAULT_PAPER_SIZE : '');
+    const paper = PAPER_SIZES[paperKey] || Object.values(PAPER_SIZES)[0];
+    LabelPdfGenerator.generateLabelPdf(template, label.fields, paper, 1).then(pdfBytes => {
+      LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+    });
+  },
+
+  // ---- Create Labels View ----
+  async renderCreateLabelsView() {
+    // Load stickers
+    StickerSystem.init && StickerSystem.init();
+    // Load saved labels
+    await this.loadSavedLabels();
+    this.renderSavedLabels('cl-labels-list');
+    // Also render sticker list into the create-labels panel
+    this._renderClStickerList();
+  },
+
+  _renderClStickerList() {
+    const target = document.getElementById('cl-sticker-list');
+    if (!target) return;
+    const stickers = StickerSystem.stickers || [];
+    if (stickers.length === 0) {
+      target.innerHTML = '<div class="text-center py-4 text-muted border rounded">' +
+        '<p class="mb-1 fw-semibold">No stickers found</p>' +
+        '<p class="small mb-0">Click the "Oil Sticker" button above to create your first sticker</p>' +
+        '</div>';
+      return;
+    }
+    const oilNames = {
+      conv: 'Conventional Oil', super: 'Super Synthetic', mobil1: 'Mobil 1', rotella: 'Rotella', delvac: 'Delvac 1', custom: 'Custom'
+    };
+    let html = '';
+    stickers.forEach(s => {
+      const oilLabel = oilNames[s.oilTypeKey] || s.oilTypeKey || 'Unknown';
+      const ts = s.createdAt && s.createdAt.toDate ? s.createdAt.toDate() : new Date(s.createdAt || 0);
+      const dateStr = ts ? (ts.toLocaleDateString('en-US', {month:'short', day:'numeric'})) + ' ' + ts.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+      html += '<div class="d-flex align-items-center justify-content-between py-2 border-bottom">' +
+        '<div>' +
+          '<strong class="small"><i class="fas fa-gas-pump me-1 text-primary"></i>' + this.escHtml(oilLabel) + '</strong>' +
+          '<br><small class="text-muted">' + this.escHtml(s.vehicleInfo || s.vin || '') + '</small>' +
+          (s.vin ? '<br><small class="text-muted font-monospace">' + this.escHtml(s.vin) + '</small>' : '') +
+        '</div>' +
+        '<div class="d-flex align-items-center gap-2">' +
+          (s.mileage ? '<span class="badge bg-info text-dark">' + Number(s.mileage).toLocaleString() + 'Mi</span>' : '') +
+          '<small class="text-muted">' + this.escHtml(dateStr) + '</small>' +
+          '<button class="btn btn-sm btn-outline-primary" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')" title="Print"><i class="fas fa-print"></i></button>' +
+          '<button class="btn btn-sm btn-outline-danger" onclick="StickerSystem.deleteSticker(\'' + s.id + '\');LabelSystem._renderClStickerList();" title="Delete"><i class="fas fa-times text-danger"></i></button>' +
+        '</div>' +
+      '</div>';
+    });
+    target.innerHTML = html;
+  },
+
+  // ---- Create Sticker Modal ----
+  openCreateStickerModal() {
+    const modal = document.getElementById('createStickerModal');
+    if (!modal) return;
+    document.getElementById('csm-vin').value = '';
+    document.getElementById('csm-mileage').value = '';
+    document.getElementById('csm-vin-count').textContent = '0/17 characters';
+    document.getElementById('csm-alert').style.display = 'none';
+    document.querySelectorAll('.csm-oil-btn').forEach(b => b.classList.remove('btn-primary', 'active'));
+    document.querySelectorAll('.csm-oil-btn').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-outline-secondary'); });
+    this._csmSelectedOil = null;
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+  },
+
+  closeCreateStickerModal() {
+    const modal = document.getElementById('createStickerModal');
+    if (modal) {
+      const bsModal = bootstrap.Modal.getInstance(modal);
+      if (bsModal) bsModal.hide();
+    }
+  },
+
+  csmOnVinInput(value) {
+    const clean = value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '');
+    const el = document.getElementById('csm-vin');
+    if (el) el.value = clean;
+    const countEl = document.getElementById('csm-vin-count');
+    if (countEl) countEl.textContent = clean.length + '/17 characters';
+  },
+
+  csmSelectOil(btn) {
+    document.querySelectorAll('.csm-oil-btn').forEach(b => {
+      b.classList.remove('btn-primary', 'active');
+      b.classList.add('btn-outline-secondary');
+    });
+    btn.classList.remove('btn-outline-secondary');
+    btn.classList.add('btn-primary', 'active');
+    this._csmSelectedOil = btn.dataset.oil;
+  },
+
+  async createStickerSimple() {
+    const vin = (document.getElementById('csm-vin') || {}).value || '';
+    const mileage = (document.getElementById('csm-mileage') || {}).value || '';
+    const oilKey = this._csmSelectedOil;
+    const alertEl = document.getElementById('csm-alert');
+
+    if (!vin || vin.length < 3) {
+      if (alertEl) { alertEl.textContent = 'Please enter a VIN number.'; alertEl.style.display = 'block'; }
+      return;
+    }
+    if (!oilKey) {
+      if (alertEl) { alertEl.textContent = 'Please select an oil type.'; alertEl.style.display = 'block'; }
+      return;
+    }
+    if (!mileage) {
+      if (alertEl) { alertEl.textContent = 'Please enter the current mileage.'; alertEl.style.display = 'block'; }
+      return;
+    }
+
+    if (alertEl) alertEl.style.display = 'none';
+    const oilType = OIL_TYPES[oilKey];
+    const serviceDate = new Date().toISOString().split('T')[0];
+    const stickerData = {
+      vin: vin.toUpperCase(),
+      mileage: parseInt(mileage),
+      oilTypeKey: oilKey,
+      oilTypeName: oilType ? oilType.name : oilKey,
+      serviceDate: serviceDate,
+      vehicleInfo: vin.toUpperCase(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      printed: false
+    };
+
+    try {
+      await StickerSystem.getDb().collection('static_stickers').add(stickerData);
+      this.closeCreateStickerModal();
+      await StickerSystem.loadStickers();
+      if (this.currentLsTab === 'create-labels') this._renderClStickerList();
+    } catch (err) {
+      if (alertEl) { alertEl.textContent = 'Failed to save sticker: ' + err.message; alertEl.style.display = 'block'; }
+    }
   }
 };
 
