@@ -2521,11 +2521,10 @@ const LabelSystem = {
     document.querySelectorAll('.csm-oil-btn').forEach(b => { b.classList.remove('btn-primary', 'active'); b.classList.add('btn-outline-secondary'); });
     this._csmSelectedOil = null;
     this._csmDecodedVin = null;
-    this._csmEditor = null;
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
     // Init canvas after modal animation completes
-    modal.addEventListener('shown.bs.modal', () => { this._csmInitCanvas(); }, { once: true });
+    modal.addEventListener('shown.bs.modal', () => { this._csmRenderPreview(); }, { once: true });
   },
 
   closeCreateStickerModal() {
@@ -2583,53 +2582,71 @@ const LabelSystem = {
     }
   },
 
-  // ---- Modal Sticker Canvas ----
+  // ---- Modal Sticker Preview (static canvas, no CanvasEditor) ----
 
-  _csmInitCanvas() {
+  _csmRenderPreview() {
     const viewport = document.getElementById('csm-canvas-viewport');
     if (!viewport) return;
+
     const paper = STICKER_PAPER_SIZES['GODEX'];
+    const data = this._csmBuildData();
 
-    // Size the viewport to the paper's aspect ratio so clientWidth/clientHeight
-    // are valid when CanvasEditor.render() reads them
-    const availW = Math.max((viewport.parentElement ? viewport.parentElement.clientWidth : 0) - 32, 180);
-    const paperAspect = paper.height / paper.width; // mm ratio
-    viewport.style.width  = availW + 'px';
-    viewport.style.height = Math.round(availW * paperAspect) + 'px';
+    // Compute canvas size to fill the preview box width
+    const boxW = viewport.parentElement ? (viewport.parentElement.clientWidth - 24) : 280;
+    const canvasW = Math.max(boxW, 180);
+    const canvasH = Math.round(canvasW * (paper.height / paper.width));
 
-    const canvasElements = STICKER_LAYOUT.elements.map(el => ({
-      id: el.id,
-      name: el.label || el.id,
-      text: el.content,
-      _type: 'sticker',
-      x: el.x,
-      y: el.y,
-      position: { x: el.x, y: el.y },
-      fontSize: Math.round(STICKER_LAYOUT.fontSize * el.fontSize),
-      fontFamily: STICKER_LAYOUT.fontFamily || 'Helvetica',
-      textAlign: el.align || 'center',
-      color: '#000000',
-      bold: !!el.bold,
-      rotation: 0,
-      showInForm: true
-    }));
-
-    if (!this._csmEditor) {
-      this._csmEditor = Object.create(CanvasEditor);
+    // Reuse or create the canvas element
+    let canvas = viewport.querySelector('canvas');
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      canvas.style.cssText = 'display:block;width:100%;height:auto;border-radius:4px;';
+      viewport.innerHTML = '';
+      viewport.appendChild(canvas);
     }
-    this._csmEditor.init(viewport, {
-      paperWidth: paper.width,
-      paperHeight: paper.height,
-      elements: canvasElements,
-      showGrid: false,
-      showRulers: false,
-      onSelectionChange() {},
-      onElementsChange() {}
-    });
 
-    // Re-fit now that the wrapper has explicit dimensions
-    if (this._csmEditor.fitToView) this._csmEditor.fitToView();
-    this._csmUpdateCanvas();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = canvasW * dpr;
+    canvas.height = canvasH * dpr;
+    canvas.style.width  = canvasW + 'px';
+    canvas.style.height = canvasH + 'px';
+
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Paper background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, 0.5, canvasW - 1, canvasH - 1);
+
+    // Scale factor: canvas pixels per mm
+    const scale = canvasW / paper.width;
+
+    // Draw each sticker element
+    for (const el of STICKER_LAYOUT.elements) {
+      let text = el.content;
+      text = text
+        .replace('{serviceDate}',   data.nextServiceDate   || '')
+        .replace('{serviceMileage}', data.nextServiceMileage ? data.nextServiceMileage + ' mi' : '')
+        .replace('{oilType}',       data.oilTypeName       || '')
+        .replace('{decodedDetails}', data.vehicleDetails   || '');
+      if (!text) continue;
+
+      // Position: percentages → canvas px
+      const x = (el.x / 100) * canvasW;
+      const y = (el.y / 100) * canvasH;
+
+      // Font size: pt-equivalent scaled by canvas scale
+      const fontSizePx = Math.max(STICKER_LAYOUT.fontSize * el.fontSize * scale * 0.35 * (96 / 25.4), 6);
+
+      ctx.font = (el.bold ? 'bold ' : '') + fontSizePx + 'px ' + (STICKER_LAYOUT.fontFamily || 'Helvetica');
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = el.align || 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y);
+    }
   },
 
   _csmBuildData() {
@@ -2660,18 +2677,7 @@ const LabelSystem = {
   },
 
   _csmUpdateCanvas() {
-    if (!this._csmEditor || !this._csmEditor.elements) return;
-    const data = this._csmBuildData();
-    this._csmEditor.elements.forEach(el => {
-      let text = (STICKER_LAYOUT.elements.find(e => e.id === el.id) || {}).content || el.text || '';
-      text = text
-        .replace('{serviceDate}', data.nextServiceDate || '')
-        .replace('{serviceMileage}', data.nextServiceMileage ? data.nextServiceMileage + ' mi' : '')
-        .replace('{oilType}', data.oilTypeName || '')
-        .replace('{decodedDetails}', data.vehicleDetails || '');
-      el.text = text;
-    });
-    this._csmEditor.render();
+    this._csmRenderPreview();
   },
 
   csmSelectOil(btn) {
