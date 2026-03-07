@@ -2635,24 +2635,47 @@ const LabelSystem = {
     const oilNames = {
       conv: 'Conventional Oil', super: 'Super Synthetic', mobil1: 'Mobil 1', rotella: 'Rotella', delvac: 'Delvac 1', custom: 'Custom'
     };
+    const oilColors = {
+      conv: '#6c757d', super: '#0d6efd', mobil1: '#dc3545', rotella: '#fd7e14', delvac: '#198754', custom: '#6f42c1'
+    };
     let html = '';
     stickers.forEach(s => {
-      const oilLabel = oilNames[s.oilTypeKey] || s.oilTypeKey || 'Unknown';
+      const oilLabel = s.oilTypeName || oilNames[s.oilTypeKey] || s.oilTypeKey || 'Unknown';
+      const oilColor = oilColors[s.oilTypeKey] || '#6c757d';
       const ts = s.createdAt && s.createdAt.toDate ? s.createdAt.toDate() : new Date(s.createdAt || 0);
-      const dateStr = ts ? (ts.toLocaleDateString('en-US', {month:'short', day:'numeric'})) + ' ' + ts.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-      html += '<div class="d-flex align-items-center justify-content-between py-2 border-bottom">' +
-        '<div>' +
-          '<strong class="small"><i class="fas fa-gas-pump me-1 text-primary"></i>' + this.escHtml(oilLabel) + '</strong>' +
-          '<br><small class="text-muted">' + this.escHtml(s.vehicleInfo || s.vin || '') + '</small>' +
-          (s.vin ? '<br><small class="text-muted font-monospace">' + this.escHtml(s.vin) + '</small>' : '') +
-        '</div>' +
-        '<div class="d-flex align-items-center gap-2">' +
-          (s.mileage ? '<span class="badge bg-info text-dark">' + Number(s.mileage).toLocaleString() + 'Mi</span>' : '') +
-          '<small class="text-muted">' + this.escHtml(dateStr) + '</small>' +
-          '<button class="btn btn-sm btn-outline-primary" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')" title="Print"><i class="fas fa-print"></i></button>' +
-          '<button class="btn btn-sm btn-outline-danger" onclick="StickerSystem.deleteSticker(\'' + s.id + '\');LabelSystem._renderClStickerList();" title="Delete"><i class="fas fa-times text-danger"></i></button>' +
-        '</div>' +
-      '</div>';
+      const dateStr = ts ? ts.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) + ' ' +
+        ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+      // Vehicle line: prefer decodedDetails (has engine info), fall back to vehicleInfo, then VIN
+      const vehicleLine = s.decodedDetails || s.vehicleInfo || '';
+      // Service date formatted
+      const svcDate = s.serviceDate ? new Date(s.serviceDate + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '';
+
+      html +=
+        '<div class="d-flex align-items-start justify-content-between py-3 border-bottom gap-3">' +
+          // Left: main info
+          '<div style="flex:1;min-width:0;">' +
+            // Oil type badge + vehicle name on same row
+            '<div class="d-flex align-items-center gap-2 mb-1">' +
+              '<span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.75rem;font-weight:700;color:#fff;background:' + oilColor + ';">' +
+                '<i class="fas fa-oil-can me-1"></i>' + this.escHtml(oilLabel) +
+              '</span>' +
+              (vehicleLine ? '<strong class="small">' + this.escHtml(vehicleLine) + '</strong>' : '') +
+            '</div>' +
+            // VIN + mileage + service date row
+            '<div class="d-flex flex-wrap align-items-center gap-2">' +
+              (s.vin ? '<span style="font-family:monospace;font-size:0.78rem;color:#555;background:#f5f5f5;padding:1px 7px;border-radius:4px;border:1px solid #e0e0e0;">' + this.escHtml(s.vin) + '</span>' : '') +
+              (s.mileage ? '<span style="font-size:0.78rem;color:#0d6efd;font-weight:600;"><i class="fas fa-tachometer-alt me-1"></i>' + Number(s.mileage).toLocaleString() + ' mi</span>' : '') +
+              (svcDate ? '<span style="font-size:0.78rem;color:#6c757d;"><i class="fas fa-calendar-alt me-1"></i>Service: ' + this.escHtml(svcDate) + '</span>' : '') +
+            '</div>' +
+            // Created timestamp
+            '<div class="mt-1"><small class="text-muted" style="font-size:0.72rem;"><i class="fas fa-clock me-1"></i>Created ' + this.escHtml(dateStr) + '</small></div>' +
+          '</div>' +
+          // Right: action buttons
+          '<div class="d-flex gap-1 flex-shrink-0 align-self-center">' +
+            '<button class="btn btn-sm btn-outline-primary" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')" title="Print"><i class="fas fa-print"></i></button>' +
+            '<button class="btn btn-sm btn-outline-danger" onclick="StickerSystem.deleteSticker(\'' + s.id + '\');LabelSystem._renderClStickerList();" title="Delete"><i class="fas fa-times"></i></button>' +
+          '</div>' +
+        '</div>';
     });
     target.innerHTML = html;
   },
