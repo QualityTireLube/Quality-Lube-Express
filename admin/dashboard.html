@@ -4089,11 +4089,15 @@
                   </div>
                 </div>
               </div>
-              <!-- Right: Canvas preview (bare, no toolbar) -->
-              <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;">
-                <div id="csm-canvas-viewport" style="width:100%;min-height:200px;background:#e8e8e8;border-radius:6px;overflow:hidden;position:relative;">
-                  <!-- Canvas rendered by JS -->
+              <!-- Right: Canvas preview -->
+              <div style="flex:1;min-width:0;">
+                <h6 class="text-center mb-2 fw-semibold">Label Preview</h6>
+                <div class="label-preview-box" style="min-height:220px;display:flex;align-items:center;justify-content:center;">
+                  <div id="csm-canvas-viewport" style="width:100%;position:relative;overflow:hidden;">
+                    <!-- Canvas rendered by JS -->
+                  </div>
                 </div>
+                <small class="d-block text-center text-muted mt-2">This preview updates in real-time as you fill the form</small>
               </div>
             </div>
           </div>

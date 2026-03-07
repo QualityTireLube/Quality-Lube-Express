@@ -2618,6 +2618,8 @@ const LabelSystem = {
       onSelectionChange() {},
       onElementsChange() {}
     });
+    // Zoom to fill the preview box
+    if (this._csmEditor.zoomFit) this._csmEditor.zoomFit();
     this._csmUpdateCanvas();
   },
 
