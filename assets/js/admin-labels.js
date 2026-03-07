@@ -2608,8 +2608,9 @@ const LabelSystem = {
     this.renderSavedLabels('cl-labels-list');
     this.renderArchivedLabels('');
     this._renderClStickerList();
-    // Default to active tab
+    this.renderArchivedStickers('');
     this._showClSubTab('active');
+    this._showClStickerSubTab('active');
   },
 
   _showClSubTab(tab) {
@@ -2624,7 +2625,7 @@ const LabelSystem = {
   _renderClStickerList() {
     const target = document.getElementById('cl-sticker-list');
     if (!target) return;
-    const stickers = StickerSystem.stickers || [];
+    const stickers = (StickerSystem.stickers || []).filter(s => !s.archived);
     if (stickers.length === 0) {
       target.innerHTML = '<div class="text-center py-4 text-muted border rounded">' +
         '<p class="mb-1 fw-semibold">No stickers found</p>' +
@@ -2632,52 +2633,95 @@ const LabelSystem = {
         '</div>';
       return;
     }
-    const oilNames = {
-      conv: 'Conventional Oil', super: 'Super Synthetic', mobil1: 'Mobil 1', rotella: 'Rotella', delvac: 'Delvac 1', custom: 'Custom'
-    };
-    const oilColors = {
-      conv: '#6c757d', super: '#0d6efd', mobil1: '#dc3545', rotella: '#fd7e14', delvac: '#198754', custom: '#6f42c1'
-    };
-    let html = '';
-    stickers.forEach(s => {
-      const oilLabel = s.oilTypeName || oilNames[s.oilTypeKey] || s.oilTypeKey || 'Unknown';
-      const oilColor = oilColors[s.oilTypeKey] || '#6c757d';
-      const ts = s.createdAt && s.createdAt.toDate ? s.createdAt.toDate() : new Date(s.createdAt || 0);
-      const dateStr = ts ? ts.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) + ' ' +
-        ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
-      // Vehicle line: prefer decodedDetails (has engine info), fall back to vehicleInfo, then VIN
-      const vehicleLine = s.decodedDetails || s.vehicleInfo || '';
-      // Service date formatted
-      const svcDate = s.serviceDate ? new Date(s.serviceDate + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '';
+    target.innerHTML = stickers.map(s => this._stickerCardHtml(s, false)).join('');
+  },
 
-      html +=
-        '<div class="d-flex align-items-start justify-content-between py-3 border-bottom gap-3">' +
-          // Left: main info
-          '<div style="flex:1;min-width:0;">' +
-            // Oil type badge + vehicle name on same row
-            '<div class="d-flex align-items-center gap-2 mb-1">' +
-              '<span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.75rem;font-weight:700;color:#fff;background:' + oilColor + ';">' +
-                '<i class="fas fa-oil-can me-1"></i>' + this.escHtml(oilLabel) +
-              '</span>' +
-              (vehicleLine ? '<strong class="small">' + this.escHtml(vehicleLine) + '</strong>' : '') +
-            '</div>' +
-            // VIN + mileage + service date row
-            '<div class="d-flex flex-wrap align-items-center gap-2">' +
-              (s.vin ? '<span style="font-family:monospace;font-size:0.78rem;color:#555;background:#f5f5f5;padding:1px 7px;border-radius:4px;border:1px solid #e0e0e0;">' + this.escHtml(s.vin) + '</span>' : '') +
-              (s.mileage ? '<span style="font-size:0.78rem;color:#0d6efd;font-weight:600;"><i class="fas fa-tachometer-alt me-1"></i>' + Number(s.mileage).toLocaleString() + ' mi</span>' : '') +
-              (svcDate ? '<span style="font-size:0.78rem;color:#6c757d;"><i class="fas fa-calendar-alt me-1"></i>Service: ' + this.escHtml(svcDate) + '</span>' : '') +
-            '</div>' +
-            // Created timestamp
-            '<div class="mt-1"><small class="text-muted" style="font-size:0.72rem;"><i class="fas fa-clock me-1"></i>Created ' + this.escHtml(dateStr) + '</small></div>' +
-          '</div>' +
-          // Right: action buttons
-          '<div class="d-flex gap-1 flex-shrink-0 align-self-center">' +
-            '<button class="btn btn-sm btn-outline-primary" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')" title="Print"><i class="fas fa-print"></i></button>' +
-            '<button class="btn btn-sm btn-outline-danger" onclick="StickerSystem.deleteSticker(\'' + s.id + '\');LabelSystem._renderClStickerList();" title="Delete"><i class="fas fa-times"></i></button>' +
-          '</div>' +
-        '</div>';
+  _showClStickerSubTab(tab) {
+    ['active', 'archived'].forEach(t => {
+      const btn = document.getElementById('cl-sticker-subtab-' + t);
+      const panel = document.getElementById('cl-sticker-subpanel-' + t);
+      if (btn) btn.classList.toggle('active', t === tab);
+      if (panel) panel.style.display = t === tab ? 'block' : 'none';
     });
-    target.innerHTML = html;
+  },
+
+  _stickerCardHtml(s, isArchived) {
+    const oilNames = { conv: 'Conventional Oil', super: 'Super Synthetic', mobil1: 'Mobil 1', rotella: 'Rotella', delvac: 'Delvac 1', custom: 'Custom' };
+    const oilColors = { conv: '#6c757d', super: '#0d6efd', mobil1: '#dc3545', rotella: '#fd7e14', delvac: '#198754', custom: '#6f42c1' };
+    const oilLabel = s.oilTypeName || oilNames[s.oilTypeKey] || s.oilTypeKey || 'Unknown';
+    const oilColor = oilColors[s.oilTypeKey] || '#6c757d';
+    const ts = s.createdAt && s.createdAt.toDate ? s.createdAt.toDate() : new Date(s.createdAt || 0);
+    const dateStr = ts ? ts.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) + ' ' +
+      ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+    const vehicleLine = s.decodedDetails || s.vehicleInfo || '';
+    const svcDate = s.serviceDate ? new Date(s.serviceDate + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '';
+    const searchVal = document.getElementById('cl-sticker-archive-search') ? document.getElementById('cl-sticker-archive-search').value : '';
+    return '<div class="d-flex align-items-start justify-content-between py-3 border-bottom gap-3">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div class="d-flex align-items-center gap-2 mb-1">' +
+          '<span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.75rem;font-weight:700;color:#fff;background:' + oilColor + ';">' +
+            '<i class="fas fa-oil-can me-1"></i>' + this.escHtml(oilLabel) +
+          '</span>' +
+          (vehicleLine ? '<strong class="small">' + this.escHtml(vehicleLine) + '</strong>' : '') +
+        '</div>' +
+        '<div class="d-flex flex-wrap align-items-center gap-2">' +
+          (s.vin ? '<span style="font-family:monospace;font-size:0.78rem;color:#555;background:#f5f5f5;padding:1px 7px;border-radius:4px;border:1px solid #e0e0e0;">' + this.escHtml(s.vin) + '</span>' : '') +
+          (s.mileage ? '<span style="font-size:0.78rem;color:#0d6efd;font-weight:600;"><i class="fas fa-tachometer-alt me-1"></i>' + Number(s.mileage).toLocaleString() + ' mi</span>' : '') +
+          (svcDate ? '<span style="font-size:0.78rem;color:#6c757d;"><i class="fas fa-calendar-alt me-1"></i>Service: ' + this.escHtml(svcDate) + '</span>' : '') +
+        '</div>' +
+        '<div class="mt-1"><small class="text-muted" style="font-size:0.72rem;"><i class="fas fa-clock me-1"></i>Created ' + this.escHtml(dateStr) + '</small></div>' +
+      '</div>' +
+      '<div class="d-flex gap-1 flex-shrink-0 align-self-center">' +
+        (!isArchived ? '<button class="btn btn-sm btn-outline-primary" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')" title="Print"><i class="fas fa-print"></i></button>' : '') +
+        (!isArchived
+          ? '<button class="btn btn-sm btn-outline-secondary" onclick="LabelSystem.archiveSticker(\'' + s.id + '\')" title="Archive"><i class="fas fa-archive"></i></button>'
+          : '<button class="btn btn-sm btn-outline-success" onclick="LabelSystem.unarchiveSticker(\'' + s.id + '\')" title="Restore"><i class="fas fa-undo"></i></button>') +
+        '<button class="btn btn-sm btn-outline-danger" onclick="StickerSystem.deleteSticker(\'' + s.id + '\');LabelSystem._renderClStickerList();LabelSystem.renderArchivedStickers(\'' + this.escHtml(searchVal) + '\');" title="Delete"><i class="fas fa-times"></i></button>' +
+      '</div>' +
+    '</div>';
+  },
+
+  renderArchivedStickers(query) {
+    const container = document.getElementById('cl-archived-sticker-list');
+    if (!container) return;
+    let stickers = (StickerSystem.stickers || []).filter(s => s.archived);
+    if (query && query.trim()) {
+      const q = query.trim().toLowerCase();
+      stickers = stickers.filter(s =>
+        (s.vin || '').toLowerCase().includes(q) ||
+        (s.vehicleInfo || '').toLowerCase().includes(q) ||
+        (s.decodedDetails || '').toLowerCase().includes(q) ||
+        (s.oilTypeName || s.oilTypeKey || '').toLowerCase().includes(q) ||
+        String(s.mileage || '').includes(q)
+      );
+    }
+    if (stickers.length === 0) {
+      container.innerHTML = '<div class="text-center py-4 text-muted border rounded">' +
+        '<p class="mb-1 fw-semibold">' + (query ? 'No results for "' + this.escHtml(query) + '"' : 'No archived stickers') + '</p>' +
+        '</div>';
+      return;
+    }
+    container.innerHTML = stickers.map(s => this._stickerCardHtml(s, true)).join('');
+  },
+
+  async archiveSticker(stickerId) {
+    try {
+      await StickerSystem.getDb().collection('static_stickers').doc(stickerId).update({ archived: true });
+      const s = (StickerSystem.stickers || []).find(x => x.id === stickerId);
+      if (s) s.archived = true;
+      this._renderClStickerList();
+      this.renderArchivedStickers(document.getElementById('cl-sticker-archive-search') ? document.getElementById('cl-sticker-archive-search').value : '');
+    } catch (err) { alert('Archive failed: ' + err.message); }
+  },
+
+  async unarchiveSticker(stickerId) {
+    try {
+      await StickerSystem.getDb().collection('static_stickers').doc(stickerId).update({ archived: false });
+      const s = (StickerSystem.stickers || []).find(x => x.id === stickerId);
+      if (s) s.archived = false;
+      this._renderClStickerList();
+      this.renderArchivedStickers(document.getElementById('cl-sticker-archive-search') ? document.getElementById('cl-sticker-archive-search').value : '');
+    } catch (err) { alert('Restore failed: ' + err.message); }
   },
 
   // ---- Create Sticker Modal ----
@@ -2895,7 +2939,8 @@ const LabelSystem = {
       vehicleInfo: vehicleInfoText,
       decodedDetails: decoded ? [decoded.year, decoded.make, decoded.model, decoded.engineL ? decoded.engineL + 'L' : '', decoded.engineCylinders ? decoded.engineCylinders + ' cyl' : ''].filter(Boolean).join(' ') : '',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      printed: false
+      printed: false,
+      archived: false
     };
 
     try {
