@@ -2209,21 +2209,7 @@ const LabelSystem = {
       .join('');
     document.getElementById('clm-auto-chips').innerHTML = chipsHtml;
 
-    const paperSelect = document.getElementById('clm-paper-size');
-    if (paperSelect) {
-      paperSelect.innerHTML = '';
-      Object.entries(PAPER_SIZES).forEach(([key, ps]) => {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = ps.name + ' (' + ps.width + '\u00d7' + ps.height + 'mm)';
-        paperSelect.appendChild(opt);
-      });
-      paperSelect.value = template.paperSize || (typeof DEFAULT_PAPER_SIZE !== 'undefined' ? DEFAULT_PAPER_SIZE : '');
-    }
-
-    this._clmPopulatePrinters();
     this._renderClmForm();
-    this._renderClmRotationControls();
     this._updateClmPreview();
   },
 
@@ -2255,7 +2241,7 @@ const LabelSystem = {
     const container = document.getElementById('clm-fields-form');
     if (!container) return;
     const autoFields = new Set(['Created By', 'Created Date', 'Copies to be Printed']);
-    const manualFields = template.fields.filter(f => !autoFields.has(f.name));
+    const manualFields = template.fields.filter(f => f.showInForm !== false && !autoFields.has(f.name));
     if (manualFields.length === 0) {
       container.innerHTML = '<p class="text-muted small">All fields are auto-filled.</p>';
       return;
@@ -2326,11 +2312,16 @@ const LabelSystem = {
     this._updateClmPreviewInfo();
   },
 
+  _clmGetPaper() {
+    const template = this.clmSelectedTemplate;
+    const paperKey = template ? template.paperSize : '';
+    return PAPER_SIZES[paperKey] || Object.values(PAPER_SIZES)[0];
+  },
+
   _updateClmPreview() {
     const template = this.clmSelectedTemplate;
     if (!template) return;
-    const paperKey = (document.getElementById('clm-paper-size') || {}).value || '';
-    const paper = PAPER_SIZES[paperKey] || Object.values(PAPER_SIZES)[0];
+    const paper = this._clmGetPaper();
     const box = document.getElementById('clm-preview-box');
     if (!box) return;
     LabelPdfGenerator.generatePreviewImage(template, this.clmLabelData, paper).then(dataUrl => {
@@ -2342,8 +2333,7 @@ const LabelSystem = {
   },
 
   _updateClmPreviewInfo() {
-    const paperKey = (document.getElementById('clm-paper-size') || {}).value || '';
-    const paper = PAPER_SIZES[paperKey];
+    const paper = this._clmGetPaper();
     const infoEl = document.getElementById('clm-preview-info');
     if (infoEl && paper) {
       const pxW = Math.round((paper.width / 25.4) * 96);
@@ -2355,10 +2345,8 @@ const LabelSystem = {
   clmPrint() {
     const template = this.clmSelectedTemplate;
     if (!template) return;
-    const paperKey = (document.getElementById('clm-paper-size') || {}).value || '';
-    const paper = PAPER_SIZES[paperKey] || Object.values(PAPER_SIZES)[0];
-    const copies = parseInt((document.getElementById('clm-copies') || {}).value) || 1;
-    LabelPdfGenerator.generateLabelPdf(template, this.clmLabelData, paper, copies).then(pdfBytes => {
+    const paper = this._clmGetPaper();
+    LabelPdfGenerator.generateLabelPdf(template, this.clmLabelData, 1).then(pdfBytes => {
       LabelPdfGenerator.openPdfInNewTab(pdfBytes);
     }).catch(err => {
       const alertEl = document.getElementById('clm-alert');
@@ -2525,11 +2513,14 @@ const LabelSystem = {
     if (!modal) return;
     document.getElementById('csm-vin').value = '';
     document.getElementById('csm-mileage').value = '';
-    document.getElementById('csm-vin-count').textContent = '0/17 characters';
+    const statusEl = document.getElementById('csm-vin-status');
+    if (statusEl) { statusEl.textContent = '0/17 characters'; statusEl.className = 'text-muted small'; }
+    const vehicleInfo = document.getElementById('csm-vehicle-info');
+    if (vehicleInfo) vehicleInfo.style.display = 'none';
     document.getElementById('csm-alert').style.display = 'none';
-    document.querySelectorAll('.csm-oil-btn').forEach(b => b.classList.remove('btn-primary', 'active'));
-    document.querySelectorAll('.csm-oil-btn').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-outline-secondary'); });
+    document.querySelectorAll('.csm-oil-btn').forEach(b => { b.classList.remove('btn-primary', 'active'); b.classList.add('btn-outline-secondary'); });
     this._csmSelectedOil = null;
+    this._csmDecodedVin = null;
     const bsModal = new bootstrap.Modal(modal);
     bsModal.show();
   },
@@ -2543,11 +2534,49 @@ const LabelSystem = {
   },
 
   csmOnVinInput(value) {
-    const clean = value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '');
+    const clean = value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '').substring(0, 17);
     const el = document.getElementById('csm-vin');
     if (el) el.value = clean;
-    const countEl = document.getElementById('csm-vin-count');
-    if (countEl) countEl.textContent = clean.length + '/17 characters';
+    const statusEl = document.getElementById('csm-vin-status');
+    const vehicleInfo = document.getElementById('csm-vehicle-info');
+    if (clean.length === 17) {
+      if (statusEl) { statusEl.textContent = 'Auto-decoding VIN...'; statusEl.className = 'text-info small'; }
+      if (vehicleInfo) vehicleInfo.style.display = 'none';
+      this._csmDecodedVin = null;
+      this.csmDecodeVin(clean);
+    } else {
+      if (statusEl) { statusEl.textContent = clean.length + '/17 characters'; statusEl.className = 'text-muted small'; }
+      if (vehicleInfo) vehicleInfo.style.display = 'none';
+      this._csmDecodedVin = null;
+    }
+  },
+
+  async csmDecodeVin(vin) {
+    try {
+      const resp = await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/' + vin + '?format=json');
+      const json = await resp.json();
+      const r = json.Results && json.Results[0] ? json.Results[0] : {};
+      this._csmDecodedVin = {
+        year: r.ModelYear || '',
+        make: r.Make || '',
+        model: r.Model || '',
+        engineL: r.DisplacementL || '',
+        engineCylinders: r.EngineCylinders || ''
+      };
+      const parts = [this._csmDecodedVin.year, this._csmDecodedVin.make, this._csmDecodedVin.model].filter(Boolean);
+      if (this._csmDecodedVin.engineL) parts.push(this._csmDecodedVin.engineL + 'L');
+      if (this._csmDecodedVin.engineCylinders) parts.push(this._csmDecodedVin.engineCylinders + ' cyl');
+      const vehicleText = parts.join(' ') || 'No data found';
+      const textEl = document.getElementById('csm-vehicle-text');
+      const vehicleInfo = document.getElementById('csm-vehicle-info');
+      const statusEl = document.getElementById('csm-vin-status');
+      if (textEl) textEl.textContent = vehicleText;
+      if (vehicleInfo) vehicleInfo.style.display = 'block';
+      if (statusEl) { statusEl.textContent = 'VIN decoded successfully'; statusEl.className = 'text-success small'; }
+    } catch (err) {
+      const statusEl = document.getElementById('csm-vin-status');
+      if (statusEl) { statusEl.textContent = 'Decode failed — check your connection'; statusEl.className = 'text-danger small'; }
+    }
   },
 
   csmSelectOil(btn) {
@@ -2582,13 +2611,18 @@ const LabelSystem = {
     if (alertEl) alertEl.style.display = 'none';
     const oilType = OIL_TYPES[oilKey];
     const serviceDate = new Date().toISOString().split('T')[0];
+    const decoded = this._csmDecodedVin;
+    const vehicleInfoText = decoded
+      ? [decoded.year, decoded.make, decoded.model].filter(Boolean).join(' ')
+      : vin.toUpperCase();
     const stickerData = {
       vin: vin.toUpperCase(),
       mileage: parseInt(mileage),
       oilTypeKey: oilKey,
       oilTypeName: oilType ? oilType.name : oilKey,
       serviceDate: serviceDate,
-      vehicleInfo: vin.toUpperCase(),
+      vehicleInfo: vehicleInfoText,
+      decodedDetails: decoded ? [decoded.year, decoded.make, decoded.model, decoded.engineL ? decoded.engineL + 'L' : '', decoded.engineCylinders ? decoded.engineCylinders + ' cyl' : ''].filter(Boolean).join(' ') : '',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       printed: false
     };

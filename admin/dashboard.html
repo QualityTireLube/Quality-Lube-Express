@@ -4009,33 +4009,11 @@
         <div class="label-creator-form-row">
           <!-- Left: Form fields -->
           <div class="label-creator-form-col">
-            <div class="card mb-3">
+            <div class="card">
               <div class="card-body">
                 <h6 class="mb-2"><i class="fas fa-edit me-1"></i>Label Fields</h6>
                 <div class="auto-filled-chips" id="clm-auto-chips"></div>
                 <div id="clm-fields-form"><!-- Rendered by JS --></div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-body">
-                <h6 class="mb-2"><i class="fas fa-cog me-1"></i>Print Settings</h6>
-                <div class="mb-2">
-                  <label class="form-label small">Paper Size</label>
-                  <select class="form-select form-select-sm" id="clm-paper-size" onchange="LabelSystem.clmPaperSizeChanged(this.value)"></select>
-                </div>
-                <div class="mb-2">
-                  <label class="form-label small">Printer</label>
-                  <select class="form-select form-select-sm" id="clm-printer-select">
-                    <option value="" disabled>Connect to print server first</option>
-                  </select>
-                </div>
-                <div class="mb-2">
-                  <label class="form-label small">Copies</label>
-                  <input type="number" class="form-control form-control-sm" id="clm-copies" value="1" min="1" max="20">
-                </div>
-                <hr class="my-2">
-                <h6 class="mb-2"><i class="fas fa-sync-alt me-1"></i>Field Rotation</h6>
-                <div id="clm-rotation-controls"></div>
               </div>
             </div>
           </div>
@@ -4083,9 +4061,12 @@
               <div class="col-md-6">
                 <div class="form-floating">
                   <input type="text" class="form-control" id="csm-vin" maxlength="17" placeholder="VIN Number" oninput="LabelSystem.csmOnVinInput(this.value)" style="font-family:monospace;text-transform:uppercase;">
-                  <label for="csm-vin">VIN Number</label>
+                  <label for="csm-vin">VIN Number <span class="text-danger">*</span></label>
                 </div>
-                <small class="text-muted" id="csm-vin-count">0/17 characters</small>
+                <small id="csm-vin-status" class="text-muted">0/17 characters</small>
+                <div id="csm-vehicle-info" class="alert alert-success py-1 px-2 mt-1 mb-0" style="display:none;font-size:0.8rem;">
+                  <i class="fas fa-car me-1"></i><span id="csm-vehicle-text"></span>
+                </div>
               </div>
               <div class="col-md-6">
                 <div class="form-floating">
