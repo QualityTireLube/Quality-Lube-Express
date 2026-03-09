@@ -2916,6 +2916,8 @@ const LabelSystem = {
       if (vehicleInfo) vehicleInfo.style.display = 'none';
       this._csmDecodedVin = null;
     }
+    // Always update canvas so QR and text render live as user types
+    this._csmUpdateCanvas();
   },
 
   async csmDecodeVin(vin) {
@@ -2944,6 +2946,8 @@ const LabelSystem = {
     } catch (err) {
       const statusEl = document.getElementById('csm-vin-status');
       if (statusEl) { statusEl.textContent = 'Decode failed — check your connection'; statusEl.className = 'text-danger small'; }
+      // Still update canvas so QR shows from the VIN even without decoded vehicle info
+      this._csmUpdateCanvas();
     }
   },
 
@@ -3346,6 +3350,10 @@ const StickerSystem = {
       console.error('Failed to load stickers:', err);
       this.stickers = [];
       this.renderStickerList();
+    }
+    // Refresh cl-sticker-list on the Create Labels tab (labels.html)
+    if (typeof LabelSystem !== 'undefined' && LabelSystem.currentLsTab === 'create-labels') {
+      LabelSystem._renderClStickerList();
     }
   },
 
