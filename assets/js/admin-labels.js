@@ -352,6 +352,8 @@ const LabelSystem = {
         if (e.target.getAttribute('href') === '#labels-tab') {
           this.loadTemplates();
           this.testPrintClientConnection();
+          // Render the active sub-tab content (create-labels, stickers, etc.)
+          this.showLsTab(this.currentLsTab);
         }
       });
     });
