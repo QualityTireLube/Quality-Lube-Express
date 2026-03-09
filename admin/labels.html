@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Labels &amp; Stickers — Quality Lube Express</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <style>
+    /* ── Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      background: #f4f4f7;
+      font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #333;
+      margin: 0;
+    }
+    a { text-decoration: none; }
+
+    /* ── Admin Header ─────────────────────────────── */
+    .admin-header {
+      background: #000;
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .admin-brand { color: #fff; font-weight: 700; font-size: 17px; }
+    .admin-header .back-link {
+      color: #aaa;
+      font-size: 13px;
+      margin-left: auto;
+      padding: 4px 10px;
+      border: 1px solid #444;
+      border-radius: 4px;
+      transition: 0.2s;
+    }
+    .admin-header .back-link:hover { border-color: #fff; color: #fff; }
+
+    /* ── Page Container ──────────────────────────── */
+    .labels-page {
+      max-width: 1200px;
+      margin: 32px auto;
+      padding: 0 20px 60px;
+    }
+
+    /* ── Top Action Bar ──────────────────────────── */
+    .labels-topbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .topbar-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .topbar-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .topbar-btn:active { transform: translateY(0); }
+    .topbar-btn.copy-icon {
+      background: #e8e8e8;
+      color: #555;
+      padding: 8px 12px;
+      font-size: 16px;
+    }
+    .topbar-btn.label-btn {
+      background: #c00d4b;
+      color: #fff;
+    }
+    .topbar-btn.sticker-btn {
+      background: #1565c0;
+      color: #fff;
+    }
+
+    /* ── Section ─────────────────────────────────── */
+    .lp-section {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+      overflow: hidden;
+      margin-bottom: 0;
+    }
+    .lp-section + .lp-divider { height: 1px; background: #e0e0e0; margin: 24px 0; }
+    /* .lp-section + .lp-divider + .lp-section — no extra styles needed */
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .section-head h5 { margin: 0; font-size: 16px; font-weight: 600; }
+    .print-settings-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      background: #1565c0;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .print-settings-btn:hover { background: #0d47a1; }
+
+    /* ── Sticker Row ─────────────────────────────── */
+    .sticker-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 22px;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.15s;
+    }
+    .sticker-row:last-child { border-bottom: none; }
+    .sticker-row:hover { background: #fafafa; }
+    .sticker-row-icon { font-size: 18px; color: #666; flex-shrink: 0; }
+    .sticker-row-info { flex: 1; min-width: 0; }
+    .sticker-row-info strong { font-size: 14px; display: block; }
+    .sticker-row-info .sticker-sub { font-size: 12px; color: #888; margin-top: 1px; }
+    .sticker-row-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .mileage-badge {
+      background: #00acc1;
+      color: #fff;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .action-icon-btn {
+      width: 34px; height: 34px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      background: #fff;
+      color: #555;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .action-icon-btn:hover { background: #f5f5f5; color: #222; }
+    .action-icon-btn.red-x {
+      border-color: #f5c6cb;
+      color: #dc3545;
+    }
+    .action-icon-btn.red-x:hover { background: #fce8ea; }
+    .sticker-timestamp { font-size: 11px; color: #aaa; white-space: nowrap; }
+
+    /* ── No Items State ──────────────────────────── */
+    .no-items-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+    .no-items-state p { margin: 0 0 6px; font-size: 14px; font-weight: 500; }
+    .no-items-state small { font-size: 12px; }
+
+    /* ── Full Overlay (Label) ────────────────────── */
+    .label-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1050;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 20px;
+      background: rgba(0,0,0,0.45);
+      overflow-y: auto;
+    }
+    .label-overlay.open { display: flex; }
+    .label-overlay-card {
+      background: #fff;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 860px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+      display: flex;
+      flex-direction: column;
+    }
+    .lo-header {
+      padding: 22px 28px 18px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .lo-header h4 { margin: 0; font-size: 18px; font-weight: 600; }
+    .lo-header .lo-tag-icon { font-size: 18px; color: #1565c0; }
+    .lo-body { padding: 24px 28px; flex: 1; overflow-y: auto; }
+    .lo-footer {
+      padding: 16px 28px;
+      border-top: 1px solid #ebebeb;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .lo-footer .btn-back { margin-right: auto; }
+
+    /* Template chip categories */
+    .lo-category { margin-bottom: 22px; }
+    .lo-category h6 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #eee;
+    }
+    .lo-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .label-template-chip {
+      display: inline-block;
+      padding: 7px 16px;
+      border-radius: 20px;
+      border: 1px solid #1565c0;
+      color: #1565c0;
+      background: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .label-template-chip:hover { background: #e3f2fd; }
+    .label-template-chip.secondary { border-color: #c00d4b; color: #c00d4b; }
+    .label-template-chip.secondary:hover { background: #fce4ec; }
+    .label-template-chip.default { border-color: #888; color: #555; }
+    .label-template-chip.default:hover { background: #f5f5f5; }
+
+    /* Form + Preview layout (step 2) */
+    .lo-form-preview {
+      display: flex;
+      gap: 24px;
+    }
+    .lo-form-col { flex: 1; min-width: 0; }
+    .lo-preview-col {
+      width: 260px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .lo-preview-header {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .lo-preview-box {
+      border: 1px dashed #ccc;
+      border-radius: 6px;
+      min-height: 180px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: #fafafa;
+    }
+    .lo-preview-box img { max-width: 100%; max-height: 320px; }
+    .lo-preview-info {
+      font-size: 11px;
+      color: #999;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    /* Auto-filled chips */
+    .auto-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .auto-chip {
+      display: inline-block;
+      padding: 5px 13px;
+      border-radius: 20px;
+      border: 1px solid #bbb;
+      background: #f5f5f5;
+      color: #555;
+      font-size: 12px;
+    }
+
+    /* Tire size format chips */
+    .tire-format-chips { display: flex; gap: 8px; margin-bottom: 8px; }
+    .tire-format-chip {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      background: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      color: #555;
+    }
+    .tire-format-chip.active { background: #1565c0; color: #fff; border-color: #1565c0; }
+
+    /* ── Sticker Overlay (modal) ─────────────────── */
+    .sticker-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1060;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.45);
+    }
+    .sticker-overlay.open { display: flex; }
+    .sticker-card {
+      background: #fff;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+      margin: 20px;
+    }
+    .sticker-card-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .sticker-card-header h5 { margin: 0; font-size: 17px; font-weight: 600; }
+    .sticker-card-body { padding: 22px 24px; }
+    .sticker-fields-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .sticker-field { flex: 1; }
+    .sticker-input {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .sticker-input:focus { border-color: #1565c0; }
+    .sticker-input::placeholder { color: #aaa; }
+    .sticker-field small { display: block; font-size: 11px; color: #aaa; margin-top: 4px; }
+    .oil-type-label { font-size: 13px; font-weight: 600; color: #444; display: block; margin-bottom: 10px; }
+    .oil-type-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .oil-chip {
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      background: #fff;
+      color: #555;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .oil-chip:hover { border-color: #1565c0; color: #1565c0; background: #e3f2fd; }
+    .oil-chip.selected { background: #1565c0; color: #fff; border-color: #1565c0; }
+    .sticker-card-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #ebebeb;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* ── Buttons ─────────────────────────────────── */
+    .btn-cancel-lo {
+      background: transparent;
+      border: none;
+      color: #1565c0;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.4px;
+      padding: 8px 14px;
+    }
+    .btn-cancel-lo:hover { color: #0d47a1; }
+    .btn-print-lo {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 20px;
+      background: #fff;
+      border: 1.5px solid #1565c0;
+      color: #1565c0;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-print-lo:hover:not(:disabled) { background: #e3f2fd; }
+    .btn-print-lo:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-save-lo {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 20px;
+      background: #1565c0;
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-save-lo:hover:not(:disabled) { background: #0d47a1; }
+    .btn-save-lo:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-back-lo {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      background: #fff;
+      border: 1px solid #ccc;
+      color: #555;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn-back-lo:hover { background: #f5f5f5; }
+    .btn-create-sticker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 20px;
+      background: #1565c0;
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-create-sticker:hover:not(:disabled) { background: #0d47a1; }
+    .btn-create-sticker:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Print Settings Modal ────────────────────── */
+    .ps-modal-body { padding: 20px 24px; }
+    .ps-modal-body .form-label { font-size: 13px; font-weight: 600; }
+
+    /* ── Responsive ──────────────────────────────── */
+    @media (max-width: 640px) {
+      .lo-form-preview { flex-direction: column; }
+      .lo-preview-col { width: 100%; }
+      .sticker-fields-row { flex-direction: column; }
+      .labels-topbar { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════════════ -->
+<header class="admin-header">
+  <a href="dashboard.html" class="admin-brand">Quality Lube Express</a>
+  <span style="color:#666; font-size:14px;">/ Labels &amp; Stickers</span>
+  <a href="dashboard.html" class="back-link"><i class="fas fa-chevron-left me-1"></i>Dashboard</a>
+</header>
+
+<!-- ═══════════════ PAGE ══════════════════════════ -->
+<div class="labels-page">
+
+  <!-- Top Action Buttons -->
+  <div class="labels-topbar">
+    <button class="topbar-btn copy-icon" title="New Label (Quick)" onclick="openLabelOverlay()">
+      <i class="fas fa-copy"></i>
+    </button>
+    <button class="topbar-btn label-btn" onclick="openLabelOverlay()">LABEL</button>
+    <button class="topbar-btn sticker-btn" onclick="openStickerOverlay()">OIL STICKER</button>
+  </div>
+
+  <!-- ── Static Stickers Section ─────────────────── -->
+  <div class="lp-section" id="stickers-section">
+    <div class="section-head">
+      <h5>Static Stickers</h5>
+      <button class="print-settings-btn" onclick="openPrintSettings()">
+        <i class="fas fa-cog"></i> PRINT SETTINGS
+      </button>
+    </div>
+    <!-- Custom sticker rows rendered here -->
+    <div id="stickers-rows-container">
+      <div class="no-items-state">
+        <p>Loading stickers…</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="lp-divider"></div>
+
+  <!-- ── Labels Section ──────────────────────────── -->
+  <div class="lp-section" id="labels-section">
+    <div class="section-head">
+      <h5>Labels</h5>
+      <button class="print-settings-btn" onclick="openPrintSettings()">
+        <i class="fas fa-cog"></i> PRINT SETTINGS
+      </button>
+    </div>
+    <div id="labels-rows-container">
+      <div class="no-items-state">
+        <p>No labels found</p>
+        <small>Click the "Create Label" button above to create your first label</small>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /labels-page -->
+
+
+<!-- ═══════════════ LABEL OVERLAY ════════════════ -->
+<div class="label-overlay" id="labelOverlay">
+  <div class="label-overlay-card">
+
+    <!-- STEP 1 — Template Selection -->
+    <div id="label-creator-step-select">
+      <div class="lo-header">
+        <i class="fas fa-tag lo-tag-icon"></i>
+        <h4>Create New Label</h4>
+      </div>
+      <div class="lo-body">
+        <div id="label-creator-templates">
+          <!-- Populated by LabelSystem.renderCreatorTemplates() -->
+        </div>
+      </div>
+      <div class="lo-footer">
+        <button class="btn-cancel-lo" onclick="closeLabelOverlay()">
+          <i class="fas fa-times me-1"></i>CANCEL
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2 — Form Fill + Preview -->
+    <div id="label-creator-step-fill" style="display:none;">
+      <div class="lo-header">
+        <i class="fas fa-print lo-tag-icon"></i>
+        <h4>Create <span id="creator-template-name"></span> Label</h4>
+      </div>
+      <div class="lo-body">
+        <div id="creator-alert" class="alert alert-danger mb-3" style="display:none;"></div>
+        <div class="auto-chips-row" id="creator-auto-chips"></div>
+
+        <div class="lo-form-preview">
+          <!-- Left: Form Fields -->
+          <div class="lo-form-col">
+            <div id="creator-fields-form"></div>
+            <!-- Hidden: print settings (kept for JS compatibility) -->
+            <div style="display:none;">
+              <select id="creator-paper-size" onchange="LabelSystem.creatorPaperSizeChanged(this.value)"></select>
+              <select id="creator-printer-select" onchange="LabelSystem.creatorPrinterChanged()">
+                <option value="" disabled>No printers</option>
+              </select>
+              <input type="number" id="creator-copies" value="1" min="1" max="20">
+              <div id="creator-rotation-controls"></div>
+              <span id="creator-print-label">Print Label</span>
+              <span id="creator-send-label">Send to Print Client</span>
+              <div id="print-modal-test-banner"></div>
+            </div>
+          </div>
+
+          <!-- Right: Preview -->
+          <div class="lo-preview-col">
+            <div class="lo-preview-header">Label Preview</div>
+            <div class="lo-preview-box" id="creator-preview-box">
+              <span style="color:#ccc; font-size:12px;">Preview will appear here</span>
+            </div>
+            <div class="lo-preview-info" id="creator-preview-info">
+              This preview updates in real-time as you fill the form
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lo-footer">
+        <button class="btn-back-lo btn-back" onclick="LabelSystem.creatorBackToSelect()">
+          <i class="fas fa-arrow-left me-1"></i>BACK TO TEMPLATES
+        </button>
+        <button class="btn-print-lo" id="creator-print-btn" onclick="LabelSystem.creatorPrint()" disabled>
+          <i class="fas fa-print"></i>PRINT
+        </button>
+        <button class="btn-save-lo" id="creator-send-btn" onclick="saveLabelAndClose()" disabled>
+          <i class="fas fa-save"></i>SAVE
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /label-overlay-card -->
+</div><!-- /labelOverlay -->
+
+
+<!-- ═══════════════ OIL STICKER OVERLAY ══════════ -->
+<div class="sticker-overlay" id="stickerOverlay">
+  <div class="sticker-card">
+    <div class="sticker-card-header">
+      <h5>Create New Oil Change Sticker</h5>
+    </div>
+    <div class="sticker-card-body">
+      <div class="sticker-fields-row">
+        <div class="sticker-field">
+          <input type="text" id="os-vin" class="sticker-input"
+                 placeholder="VIN Number" maxlength="17"
+                 autocomplete="off"
+                 oninput="onOsVinInput(this.value)">
+          <small id="os-vin-count">0/17 characters</small>
+        </div>
+        <div class="sticker-field">
+          <input type="number" id="os-mileage" class="sticker-input"
+                 placeholder="Current Mileage" min="0"
+                 oninput="validateStickerOverlay()">
+        </div>
+      </div>
+      <div>
+        <span class="oil-type-label">Oil Type</span>
+        <div class="oil-type-chips" id="os-oil-chips">
+          <button class="oil-chip" data-type="conv"    onclick="selectOilType(this)">Conventional Oil</button>
+          <button class="oil-chip" data-type="super"   onclick="selectOilType(this)">Super Synthetic</button>
+          <button class="oil-chip" data-type="mobil1"  onclick="selectOilType(this)">Mobil 1</button>
+          <button class="oil-chip" data-type="rotella" onclick="selectOilType(this)">Rotella</button>
+          <button class="oil-chip" data-type="delvac"  onclick="selectOilType(this)">Delvac 1</button>
+        </div>
+      </div>
+    </div>
+    <div class="sticker-card-footer">
+      <button class="btn-cancel-lo" onclick="closeStickerOverlay()">CANCEL</button>
+      <button class="btn-create-sticker" id="os-create-btn" onclick="createSimpleSticker()" disabled>
+        CREATE STICKER
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ PRINT SETTINGS MODAL ════════ -->
+<div class="modal fade" id="printSettingsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-cog me-2"></i>Print Settings</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="ps-modal-body">
+        <div class="mb-3">
+          <label class="form-label">Print Server URL</label>
+          <input type="text" class="form-control" id="label-print-server"
+                 value="https://us-central1-qualityexpress-c19f2.cloudfunctions.net/printApi">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">API Key</label>
+          <div class="input-group">
+            <input type="password" class="form-control" id="label-print-token" value="ql-print-2024">
+            <button class="btn btn-outline-secondary" type="button"
+                    onclick="const el=document.getElementById('label-print-token');el.type=el.type==='password'?'text':'password';">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Default Copies</label>
+          <input type="number" class="form-control" id="label-default-copies" value="1" min="1" max="20">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Default Paper Size</label>
+          <select class="form-select" id="label-default-paper">
+            <option value="29mmx90mm">Brother DK1201 (90×29mm)</option>
+            <option value="Brother-QL800">Brother QL-800 (62×29mm)</option>
+            <option value="Dymo-TwinTurbo">Dymo Twin Turbo (89×36mm)</option>
+          </select>
+        </div>
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="label-auto-save" checked>
+          <label class="form-check-label" for="label-auto-save">Auto-save templates while editing</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="LabelSystem.saveSettings(); bootstrap.Modal.getInstance(document.getElementById('printSettingsModal')).hide();">
+          <i class="fas fa-save me-1"></i>Save Settings
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- QR Code Modal (used by StickerSystem.showQrCode) -->
+<div class="modal fade" id="stickerQrModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-qrcode me-2"></i>VIN QR Code</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p class="mb-3 fw-bold" id="qr-modal-vin" style="font-family:monospace;"></p>
+        <div id="qr-modal-canvas"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VIN Details Modal (used by StickerSystem.showVinDetails) -->
+<div class="modal fade" id="stickerVinModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-car me-2"></i>Vehicle Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="vin-modal-content"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════ HIDDEN COMPATIBILITY ELEMENTS ═
+     These IDs are required by admin-labels.js but not
+     visible on this page.
+══════════════════════════════════════════════════ -->
+<div style="display:none;" aria-hidden="true">
+  <!-- Print client bar -->
+  <div id="printClientBar">
+    <span id="printClientStatus"></span>
+    <span id="printClientJobs"></span>
+    <span id="printClientPrinters"></span>
+  </div>
+  <!-- Test mode -->
+  <div id="testModeToggle"><div class="toggle-switch"></div><span></span></div>
+  <div id="testLogPanel"><div id="testLogEntries"></div></div>
+  <!-- Template table counts + bodies (not shown on this page) -->
+  <span id="ls-restocking-count">0</span>
+  <span id="ls-archived-count">0</span>
+  <span id="ls-templates-count">0</span>
+  <table><tbody id="restocking-table-body"></tbody></table>
+  <table id="restocking-table"><tbody></tbody></table>
+  <div id="restocking-empty"></div>
+  <table><tbody id="archived-table-body"></tbody></table>
+  <table id="archived-table"><tbody></tbody></table>
+  <div id="archived-empty"></div>
+  <table><tbody id="templates-table-body"></tbody></table>
+  <table id="templates-table"><tbody></tbody></table>
+  <div id="templates-empty"></div>
+  <!-- Stats -->
+  <span id="stat-total-templates"></span>
+  <span id="stat-total-fields"></span>
+  <span id="stat-avg-fields"></span>
+  <div id="stat-paper-distribution"></div>
+  <div id="label-recent-list"></div>
+  <div id="label-printers-list"></div>
+  <div id="label-clients-list"></div>
+  <div id="label-live-logs"></div>
+  <input type="checkbox" id="live-log-auto-refresh">
+  <!-- Sticker table (used by StickerSystem.renderStickerList internally) -->
+  <table id="stickers-table"><tbody id="stickers-table-body"></tbody></table>
+  <div id="stickers-empty"></div>
+  <!-- Archived sticker elements -->
+  <table id="archived-stickers-table"><tbody id="archived-stickers-table-body"></tbody></table>
+  <div id="archived-stickers-empty"></div>
+  <span id="ls-archived-stickers-count">0</span>
+  <!-- Sticker editor form (not used on this page; hidden for StickerSystem.init compat) -->
+  <div id="sticker-create-form">
+    <div id="sticker-alert"></div>
+    <div id="sticker-template-badge"><span id="sticker-template-name-badge"></span></div>
+    <input id="sticker-vin" type="text">
+    <small id="sticker-vin-status"></small>
+    <div id="sticker-vehicle-info"><span id="sticker-vehicle-text"></span></div>
+    <button id="sticker-decode-btn" disabled></button>
+    <select id="sticker-oil-type"></select>
+    <input id="sticker-mileage" type="number">
+    <input id="sticker-date" type="date">
+    <input id="sticker-copies" type="number" value="1">
+    <input id="sticker-qr-enabled" type="checkbox" checked>
+    <select id="sticker-paper-size"><option value="GODEX">GODEX</option></select>
+    <select id="sticker-printer-select"></select>
+    <div id="se-canvas-viewport"></div>
+    <div id="se-props-panel">
+      <div id="se-props-empty"></div>
+      <div id="se-props-content">
+        <span id="se-prop-name"></span>
+        <input id="se-prop-text" type="text">
+        <input id="se-prop-x" type="number">
+        <input id="se-prop-y" type="number">
+        <input id="se-prop-fontsize" type="range" min="4" max="24" value="8">
+        <span id="se-prop-fontsize-val">8px</span>
+        <button id="se-prop-bold"></button>
+        <button id="se-align-left"></button>
+        <button id="se-align-center"></button>
+        <button id="se-align-right"></button>
+      </div>
+    </div>
+    <span id="se-zoom-label">100%</span>
+    <button id="se-toggle-grid"></button>
+    <button id="sticker-send-btn" disabled></button>
+    <button id="sticker-preview-btn" disabled></button>
+    <button id="sticker-save-btn" disabled></button>
+  </div>
+  <!-- Label editor overlay stub (used by admin-labels.js openEditor/closeEditor) -->
+  <div id="labelEditorOverlay" class="label-editor-overlay"></div>
+</div><!-- /hidden compat -->
+
+
+<!-- ═══════════════ SCRIPTS ═══════════════════════ -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+
+<script>
+  // ── Firebase Init ──────────────────────────────
+  const firebaseConfig = {
+    apiKey: "AIzaSyA2DI7LRK4kR7DZtGRridtmCZYl8F32cLg",
+    authDomain: "qualityexpress-c19f2.firebaseapp.com",
+    projectId: "qualityexpress-c19f2",
+    storageBucket: "qualityexpress-c19f2.firebasestorage.app",
+    messagingSenderId: "201962327491",
+    appId: "1:201962327491:web:342d771b9013d901cc8176",
+    measurementId: "G-HJDBXM5CLX"
+  };
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+</script>
+
+<script src="../assets/js/canvas-editor.js"></script>
+<script src="../assets/js/admin-labels.js"></script>
+
+<script>
+  // ═══════════════════════════════════════════════
+  // PAGE STATE
+  // ═══════════════════════════════════════════════
+  let _selectedOilType = null;
+
+  // ═══════════════════════════════════════════════
+  // HELPERS
+  // ═══════════════════════════════════════════════
+  function esc(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ═══════════════════════════════════════════════
+  // LABEL OVERLAY
+  // ═══════════════════════════════════════════════
+  function openLabelOverlay() {
+    document.getElementById('labelOverlay').classList.add('open');
+    LabelSystem.initCreator();
+  }
+
+  function closeLabelOverlay() {
+    document.getElementById('labelOverlay').classList.remove('open');
+    LabelSystem.creatorSelectedTemplate = null;
+    LabelSystem.creatorLabelData = {};
+  }
+
+  async function saveLabelAndClose() {
+    const template = LabelSystem.creatorSelectedTemplate;
+    if (!template) return;
+
+    const btn = document.getElementById('creator-send-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+
+    try {
+      const user = firebase.auth().currentUser;
+      const userName = user ? (user.displayName || user.email || 'Unknown') : 'Unknown';
+
+      // Save to generated_labels collection
+      await db.collection('generated_labels').add({
+        templateId:   template.id,
+        templateName: template.labelName,
+        fieldData:    LabelSystem.creatorLabelData,
+        createdBy:    userName,
+        createdDate:  new Date().toISOString()
+      });
+
+      // Also open the PDF
+      await LabelSystem.creatorPrint();
+
+      closeLabelOverlay();
+      loadLabels();
+    } catch (err) {
+      const alertEl = document.getElementById('creator-alert');
+      alertEl.textContent = 'Save failed: ' + (err.message || err);
+      alertEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save"></i>SAVE';
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // OIL STICKER OVERLAY
+  // ═══════════════════════════════════════════════
+  function openStickerOverlay() {
+    _selectedOilType = null;
+    document.getElementById('os-vin').value     = '';
+    document.getElementById('os-mileage').value = '';
+    document.getElementById('os-vin-count').textContent = '0/17 characters';
+    document.querySelectorAll('#os-oil-chips .oil-chip').forEach(c => c.classList.remove('selected'));
+    document.getElementById('os-create-btn').disabled = true;
+    document.getElementById('stickerOverlay').classList.add('open');
+  }
+
+  function closeStickerOverlay() {
+    document.getElementById('stickerOverlay').classList.remove('open');
+  }
+
+  function onOsVinInput(raw) {
+    const clean = raw.replace(/[^A-HJ-NPR-Z0-9]/gi, '').toUpperCase().substring(0, 17);
+    document.getElementById('os-vin').value = clean;
+    document.getElementById('os-vin-count').textContent = clean.length + '/17 characters';
+    validateStickerOverlay();
+  }
+
+  function selectOilType(btn) {
+    document.querySelectorAll('#os-oil-chips .oil-chip').forEach(c => c.classList.remove('selected'));
+    btn.classList.add('selected');
+    _selectedOilType = btn.dataset.type;
+    validateStickerOverlay();
+  }
+
+  function validateStickerOverlay() {
+    const vin     = document.getElementById('os-vin').value.trim();
+    const mileage = document.getElementById('os-mileage').value.trim();
+    const valid   = vin.length === 17 && mileage !== '' && parseInt(mileage) >= 0 && _selectedOilType;
+    document.getElementById('os-create-btn').disabled = !valid;
+  }
+
+  async function createSimpleSticker() {
+    const vin     = document.getElementById('os-vin').value.trim();
+    const mileage = parseInt(document.getElementById('os-mileage').value);
+    if (!vin || isNaN(mileage) || !_selectedOilType) return;
+
+    const oilDefs = {
+      conv:    { name: 'Conventional Oil', durationDays: 90,  mileageInterval: 3000  },
+      super:   { name: 'Super Synthetic',  durationDays: 180, mileageInterval: 7000  },
+      mobil1:  { name: 'Mobil 1',          durationDays: 365, mileageInterval: 10000 },
+      rotella: { name: 'Rotella',          durationDays: 90,  mileageInterval: 3000  },
+      delvac:  { name: 'Delvac 1',         durationDays: 365, mileageInterval: 10000 }
+    };
+    const oil  = oilDefs[_selectedOilType] || oilDefs.conv;
+    const now  = new Date();
+    const next = new Date(now);
+    next.setDate(next.getDate() + oil.durationDays);
+
+    const btn = document.getElementById('os-create-btn');
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+
+    try {
+      const user     = firebase.auth().currentUser;
+      const userName = user ? (user.displayName || user.email || 'Unknown') : 'Unknown';
+
+      await db.collection('static_stickers').add({
+        vin,
+        mileage,
+        oilTypeKey:          _selectedOilType,
+        oilTypeName:         oil.name,
+        serviceDate:         now.toISOString().split('T')[0],
+        nextServiceDate:     next.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+        nextServiceMileage:  mileage + oil.mileageInterval,
+        vehicleDetails:      '',
+        decodedVin:          {},
+        createdBy:           userName,
+        createdDate:         new Date().toISOString(),
+        printed:             false,
+        archived:            false
+      });
+
+      closeStickerOverlay();
+      // Reload stickers via StickerSystem (it holds the in-memory list)
+      await StickerSystem.loadStickers();
+    } catch (err) {
+      alert('Failed to create sticker: ' + (err.message || err));
+      btn.disabled = false;
+      btn.textContent = 'CREATE STICKER';
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // PRINT SETTINGS
+  // ═══════════════════════════════════════════════
+  function openPrintSettings() {
+    new bootstrap.Modal(document.getElementById('printSettingsModal')).show();
+  }
+
+  // ═══════════════════════════════════════════════
+  // STICKER LIST RENDERING (custom card display)
+  // ═══════════════════════════════════════════════
+  function renderStickersDisplay() {
+    const container = document.getElementById('stickers-rows-container');
+    const active    = (StickerSystem.stickers || []).filter(s => !s.archived);
+
+    if (active.length === 0) {
+      container.innerHTML = `
+        <div class="no-items-state">
+          <p>No stickers yet</p>
+          <small>Click "OIL STICKER" above to create your first oil change sticker</small>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = active.map(s => renderStickerRow(s)).join('');
+  }
+
+  function renderStickerRow(s) {
+    const oilName  = s.oilTypeName || s.oilTypeKey || '';
+    const mileage  = s.mileage ? Number(s.mileage).toLocaleString() : '0';
+    const date     = s.createdDate ? new Date(s.createdDate) : null;
+    const dateStr  = date
+      ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+        date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+      : '';
+    const vehicle1 = s.vehicleDetails || (s.decodedVin
+      ? [(s.decodedVin.year || ''), (s.decodedVin.make || ''), (s.decodedVin.model || '')].filter(Boolean).join(' ')
+      : '');
+    const vinLine  = esc(s.vin || '');
+
+    return `<div class="sticker-row">
+      <div class="sticker-row-icon"><i class="fas fa-gas-pump"></i></div>
+      <div class="sticker-row-info">
+        <strong>${esc(oilName)}</strong>
+        ${vehicle1 ? `<div class="sticker-sub">${esc(vehicle1)}</div>` : ''}
+        ${vinLine   ? `<div class="sticker-sub" style="font-family:monospace;">${vinLine}</div>` : ''}
+      </div>
+      <div class="sticker-row-actions">
+        <span class="mileage-badge">${esc(mileage)}Mi</span>
+        <button class="action-icon-btn" title="QR Code"        onclick="StickerSystem.showQrCode('${s.id}')"><i class="fas fa-qrcode"></i></button>
+        <button class="action-icon-btn" title="Print"          onclick="StickerSystem.reprintSticker('${s.id}')"><i class="fas fa-print"></i></button>
+        <button class="action-icon-btn" title="Vehicle Details" onclick="StickerSystem.showVinDetails('${s.id}')"><i class="fas fa-car"></i></button>
+        <button class="action-icon-btn red-x" title="Archive"  onclick="StickerSystem.archiveSticker('${s.id}')"><i class="fas fa-times"></i></button>
+        <span class="sticker-timestamp">${esc(dateStr)}</span>
+      </div>
+    </div>`;
+  }
+
+  // ═══════════════════════════════════════════════
+  // LABELS LIST RENDERING
+  // ═══════════════════════════════════════════════
+  async function loadLabels() {
+    try {
+      const snap = await db.collection('generated_labels')
+        .orderBy('createdDate', 'desc').limit(50).get();
+      const labels = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderLabelsDisplay(labels);
+    } catch (err) {
+      console.error('Failed to load labels:', err);
+    }
+  }
+
+  function renderLabelsDisplay(labels) {
+    const container = document.getElementById('labels-rows-container');
+
+    if (!labels || labels.length === 0) {
+      container.innerHTML = `
+        <div class="no-items-state">
+          <p>No labels found</p>
+          <small>Click the "Create Label" button above to create your first label</small>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = labels.map(label => renderLabelRow(label)).join('');
+  }
+
+  function renderLabelRow(label) {
+    const date      = label.createdDate ? new Date(label.createdDate) : null;
+    const dateStr   = date
+      ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+        date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+      : '';
+    const keyFields = Object.entries(label.fieldData || {})
+      .filter(([k]) => k !== 'Created By' && k !== 'Created Date' && k !== 'Copies to be Printed')
+      .map(([, v]) => v).filter(Boolean).slice(0, 3).join(' · ');
+
+    return `<div class="sticker-row">
+      <div class="sticker-row-icon"><i class="fas fa-tag" style="color:#1565c0;"></i></div>
+      <div class="sticker-row-info">
+        <strong>${esc(label.templateName || 'Label')}</strong>
+        ${keyFields ? `<div class="sticker-sub">${esc(keyFields)}</div>` : ''}
+        ${label.createdBy ? `<div class="sticker-sub">By ${esc(label.createdBy)}</div>` : ''}
+      </div>
+      <div class="sticker-row-actions">
+        <button class="action-icon-btn" title="Print"  onclick="reprintLabel('${label.id}')"><i class="fas fa-print"></i></button>
+        <button class="action-icon-btn red-x" title="Delete" onclick="deleteLabel('${label.id}')"><i class="fas fa-times"></i></button>
+        <span class="sticker-timestamp">${esc(dateStr)}</span>
+      </div>
+    </div>`;
+  }
+
+  async function reprintLabel(id) {
+    try {
+      const snap = await db.collection('generated_labels').doc(id).get();
+      if (!snap.exists) { alert('Label not found'); return; }
+      const data     = snap.data();
+      const template = LabelSystem.templates.find(t => t.id === data.templateId);
+      if (!template) { alert('Template was deleted or not found'); return; }
+      const copies   = parseInt((data.fieldData || {})['Copies to be Printed'] || '1');
+      const pdfBytes = await LabelPdfGenerator.generateLabelPdf(template, data.fieldData, copies);
+      LabelPdfGenerator.openPdfInNewTab(pdfBytes);
+    } catch (err) {
+      alert('Print failed: ' + (err.message || err));
+    }
+  }
+
+  async function deleteLabel(id) {
+    if (!confirm('Delete this label permanently?')) return;
+    try {
+      await db.collection('generated_labels').doc(id).delete();
+      loadLabels();
+    } catch (err) {
+      alert('Delete failed: ' + (err.message || err));
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // AUTH + INIT
+  // ═══════════════════════════════════════════════
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      window.location.href = '../login.html';
+      return;
+    }
+
+    // Store user info so LabelSystem can auto-fill Created By
+    if (user.displayName) localStorage.setItem('userName', user.displayName);
+    if (user.email)       localStorage.setItem('userEmail', user.email);
+
+    // Patch StickerSystem so it also refreshes our custom display
+    const _origRenderStickerList = StickerSystem.renderStickerList.bind(StickerSystem);
+    StickerSystem.renderStickerList = function() {
+      _origRenderStickerList();
+      renderStickersDisplay();
+    };
+
+    // Init LabelSystem (loads templates, settings, connects print server)
+    LabelSystem.init();
+
+    // Init StickerSystem (loads stickers from Firebase)
+    StickerSystem.initialized = false; // force re-init
+    StickerSystem.init();
+
+    // Load labels list
+    loadLabels();
+  });
+</script>
+
+</body>
+</html>
