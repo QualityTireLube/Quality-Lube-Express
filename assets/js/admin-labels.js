@@ -2936,7 +2936,7 @@ const LabelSystem = {
 
   // ---- Modal Sticker Preview (static canvas, no CanvasEditor) ----
 
-  _csmRenderPreview() {
+  async _csmRenderPreview() {
     const viewport = document.getElementById('csm-canvas-viewport');
     if (!viewport) return;
 
@@ -2971,11 +2971,15 @@ const LabelSystem = {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvasW, canvasH);
 
+    // Border
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(0.5, 0.5, canvasW - 1, canvasH - 1);
+
     // Font size formula: fontSize(pt) * 0.35(pt→mm) * scale(mm→canvasPx)
-    // DPI factors cancel, so: basePt * elScale * 0.35 * (canvasW / paper.width)
     const mmToCanvasPx = canvasW / paper.width;
 
-    // Draw each sticker element
+    // Draw each sticker text element
     for (const el of STICKER_LAYOUT.elements) {
       let text = el.content;
       text = text
@@ -2994,6 +2998,25 @@ const LabelSystem = {
       ctx.textAlign = el.align || 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(text, x, y);
+    }
+
+    // Draw QR code if VIN is present
+    const vin = (document.getElementById('csm-vin') || {}).value || '';
+    if (vin) {
+      try {
+        const qrSizePx = Math.round(STICKER_LAYOUT.qrCodeSize * mmToCanvasPx);
+        const qrDataUrl = await this.generateQrDataUrl(vin, qrSizePx * 2);
+        if (qrDataUrl) {
+          const img = new Image();
+          img.src = qrDataUrl;
+          await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+          const qrX = (STICKER_LAYOUT.qrCodePosition.x / 100) * canvasW - qrSizePx / 2;
+          const qrY = (STICKER_LAYOUT.qrCodePosition.y / 100) * canvasH - qrSizePx / 2;
+          ctx.drawImage(img, qrX, qrY, qrSizePx, qrSizePx);
+        }
+      } catch (e) {
+        // QR generation failed — skip silently
+      }
     }
   },
 
