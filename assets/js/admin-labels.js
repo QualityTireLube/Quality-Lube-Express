@@ -2878,6 +2878,10 @@ const LabelSystem = {
     if (!modal) return;
     document.getElementById('csm-vin').value = '';
     document.getElementById('csm-mileage').value = '';
+    const serviceDateEl = document.getElementById('csm-service-date');
+    if (serviceDateEl) serviceDateEl.value = new Date().toISOString().split('T')[0];
+    const nextServiceDateEl = document.getElementById('csm-next-service-date');
+    if (nextServiceDateEl) nextServiceDateEl.value = '';
     const statusEl = document.getElementById('csm-vin-status');
     if (statusEl) { statusEl.textContent = '0/17 characters'; statusEl.className = 'text-muted small'; }
     const vehicleInfo = document.getElementById('csm-vehicle-info');
@@ -3041,17 +3045,22 @@ const LabelSystem = {
     const vin = (document.getElementById('csm-vin') || {}).value || '';
     const oilKey = this._csmSelectedOil || '';
     const mileageStr = (document.getElementById('csm-mileage') || {}).value || '';
+    const serviceDateStr = (document.getElementById('csm-service-date') || {}).value || new Date().toISOString().split('T')[0];
     const oilType = OIL_TYPES[oilKey];
     const mileage = parseInt(mileageStr) || 0;
-    const today = new Date();
+    // Parse service date carefully to avoid timezone shifts (treat as local date)
+    const [y, mo, d] = serviceDateStr.split('-').map(Number);
+    const serviceDate = new Date(y, mo - 1, d);
     let nextServiceDate = '';
     let nextServiceMileage = '';
     if (oilType) {
-      const d = new Date(today);
-      d.setDate(d.getDate() + oilType.durationDays);
-      nextServiceDate = d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+      const next = new Date(serviceDate.getTime() + oilType.durationDays * 86400000);
+      nextServiceDate = next.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
       nextServiceMileage = mileage ? (mileage + oilType.mileageInterval).toLocaleString() : '';
     }
+    // Update the read-only next service date display field
+    const nextEl = document.getElementById('csm-next-service-date');
+    if (nextEl) nextEl.value = nextServiceDate;
     const decoded = this._csmDecodedVin;
     const vehicleDetails = decoded
       ? [decoded.year, decoded.make, decoded.model].filter(Boolean).join(' ')
@@ -3102,8 +3111,10 @@ const LabelSystem = {
     if (alertEl) alertEl.style.display = 'none';
     const oilType = OIL_TYPES[oilKey];
     const mileageInt = parseInt(mileage) || 0;
-    const serviceDateStr = new Date().toISOString().split('T')[0];
-    const serviceDateObj = new Date(serviceDateStr);
+    const serviceDateStr = (document.getElementById('csm-service-date') || {}).value || new Date().toISOString().split('T')[0];
+    // Parse as local date to avoid timezone shifts
+    const [_y, _mo, _d] = serviceDateStr.split('-').map(Number);
+    const serviceDateObj = new Date(_y, _mo - 1, _d);
     const decoded = this._csmDecodedVin;
 
     // Compute next-service values the same way the Sticker Editor does

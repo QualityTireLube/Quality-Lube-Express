@@ -392,6 +392,18 @@
                        oninput="StickerSystem._csmUpdateCanvas(); csmValidate()">
               </div>
             </div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6">
+                <label class="form-label fw-semibold small">Service Date</label>
+                <input type="date" id="csm-service-date" class="form-control"
+                       oninput="StickerSystem._csmUpdateCanvas()">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label fw-semibold small text-muted">Next Service Date</label>
+                <input type="text" id="csm-next-service-date" class="form-control" readonly
+                       placeholder="Auto-calculated" style="background:#f8f9fa;">
+              </div>
+            </div>
 
             <!-- Decoded vehicle info -->
             <div id="csm-vehicle-info" class="alert alert-success py-2 mb-3" style="display:none;">
