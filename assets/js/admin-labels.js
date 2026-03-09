@@ -364,6 +364,14 @@ const LabelSystem = {
         document.querySelectorAll('.label-card-dropdown.show').forEach(d => d.classList.remove('show'));
       }
     });
+
+    // If the labels tab is already active when init runs (page was refreshed while on this tab),
+    // the shown.bs.tab event already fired before this listener was registered — render now.
+    const labelsNavLink = document.querySelector('#dashboardTabs a[href="#labels-tab"]')
+      || document.querySelector('#dashboardTabs a[data-bs-target="#labels-tab"]');
+    if (labelsNavLink && labelsNavLink.classList.contains('active')) {
+      this.showLsTab(this.currentLsTab);
+    }
   },
 
   // ============================================================
