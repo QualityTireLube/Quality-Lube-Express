@@ -142,6 +142,19 @@ function getPredefinedTemplates() {
       fields: [createField('Created By', 10), createField('Created Date', 25), createField('Part Number', 40), createField('Vendor Invoice Number', 55), createField('Vendor', 70), createField('Copies to be Printed', 85)],
       paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
       copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
+    },
+    // OTHER TEMPLATES
+    {
+      id: generateId(), labelName: 'Bottle Label',
+      fields: [createField('Created By', 15), createField('Created Date', 35), createField('Product Name', 55), createField('Notes', 75), createField('Copies to be Printed', 95)],
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
+    },
+    {
+      id: generateId(), labelName: 'Billing Labels',
+      fields: [createField('Created By', 15), createField('Created Date', 35), createField('Customer Name', 55), createField('Invoice #', 75), createField('Copies to be Printed', 95)],
+      paperSize: DEFAULT_PAPER_SIZE, width: CUSTOM_PAPER_SIZE.width, height: CUSTOM_PAPER_SIZE.height,
+      copies: 1, archived: false, createdBy: 'System', createdDate: new Date().toISOString()
     }
   ];
 }
