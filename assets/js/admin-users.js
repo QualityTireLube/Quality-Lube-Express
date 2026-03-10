@@ -13,7 +13,8 @@ const UserManagement = (() => {
     { id: 'pricing-tab', label: 'Pricing Management', icon: 'fa-dollar-sign' },
     { id: 'settings-tab', label: 'Settings', icon: 'fa-cog' },
     { id: 'labels-tab', label: 'Labels & Stickers', icon: 'fa-tags' },
-    { id: 'users-tab', label: 'User Management', icon: 'fa-user-shield' }
+    { id: 'users-tab', label: 'User Management', icon: 'fa-user-shield' },
+    { id: 'state-inspections-tab', label: 'State Inspections', icon: 'fa-car' }
   ];
 
   let allUsers = [];
@@ -551,6 +552,7 @@ const UserManagement = (() => {
      ============================================================ */
   return {
     ALL_TABS,
+    getAllUsers: () => allUsers,
     init,
     loadUsers,
     checkOrProvision,
