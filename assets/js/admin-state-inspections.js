@@ -401,6 +401,7 @@ const StateInspections = (() => {
         </div>
         <div class="si-record-meta">
           <i class="fas fa-user me-1"></i>${_esc(r.createdBy || '')}
+          ${r.createdTime ? `<span class="ms-3"><i class="fas fa-clock me-1"></i>${_esc(_formatTime(r.createdTime))}</span>` : ''}
           ${r.paymentType ? `<span class="ms-3"><i class="fas fa-receipt me-1"></i>${_esc(r.paymentType)}</span>` : ''}
         </div>
       </div>`;
@@ -481,8 +482,10 @@ const StateInspections = (() => {
 
   function _resetForm() {
     const today = _localToday();
+    const now   = _localTimeNow();
 
     _val('si-form-date', today);
+    _val('si-form-time', now);
     _val('si-form-sticker', '');
     _val('si-form-lastname', '');
     _val('si-form-notes', '');
@@ -636,6 +639,7 @@ const StateInspections = (() => {
 
   function _populateForm(r) {
     _val('si-form-date', r.createdDate || '');
+    _val('si-form-time', r.createdTime || '');
     _val('si-form-sticker', r.stickerNumber || '');
     _val('si-form-lastname', r.lastName || '');
     _val('si-form-notes', r.notes || '');
@@ -697,6 +701,7 @@ const StateInspections = (() => {
     _setError('');
 
     const dateVal  = _getVal('si-form-date');
+    const timeVal  = _getVal('si-form-time');
     let stickerVal = _getVal('si-form-sticker').trim();
     const lastName = _getVal('si-form-lastname').trim();
 
@@ -744,6 +749,7 @@ const StateInspections = (() => {
 
     const record = {
       createdDate: dateVal,
+      createdTime: timeVal,
       createdBy: createdBy,
       stickerNumber: stickerVal,
       lastName: lastName,
@@ -1419,6 +1425,21 @@ const StateInspections = (() => {
     const [y, m, d] = iso.split('-');
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return `${months[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`;
+  }
+
+  /** Format HH:MM (24h) to 12-hour with AM/PM. */
+  function _formatTime(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+  }
+
+  /** Returns current local time as HH:MM (24h). */
+  function _localTimeNow() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   }
 
   /** Returns today's date as YYYY-MM-DD in the browser's local timezone. */

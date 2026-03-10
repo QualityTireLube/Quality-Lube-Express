@@ -3324,10 +3324,13 @@
             <!-- Error display -->
             <div id="si-form-error" class="alert alert-danger d-none" role="alert"></div>
 
-            <!-- Date -->
+            <!-- Date & Time -->
             <div class="mb-3">
-              <label class="form-label fw-semibold">Date Created</label>
-              <input type="date" class="form-control" id="si-form-date">
+              <label class="form-label fw-semibold">Date & Time Created</label>
+              <div class="d-flex gap-2">
+                <input type="date" class="form-control" id="si-form-date">
+                <input type="time" class="form-control" id="si-form-time" style="max-width:140px;">
+              </div>
             </div>
 
             <!-- Created By -->
