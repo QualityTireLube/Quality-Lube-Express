@@ -3362,6 +3362,14 @@
           </div>
         </div>
 
+        <!-- Tint Photo Viewer Lightbox -->
+        <div class="si-modal-overlay" id="si-tint-viewer" onclick="this.style.display='none'" style="cursor:pointer;">
+          <div style="max-width:90vw;max-height:90vh;position:relative;" onclick="event.stopPropagation()">
+            <button onclick="document.getElementById('si-tint-viewer').style.display='none'" style="position:absolute;top:-14px;right:-14px;background:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:1.2rem;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);z-index:10;">&times;</button>
+            <img id="si-tint-viewer-img" src="" alt="Tint Affidavit" style="max-width:88vw;max-height:88vh;border-radius:6px;display:block;">
+          </div>
+        </div>
+
         <!-- Labels Tab -->
         <div class="tab-pane fade" id="labels-tab">
 

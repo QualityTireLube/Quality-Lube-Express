@@ -591,7 +591,23 @@ const StateInspections = (() => {
   function viewTint(id) {
     const r = records.find(x => x.id === id);
     if (!r || !r.tintAffidavitUrl) return;
-    window.open(r.tintAffidavitUrl, '_blank');
+    const viewer = document.getElementById('si-tint-viewer');
+    const img    = document.getElementById('si-tint-viewer-img');
+    if (viewer && img) {
+      img.src = r.tintAffidavitUrl;
+      viewer.style.display = 'flex';
+    } else {
+      // fallback for data: URLs — create a blob and open it
+      if (r.tintAffidavitUrl.startsWith('data:')) {
+        const [meta, b64] = r.tintAffidavitUrl.split(',');
+        const mime = meta.split(':')[1].split(';')[0];
+        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+        window.open(url, '_blank');
+      } else {
+        window.open(r.tintAffidavitUrl, '_blank');
+      }
+    }
   }
 
   // ── Delete ─────────────────────────────────────────────────
