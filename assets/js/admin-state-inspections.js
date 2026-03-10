@@ -588,26 +588,144 @@ const StateInspections = (() => {
     reader.readAsDataURL(file);
   }
 
+  // ── Tint viewer (pan + zoom) ────────────────────────────────
+  (function _initTintViewer() {
+    let _scale = 1, _ox = 0, _oy = 0;
+    let _dragging = false, _startX = 0, _startY = 0, _dragOx = 0, _dragOy = 0;
+    const MIN = 0.2, MAX = 8, STEP = 0.25;
+
+    function _applyTransform() {
+      const img = document.getElementById('si-tint-viewer-img');
+      if (!img) return;
+      img.style.transform = `translate(calc(-50% + ${_ox}px), calc(-50% + ${_oy}px)) scale(${_scale})`;
+      const lbl = document.getElementById('tvZoomLabel');
+      if (lbl) lbl.textContent = Math.round(_scale * 100) + '%';
+    }
+
+    function _resetView(fit) {
+      const img   = document.getElementById('si-tint-viewer-img');
+      const canvas = document.getElementById('tvCanvas');
+      _ox = 0; _oy = 0;
+      if (fit && img && img.naturalWidth && canvas) {
+        const sw = canvas.clientWidth  / img.naturalWidth;
+        const sh = canvas.clientHeight / img.naturalHeight;
+        _scale = Math.min(sw, sh, 1);
+      } else {
+        _scale = 1;
+      }
+      _applyTransform();
+    }
+
+    function _closeTintViewer() {
+      const v = document.getElementById('si-tint-viewer');
+      if (v) v.style.display = 'none';
+      const img = document.getElementById('si-tint-viewer-img');
+      if (img) img.src = '';
+    }
+
+    // Wire controls once DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const viewer = document.getElementById('si-tint-viewer');
+      const canvas = document.getElementById('tvCanvas');
+      const img    = document.getElementById('si-tint-viewer-img');
+      if (!viewer || !canvas || !img) return;
+
+      document.getElementById('tvClose').addEventListener('click', _closeTintViewer);
+      document.getElementById('tvZoomIn').addEventListener('click', () => { _scale = Math.min(MAX, _scale + STEP); _applyTransform(); });
+      document.getElementById('tvZoomOut').addEventListener('click', () => { _scale = Math.max(MIN, _scale - STEP); _applyTransform(); });
+      document.getElementById('tvZoomReset').addEventListener('click', () => _resetView(false));
+      document.getElementById('tvZoomFit').addEventListener('click', () => _resetView(true));
+
+      // Scroll to zoom
+      canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? STEP : -STEP;
+        const prev  = _scale;
+        _scale = Math.min(MAX, Math.max(MIN, _scale + delta));
+        // zoom toward cursor position
+        const rect = canvas.getBoundingClientRect();
+        const cx = e.clientX - rect.left - rect.width  / 2;
+        const cy = e.clientY - rect.top  - rect.height / 2;
+        _ox = cx + (_ox - cx) * (_scale / prev);
+        _oy = cy + (_oy - cy) * (_scale / prev);
+        _applyTransform();
+      }, { passive: false });
+
+      // Mouse drag to pan
+      canvas.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        _dragging = true; _startX = e.clientX; _startY = e.clientY;
+        _dragOx = _ox; _dragOy = _oy;
+        canvas.style.cursor = 'grabbing';
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', e => {
+        if (!_dragging) return;
+        _ox = _dragOx + (e.clientX - _startX);
+        _oy = _dragOy + (e.clientY - _startY);
+        _applyTransform();
+      });
+      window.addEventListener('mouseup', () => { _dragging = false; canvas.style.cursor = 'grab'; });
+
+      // Touch drag & pinch-zoom
+      let _t0x = 0, _t0y = 0, _tOx = 0, _tOy = 0, _tScale = 1, _tDist0 = 0;
+      canvas.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) {
+          _t0x = e.touches[0].clientX; _t0y = e.touches[0].clientY;
+          _tOx = _ox; _tOy = _oy;
+        } else if (e.touches.length === 2) {
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          _tDist0 = Math.hypot(dx, dy);
+          _tScale = _scale;
+        }
+        e.preventDefault();
+      }, { passive: false });
+      canvas.addEventListener('touchmove', e => {
+        if (e.touches.length === 1) {
+          _ox = _tOx + (e.touches[0].clientX - _t0x);
+          _oy = _tOy + (e.touches[0].clientY - _t0y);
+          _applyTransform();
+        } else if (e.touches.length === 2) {
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const dist = Math.hypot(dx, dy);
+          _scale = Math.min(MAX, Math.max(MIN, _tScale * (dist / _tDist0)));
+          _applyTransform();
+        }
+        e.preventDefault();
+      }, { passive: false });
+
+      // Esc key closes
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && viewer.style.display !== 'none') _closeTintViewer();
+      });
+    });
+
+    // Expose so viewTint can trigger reset after image loads
+    window._tvResetView = _resetView;
+  }());
+
   function viewTint(id) {
     const r = records.find(x => x.id === id);
     if (!r || !r.tintAffidavitUrl) return;
     const viewer = document.getElementById('si-tint-viewer');
     const img    = document.getElementById('si-tint-viewer-img');
-    if (viewer && img) {
-      img.src = r.tintAffidavitUrl;
-      viewer.style.display = 'flex';
-    } else {
-      // fallback for data: URLs — create a blob and open it
+    if (!viewer || !img) {
+      // fallback
       if (r.tintAffidavitUrl.startsWith('data:')) {
         const [meta, b64] = r.tintAffidavitUrl.split(',');
         const mime = meta.split(':')[1].split(';')[0];
         const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-        const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
-        window.open(url, '_blank');
+        window.open(URL.createObjectURL(new Blob([bytes], { type: mime })), '_blank');
       } else {
         window.open(r.tintAffidavitUrl, '_blank');
       }
+      return;
     }
+    img.onload = () => { if (window._tvResetView) window._tvResetView(true); };
+    img.src = r.tintAffidavitUrl;
+    viewer.style.display = 'flex';
   }
 
   // ── Delete ─────────────────────────────────────────────────
