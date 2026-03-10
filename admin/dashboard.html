@@ -2449,6 +2449,13 @@
       .si-chip-status.active[data-value="Fail"] { background:#ef4444; border-color:#ef4444; color:#fff; }
       .si-tint-thumb { max-width:200px; max-height:150px; border-radius:6px; border:1px solid #e2e8f0; margin-top:4px; }
 
+      /* Fleet combobox */
+      .si-fleet-combobox { position:relative; }
+      .si-fleet-dropdown { position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #cbd5e1; border-radius:0 0 8px 8px; box-shadow:0 4px 12px rgba(0,0,0,.12); max-height:220px; overflow-y:auto; z-index:1200; margin:0; padding:4px 0; list-style:none; }
+      .si-fleet-suggestion { padding:8px 14px; cursor:pointer; font-size:.9rem; }
+      .si-fleet-suggestion:hover, .si-fleet-suggestion:focus { background:#f0f7ff; outline:none; }
+      .si-fleet-suggestion strong { color:#1d4ed8; font-weight:700; }
+
       @media (max-width:600px) {
         .si-stats-bar { gap:6px; }
         .si-stat-item { min-width:70px; padding:8px 10px; }
@@ -3216,6 +3223,8 @@
               <option value="Retest">Retest</option>
               <option value="Fail">Fail</option>
             </select>
+            <input type="text" id="si-filter-fleet" list="si-fleet-datalist" placeholder="Fleet account…" autocomplete="off">
+            <datalist id="si-fleet-datalist"></datalist>
             <input type="date" id="si-filter-from" title="From date">
             <input type="date" id="si-filter-to" title="To date">
             <button class="btn btn-sm btn-outline-secondary" id="si-filter-clear">Clear</button>
@@ -3296,7 +3305,10 @@
             <!-- Fleet Name (only shown when Fleet) -->
             <div class="mb-3" id="si-fleet-row" style="display:none;">
               <label class="form-label fw-semibold">Fleet Account</label>
-              <input type="text" class="form-control" id="si-form-fleet" placeholder="Fleet company name">
+              <div class="si-fleet-combobox">
+                <input type="text" class="form-control" id="si-form-fleet" placeholder="Type to search or enter fleet name…" autocomplete="off">
+                <ul class="si-fleet-dropdown" id="si-fleet-suggestions" style="display:none;"></ul>
+              </div>
             </div>
 
             <!-- Payment Amount -->

@@ -17,12 +17,17 @@ const StateInspections = (() => {
   let filterDateTo = '';
   let filterSearch = '';
   let filterStatus = '';
+  let filterFleet = '';
+
+  // Fleet account names derived from records + fleet_accounts collection
+  let knownFleetAccounts = [];
 
   // ── Init ───────────────────────────────────────────────────
   function init(userDisplayName) {
     currentUserName = userDisplayName || '';
     _bindStaticEvents();
     _startListener();
+    _loadFleetAccountsCollection();
   }
 
   function _bindStaticEvents() {
@@ -67,6 +72,13 @@ const StateInspections = (() => {
     // Export CSV
     const exportBtn = document.getElementById('si-export-btn');
     if (exportBtn) exportBtn.addEventListener('click', exportCsv);
+
+    // Fleet filter in filter bar
+    const fleetFilterEl = document.getElementById('si-filter-fleet');
+    if (fleetFilterEl) fleetFilterEl.addEventListener('input', _onFilterChange);
+
+    // Fleet combobox in modal form
+    _wireFleetCombobox();
 
     // Payment amount chips
     document.querySelectorAll('.si-chip-payment').forEach(chip => {
@@ -116,6 +128,7 @@ const StateInspections = (() => {
       .orderBy('createdDate', 'desc')
       .onSnapshot(snap => {
         records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        _buildFleetFromRecords();
         _applyFilters();
         _showLoading(false);
       }, err => {
@@ -141,12 +154,13 @@ const StateInspections = (() => {
     filterStatus = (document.getElementById('si-filter-status') || {}).value || '';
     filterDateFrom = (document.getElementById('si-filter-from') || {}).value || '';
     filterDateTo = (document.getElementById('si-filter-to') || {}).value || '';
+    filterFleet = (document.getElementById('si-filter-fleet') || {}).value || '';
     _applyFilters();
   }
 
   function clearFilters() {
-    filterSearch = filterStatus = filterDateFrom = filterDateTo = '';
-    const ids = ['si-search', 'si-filter-status', 'si-filter-from', 'si-filter-to'];
+    filterSearch = filterStatus = filterDateFrom = filterDateTo = filterFleet = '';
+    const ids = ['si-search', 'si-filter-status', 'si-filter-from', 'si-filter-to', 'si-filter-fleet'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     _applyFilters();
   }
@@ -173,6 +187,11 @@ const StateInspections = (() => {
     }
     if (filterDateTo) {
       res = res.filter(r => (r.createdDate || '') <= filterDateTo);
+    }
+
+    if (filterFleet) {
+      const q = filterFleet.toLowerCase();
+      res = res.filter(r => (r.fleetAccount || '').toLowerCase().includes(q));
     }
 
     filteredRecords = res;
@@ -799,6 +818,136 @@ const StateInspections = (() => {
     a.download = `state-inspections-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  // ── Fleet Account Combobox ─────────────────────────────────
+
+  /** Build sorted unique fleet name list from current records. */
+  function _buildFleetFromRecords() {
+    const names = new Set(knownFleetAccounts);
+    records.forEach(r => {
+      if (r.fleetAccount && r.fleetAccount.trim()) names.add(r.fleetAccount.trim());
+    });
+    knownFleetAccounts = [...names].sort((a, b) => a.localeCompare(b));
+    _updateFleetDatalist();
+    _updateFleetFilterSuggestions();
+  }
+
+  /** Also pull from the fleet_accounts collection if it exists. */
+  function _loadFleetAccountsCollection() {
+    if (typeof db === 'undefined') return;
+    db.collection('fleet_accounts').orderBy('name', 'asc').get()
+      .then(snap => {
+        const names = new Set(knownFleetAccounts);
+        snap.docs.forEach(d => {
+          const n = (d.data().name || '').trim();
+          if (n) names.add(n);
+        });
+        knownFleetAccounts = [...names].sort((a, b) => a.localeCompare(b));
+        _updateFleetDatalist();
+        _updateFleetFilterSuggestions();
+      })
+      .catch(() => {}); // collection may not exist — that's fine
+  }
+
+  /** Keep the <datalist> for the filter-bar input in sync. */
+  function _updateFleetDatalist() {
+    const dl = document.getElementById('si-fleet-datalist');
+    if (!dl) return;
+    dl.innerHTML = knownFleetAccounts
+      .map(n => `<option value="${_esc(n)}">`)  
+      .join('');
+  }
+
+  /** Refresh suggestions shown in the open combobox dropdown, if visible. */
+  function _updateFleetFilterSuggestions() {
+    const input = document.getElementById('si-form-fleet');
+    const dropdown = document.getElementById('si-fleet-suggestions');
+    if (!input || !dropdown || dropdown.style.display === 'none') return;
+    _showFleetSuggestions(input, dropdown);
+  }
+
+  /** Wire the Fleet Account combobox in the modal form. */
+  function _wireFleetCombobox() {
+    const input = document.getElementById('si-form-fleet');
+    const dropdown = document.getElementById('si-fleet-suggestions');
+    if (!input || !dropdown) return;
+
+    input.addEventListener('input',  () => _showFleetSuggestions(input, dropdown));
+    input.addEventListener('focus',  () => _showFleetSuggestions(input, dropdown));
+    input.addEventListener('blur',   () => setTimeout(() => { dropdown.style.display = 'none'; }, 200));
+
+    // Keyboard: Escape closes dropdown
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { dropdown.style.display = 'none'; }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const first = dropdown.querySelector('.si-fleet-suggestion');
+        if (first) first.focus();
+      }
+    });
+  }
+
+  function _showFleetSuggestions(input, dropdown) {
+    const q = input.value.trim().toLowerCase();
+    const matches = q
+      ? knownFleetAccounts.filter(n => n.toLowerCase().includes(q))
+      : knownFleetAccounts;
+
+    if (matches.length === 0) { dropdown.style.display = 'none'; return; }
+
+    dropdown.innerHTML = matches
+      .map(n => `<li class="si-fleet-suggestion" tabindex="0" data-value="${_esc(n)}">${_escHighlight(n, q)}</li>`)
+      .join('');
+    dropdown.style.display = 'block';
+
+    dropdown.querySelectorAll('.si-fleet-suggestion').forEach(li => {
+      li.addEventListener('mousedown', e => {
+        e.preventDefault();
+        _selectFleetSuggestion(input, dropdown, li.dataset.value);
+      });
+      li.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          _selectFleetSuggestion(input, dropdown, li.dataset.value);
+          input.focus();
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const next = li.nextElementSibling;
+          if (next) next.focus();
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const prev = li.previousElementSibling;
+          if (prev) prev.focus(); else input.focus();
+        }
+        if (e.key === 'Escape') { dropdown.style.display = 'none'; input.focus(); }
+      });
+    });
+  }
+
+  function _selectFleetSuggestion(input, dropdown, value) {
+    input.value = value;
+    dropdown.style.display = 'none';
+    // Auto-activate Fleet payment type chip if not already on
+    const fleetChip = document.querySelector('.si-chip-payment-type[data-value="Fleet"]');
+    if (fleetChip && !fleetChip.classList.contains('active')) {
+      document.querySelectorAll('.si-chip-payment-type').forEach(c => c.classList.remove('active'));
+      fleetChip.classList.add('active');
+      const fleetRow = document.getElementById('si-fleet-row');
+      if (fleetRow) fleetRow.style.display = 'flex';
+    }
+  }
+
+  /** Highlight matching substring in suggestion text. */
+  function _escHighlight(name, query) {
+    if (!query) return _esc(name);
+    const idx = name.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return _esc(name);
+    return _esc(name.slice(0, idx))
+      + '<strong>' + _esc(name.slice(idx, idx + query.length)) + '</strong>'
+      + _esc(name.slice(idx + query.length));
   }
 
   // ── Notify admin-users that it should expose getAllUsers ───
