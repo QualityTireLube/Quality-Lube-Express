@@ -110,8 +110,16 @@ const StateInspections = (() => {
         chip.classList.add('active');
         const fleetRow = document.getElementById('si-fleet-row');
         if (fleetRow) {
-          fleetRow.style.display = chip.dataset.value === 'Fleet' ? 'flex' : 'none';
+          fleetRow.style.display = chip.dataset.value === 'Fleet' ? 'block' : 'none';
         }
+      });
+    });
+
+    // Status chips
+    document.querySelectorAll('.si-chip-status').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.si-chip-status').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
       });
     });
   }
@@ -427,7 +435,7 @@ const StateInspections = (() => {
     // Payment type chip
     if (r.paymentType) _activateChip('.si-chip-payment-type', r.paymentType);
     const fleetRow = document.getElementById('si-fleet-row');
-    if (fleetRow) fleetRow.style.display = r.paymentType === 'Fleet' ? 'flex' : 'none';
+    if (fleetRow) fleetRow.style.display = r.paymentType === 'Fleet' ? 'block' : 'none';
 
     // Payment amount chip
     const amt = String(_parseMoney(r.paymentAmount));
@@ -936,7 +944,7 @@ const StateInspections = (() => {
       document.querySelectorAll('.si-chip-payment-type').forEach(c => c.classList.remove('active'));
       fleetChip.classList.add('active');
       const fleetRow = document.getElementById('si-fleet-row');
-      if (fleetRow) fleetRow.style.display = 'flex';
+      if (fleetRow) fleetRow.style.display = 'block';
     }
   }
 
