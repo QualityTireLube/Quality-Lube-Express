@@ -330,7 +330,7 @@ const StateInspections = (() => {
   }
 
   function _resetForm() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = _localToday();
 
     _val('si-form-date', today);
     _val('si-form-sticker', '');
@@ -671,7 +671,7 @@ const StateInspections = (() => {
     const colStatus    = _findCol(header, ['status', 'result', 'pass/fail', 'Status']);
     const colNotes     = _findCol(header, ['notes', 'note', 'comments', 'Notes']);
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = _localToday();
 
     const importBtn = document.getElementById('si-import-btn');
     if (importBtn) { importBtn.disabled = true; importBtn.textContent = `Importing ${dataRows.length} rows…`; }
@@ -755,9 +755,14 @@ const StateInspections = (() => {
       const [, m, d, y] = match;
       return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
     }
-    // Try native parse
+    // Try native parse — use local date parts to avoid UTC offset shift
     const dt = new Date(raw);
-    if (!isNaN(dt)) return dt.toISOString().split('T')[0];
+    if (!isNaN(dt)) {
+      const yyyy = dt.getFullYear();
+      const mm   = String(dt.getMonth() + 1).padStart(2, '0');
+      const dd   = String(dt.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
     return '';
   }
 
@@ -1001,6 +1006,15 @@ const StateInspections = (() => {
     const [y, m, d] = iso.split('-');
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return `${months[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`;
+  }
+
+  /** Returns today's date as YYYY-MM-DD in the browser's local timezone. */
+  function _localToday() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm   = String(d.getMonth() + 1).padStart(2, '0');
+    const dd   = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
 
   function _activateChip(selector, value) {
