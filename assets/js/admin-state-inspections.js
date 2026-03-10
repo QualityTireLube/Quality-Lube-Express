@@ -19,6 +19,8 @@ const StateInspections = (() => {
   let renderedCount = 0;
   let archivedRenderedCount = 0;
   let _filterDebounceTimer = null;
+  let _scrollObserver = null;
+  let _archivedScrollObserver = null;
 
   // Date filter state
   let filterDateFrom = '';
@@ -320,15 +322,36 @@ const StateInspections = (() => {
     if (isArchived) { archivedRenderedCount = end; } else { renderedCount = end; }
 
     const remaining = source.length - end;
-    if (remaining > 0) {
-      const wrap = document.createElement('div');
-      wrap.className = 'si-load-more-wrap text-center py-3';
-      const fn = isArchived ? 'loadMoreArchived' : 'loadMore';
-      wrap.innerHTML = `<button class="btn btn-outline-secondary btn-sm si-load-more-btn" onclick="StateInspections.${fn}()">
-        <i class="fas fa-chevron-down me-1"></i>Load More (${remaining} remaining)
-      </button>`;
-      container.appendChild(wrap);
+    // Insert / update sentinel for infinite scroll
+    _updateSentinel(container, isArchived, remaining);
+  }
+
+  /** Manage the scroll-sentinel element and its IntersectionObserver. */
+  function _updateSentinel(container, isArchived, remaining) {
+    const oldSentinel = container.querySelector('.si-scroll-sentinel');
+    if (isArchived) {
+      if (_archivedScrollObserver) { _archivedScrollObserver.disconnect(); _archivedScrollObserver = null; }
+    } else {
+      if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
     }
+    if (oldSentinel) oldSentinel.remove();
+
+    if (remaining <= 0) return;
+
+    const sentinel = document.createElement('div');
+    sentinel.className = 'si-scroll-sentinel text-center py-3 text-muted';
+    sentinel.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>Loading more… (${remaining} remaining)`;
+    container.appendChild(sentinel);
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        observer.disconnect();
+        if (isArchived) { _loadMoreArchived(); } else { _loadMore(); }
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(sentinel);
+
+    if (isArchived) { _archivedScrollObserver = observer; } else { _scrollObserver = observer; }
   }
 
   function _loadMore() {
