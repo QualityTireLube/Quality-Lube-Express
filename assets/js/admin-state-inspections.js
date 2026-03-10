@@ -633,6 +633,30 @@ const StateInspections = (() => {
       document.getElementById('tvClose').addEventListener('click', _closeTintViewer);
       document.getElementById('tvZoomIn').addEventListener('click', () => { _scale = Math.min(MAX, _scale + STEP); _applyTransform(); });
       document.getElementById('tvZoomOut').addEventListener('click', () => { _scale = Math.max(MIN, _scale - STEP); _applyTransform(); });
+      document.getElementById('tvDownload').addEventListener('click', () => {
+        const src = img.src;
+        if (!src) return;
+        const a = document.createElement('a');
+        if (src.startsWith('data:')) {
+          a.href = src;
+        } else {
+          // For remote URLs, fetch as blob so the browser downloads rather than navigates
+          fetch(src)
+            .then(res => res.blob())
+            .then(blob => {
+              const url = URL.createObjectURL(blob);
+              a.href = url;
+              a.download = 'tint-affidavit.' + (blob.type.split('/')[1] || 'jpg');
+              document.body.appendChild(a); a.click();
+              document.body.removeChild(a);
+              setTimeout(() => URL.revokeObjectURL(url), 10000);
+            })
+            .catch(() => window.open(src, '_blank'));
+          return;
+        }
+        a.download = 'tint-affidavit.' + (src.split(';')[0].split('/')[1] || 'jpg');
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      });
       document.getElementById('tvZoomReset').addEventListener('click', () => _resetView(false));
       document.getElementById('tvZoomFit').addEventListener('click', () => _resetView(true));
 
