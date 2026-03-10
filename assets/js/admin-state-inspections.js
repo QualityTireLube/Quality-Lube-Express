@@ -462,41 +462,78 @@ const StateInspections = (() => {
         siEmployees = (data && data.employees) ? data.employees : [];
         _renderCreatedByChips();
         _renderSettingsEmployeeList();
+        _populateUserSelect();
       }, err => {
         console.error('[StateInspections] Failed to load SI employees:', err);
       });
   }
 
   function _bindSettingsEvents() {
+    // Add from custom name
     const addBtn = document.getElementById('si-settings-add-employee');
     const input = document.getElementById('si-settings-new-employee');
     if (addBtn && input) {
-      addBtn.addEventListener('click', () => _addSIEmployee(input));
-      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') _addSIEmployee(input); });
+      addBtn.addEventListener('click', () => _addSIEmployeeByName(input));
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') _addSIEmployeeByName(input); });
     }
+
+    // Add from existing user dropdown
+    const addFromUsersBtn = document.getElementById('si-settings-add-from-users');
+    if (addFromUsersBtn) addFromUsersBtn.addEventListener('click', _addSIEmployeeFromSelect);
   }
 
-  async function _addSIEmployee(input) {
+  function _populateUserSelect() {
+    const select = document.getElementById('si-settings-user-select');
+    if (!select) return;
+
+    let options = '<option value="">\u2014 Select a user \u2014</option>';
+    if (typeof UserManagement !== 'undefined' && typeof UserManagement.getAllUsers === 'function') {
+      const users = UserManagement.getAllUsers().filter(u => u.status === 'approved');
+      users.forEach(u => {
+        const name = u.displayName || u.email || '';
+        if (name && !siEmployees.includes(name)) {
+          options += `<option value="${_esc(name)}">${_esc(name)}${u.role === 'admin' ? ' (Admin)' : ''}</option>`;
+        }
+      });
+    }
+    select.innerHTML = options;
+  }
+
+  function _toggleSettings() {
+    const panel = document.getElementById('si-settings-panel');
+    if (!panel) return;
+    const visible = panel.style.display !== 'none';
+    panel.style.display = visible ? 'none' : 'block';
+    if (!visible) _populateUserSelect();
+  }
+
+  function _addSIEmployeeFromSelect() {
+    const select = document.getElementById('si-settings-user-select');
+    if (!select || !select.value) return;
+    const name = select.value;
+    if (siEmployees.includes(name)) { alert('Already in the list.'); return; }
+    _saveSIEmployees([...siEmployees, name]);
+  }
+
+  async function _addSIEmployeeByName(input) {
     const name = input.value.trim();
     if (!name) return;
     if (siEmployees.includes(name)) { alert('Employee already exists.'); return; }
-    const updated = [...siEmployees, name];
+    await _saveSIEmployees([...siEmployees, name]);
+    input.value = '';
+  }
+
+  async function _saveSIEmployees(list) {
     try {
-      await db.collection('settings').doc('state_inspection_employees').set({ employees: updated }, { merge: true });
-      input.value = '';
+      await db.collection('settings').doc('state_inspection_employees').set({ employees: list }, { merge: true });
     } catch (e) {
-      alert('Failed to add employee: ' + e.message);
+      alert('Failed to save employees: ' + e.message);
     }
   }
 
   async function _removeSIEmployee(name) {
     if (!confirm('Remove "' + name + '" from the inspection employee list?')) return;
-    const updated = siEmployees.filter(n => n !== name);
-    try {
-      await db.collection('settings').doc('state_inspection_employees').set({ employees: updated }, { merge: true });
-    } catch (e) {
-      alert('Failed to remove employee: ' + e.message);
-    }
+    await _saveSIEmployees(siEmployees.filter(n => n !== name));
   }
 
   function _renderSettingsEmployeeList() {
@@ -603,12 +640,13 @@ const StateInspections = (() => {
 
     // Created by: chip selection
     const createdByChip = document.querySelector('.si-chip-createdby.active');
-    let createdBy = createdByChip ? createdByChip.dataset.value : currentUserName;
+    let createdBy = createdByChip ? createdByChip.dataset.value : '';
 
     const paymentTypeChip = document.querySelector('.si-chip-payment-type.active');
     const paymentAmountChip = document.querySelector('.si-chip-payment.active');
     const statusChip = document.querySelector('.si-chip-status.active');
 
+    if (!createdBy)           { _setError('Select a "Created By" employee.'); return; }
     if (!stickerVal)          { _setError('Sticker number is required.'); return; }
     if (!lastName)            { _setError('Last name is required.'); return; }
     if (!paymentTypeChip)     { _setError('Select a payment type.'); return; }
@@ -1346,5 +1384,6 @@ const StateInspections = (() => {
     viewTint,
     toggleArchived: _toggleArchived,
     removeSIEmployee: _removeSIEmployee,
+    toggleSettings: _toggleSettings,
   };
 })();
