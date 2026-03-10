@@ -24,12 +24,18 @@ const StateInspections = (() => {
   // Fleet account names derived from records + fleet_accounts collection
   let knownFleetAccounts = [];
 
+  // State inspection employees from settings
+  let siEmployees = [];
+  let siEmployeesUnsubscribe = null;
+
   // ── Init ───────────────────────────────────────────────────
   function init(userDisplayName) {
     currentUserName = userDisplayName || '';
     _bindStaticEvents();
     _startListener();
     _loadFleetAccountsCollection();
+    _loadSIEmployees();
+    _bindSettingsEvents();
   }
 
   function _bindStaticEvents() {
@@ -53,6 +59,12 @@ const StateInspections = (() => {
     ['si-modal-cancel', 'si-modal-close'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('click', closeModal);
+    });
+
+    // Close panel when clicking the overlay backdrop
+    const overlay = document.getElementById('si-modal');
+    if (overlay) overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
     });
 
     // Search / date filters
@@ -369,12 +381,20 @@ const StateInspections = (() => {
     _renderArchivedSection();
   }
 
-  // ── Modal: open/close ──────────────────────────────────────
+  // ── Modal: open/close (slide-in panel) ──────────────────────
+  function _openPanel() {
+    const overlay = document.getElementById('si-modal');
+    overlay.style.display = 'flex';
+    // Trigger reflow for CSS transition
+    void overlay.offsetWidth;
+    overlay.classList.add('open');
+  }
+
   function openAddModal() {
     editingId = null;
     _resetForm();
     document.getElementById('si-modal-title').textContent = 'Add State Inspection';
-    document.getElementById('si-modal').style.display = 'flex';
+    _openPanel();
   }
 
   function openEdit(id) {
@@ -384,11 +404,13 @@ const StateInspections = (() => {
     _resetForm();
     _populateForm(r);
     document.getElementById('si-modal-title').textContent = 'Edit Inspection';
-    document.getElementById('si-modal').style.display = 'flex';
+    _openPanel();
   }
 
   function closeModal() {
-    document.getElementById('si-modal').style.display = 'none';
+    const overlay = document.getElementById('si-modal');
+    overlay.classList.remove('open');
+    setTimeout(() => { overlay.style.display = 'none'; }, 260);
     editingId = null;
     // reset tint preview
     const preview = document.getElementById('si-tint-preview');
@@ -405,11 +427,8 @@ const StateInspections = (() => {
     _val('si-form-fleet', '');
     _val('si-custom-amount', '');
 
-    // Created by: current user
-    _val('si-form-createdby', currentUserName);
-
     // Clear chip selections
-    document.querySelectorAll('.si-chip-payment-type, .si-chip-payment, .si-chip-status')
+    document.querySelectorAll('.si-chip-payment-type, .si-chip-payment, .si-chip-status, .si-chip-createdby')
       .forEach(c => c.classList.remove('active'));
 
     // Default payment type Cash, amount $18, status Pass
@@ -431,48 +450,89 @@ const StateInspections = (() => {
 
     // Clear error
     _setError('');
-    _populateCreatedByDropdown();
+    _renderCreatedByChips();
   }
 
-  function _populateCreatedByDropdown() {
-    const select = document.getElementById('si-form-createdby');
-    if (!select) return;
-
-    // Populate with approved admin users + current user
-    const approvedUsers = typeof UserManagement !== 'undefined'
-      ? (UserManagement.getAllUsers ? UserManagement.getAllUsers().filter(u => u.status === 'approved') : [])
-      : [];
-
-    let options = '';
-    if (approvedUsers.length > 0) {
-      approvedUsers.forEach(u => {
-        const name = u.displayName || u.email || '';
-        const selected = name === currentUserName ? ' selected' : '';
-        options += `<option value="${_esc(name)}"${selected}>${_esc(name)}</option>`;
+  // ── SI Employee settings (Firestore) ───────────────────────
+  function _loadSIEmployees() {
+    if (typeof db === 'undefined') { setTimeout(_loadSIEmployees, 500); return; }
+    siEmployeesUnsubscribe = db.collection('settings').doc('state_inspection_employees')
+      .onSnapshot(snap => {
+        const data = snap.data();
+        siEmployees = (data && data.employees) ? data.employees : [];
+        _renderCreatedByChips();
+        _renderSettingsEmployeeList();
+      }, err => {
+        console.error('[StateInspections] Failed to load SI employees:', err);
       });
-    } else {
-      // Fallback: just show current user
-      options = `<option value="${_esc(currentUserName)}" selected>${_esc(currentUserName || 'Current User')}</option>`;
+  }
+
+  function _bindSettingsEvents() {
+    const addBtn = document.getElementById('si-settings-add-employee');
+    const input = document.getElementById('si-settings-new-employee');
+    if (addBtn && input) {
+      addBtn.addEventListener('click', () => _addSIEmployee(input));
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') _addSIEmployee(input); });
     }
+  }
 
-    // Add manual entry option
-    options += `<option value="__manual__">Other (type below)</option>`;
-    select.innerHTML = options;
-
-    // If currentUserName is not in the list at all, add it
-    const found = Array.from(select.options).some(o => o.value === currentUserName);
-    if (!found && currentUserName) {
-      const opt = document.createElement('option');
-      opt.value = currentUserName;
-      opt.textContent = currentUserName;
-      opt.selected = true;
-      select.prepend(opt);
+  async function _addSIEmployee(input) {
+    const name = input.value.trim();
+    if (!name) return;
+    if (siEmployees.includes(name)) { alert('Employee already exists.'); return; }
+    const updated = [...siEmployees, name];
+    try {
+      await db.collection('settings').doc('state_inspection_employees').set({ employees: updated }, { merge: true });
+      input.value = '';
+    } catch (e) {
+      alert('Failed to add employee: ' + e.message);
     }
+  }
 
-    select.onchange = function () {
-      const manualWrap = document.getElementById('si-createdby-manual-wrap');
-      if (manualWrap) manualWrap.style.display = this.value === '__manual__' ? 'block' : 'none';
-    };
+  async function _removeSIEmployee(name) {
+    if (!confirm('Remove "' + name + '" from the inspection employee list?')) return;
+    const updated = siEmployees.filter(n => n !== name);
+    try {
+      await db.collection('settings').doc('state_inspection_employees').set({ employees: updated }, { merge: true });
+    } catch (e) {
+      alert('Failed to remove employee: ' + e.message);
+    }
+  }
+
+  function _renderSettingsEmployeeList() {
+    const container = document.getElementById('si-settings-employee-list');
+    if (!container) return;
+    if (siEmployees.length === 0) {
+      container.innerHTML = '<p class="text-muted mb-0"><i class="fas fa-info-circle me-1"></i>No employees added yet. Add employees above to populate the "Created By" options.</p>';
+      return;
+    }
+    container.innerHTML = siEmployees.map(name => `
+      <div class="d-flex align-items-center justify-content-between py-2 px-3 mb-1" style="background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;">
+        <span><i class="fas fa-user me-2 text-muted"></i>${_esc(name)}</span>
+        <button class="btn btn-sm btn-outline-danger" onclick="StateInspections.removeSIEmployee('${_esc(name)}')" title="Remove"><i class="fas fa-times"></i></button>
+      </div>
+    `).join('');
+  }
+
+  // ── Created By chips ───────────────────────────────────────
+  function _renderCreatedByChips() {
+    const container = document.getElementById('si-createdby-chips');
+    if (!container) return;
+    const names = siEmployees.length > 0 ? siEmployees : (currentUserName ? [currentUserName] : ['Unknown']);
+    container.innerHTML = names.map(name =>
+      `<span class="si-chip si-chip-createdby" data-value="${_esc(name)}">${_esc(name)}</span>`
+    ).join('');
+
+    container.querySelectorAll('.si-chip-createdby').forEach(chip => {
+      chip.addEventListener('click', () => {
+        container.querySelectorAll('.si-chip-createdby').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      });
+    });
+
+    // Default select current user if in list
+    const defaultChip = container.querySelector(`.si-chip-createdby[data-value="${CSS.escape(currentUserName)}"]`);
+    if (defaultChip) defaultChip.classList.add('active');
   }
 
   function _populateForm(r) {
@@ -482,19 +542,21 @@ const StateInspections = (() => {
     _val('si-form-notes', r.notes || '');
     _val('si-form-fleet', r.fleetAccount || '');
 
-    // created by — try to select from dropdown
-    const select = document.getElementById('si-form-createdby');
-    if (select) {
-      const opt = Array.from(select.options).find(o => o.value === r.createdBy);
-      if (opt) {
-        select.value = r.createdBy;
-      } else {
-        // Add as option
-        const newOpt = document.createElement('option');
-        newOpt.value = r.createdBy || '';
-        newOpt.textContent = r.createdBy || '';
-        newOpt.selected = true;
-        select.prepend(newOpt);
+    // created by — select matching chip
+    if (r.createdBy) {
+      _activateChip('.si-chip-createdby', r.createdBy);
+      // If not in list, add a temporary chip
+      const container = document.getElementById('si-createdby-chips');
+      if (container && !container.querySelector(`.si-chip-createdby[data-value="${CSS.escape(r.createdBy)}"]`)) {
+        const chip = document.createElement('span');
+        chip.className = 'si-chip si-chip-createdby active';
+        chip.dataset.value = r.createdBy;
+        chip.textContent = r.createdBy;
+        chip.addEventListener('click', () => {
+          container.querySelectorAll('.si-chip-createdby').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+        });
+        container.prepend(chip);
       }
     }
 
@@ -539,11 +601,9 @@ const StateInspections = (() => {
     let stickerVal = _getVal('si-form-sticker').trim();
     const lastName = _getVal('si-form-lastname').trim();
 
-    // Created by: dropdown + optional manual
-    let createdBy = _getVal('si-form-createdby');
-    if (createdBy === '__manual__') {
-      createdBy = _getVal('si-createdby-manual') || currentUserName;
-    }
+    // Created by: chip selection
+    const createdByChip = document.querySelector('.si-chip-createdby.active');
+    let createdBy = createdByChip ? createdByChip.dataset.value : currentUserName;
 
     const paymentTypeChip = document.querySelector('.si-chip-payment-type.active');
     const paymentAmountChip = document.querySelector('.si-chip-payment.active');
@@ -1285,5 +1345,6 @@ const StateInspections = (() => {
     permanentDelete,
     viewTint,
     toggleArchived: _toggleArchived,
+    removeSIEmployee: _removeSIEmployee,
   };
 })();
