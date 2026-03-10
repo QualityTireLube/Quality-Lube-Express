@@ -8,6 +8,8 @@ const StateInspections = (() => {
   // ── State ──────────────────────────────────────────────────
   let records = [];              // all loaded records
   let filteredRecords = [];      // after search/date filter
+  let archivedRecords = [];      // archived records
+  let showArchived = false;      // whether archived section is visible
   let currentUserName = '';      // display name of logged-in user
   let editingId = null;          // id of record being edited (null = new)
   let unsubscribe = null;        // Firestore real-time listener
@@ -174,7 +176,11 @@ const StateInspections = (() => {
   }
 
   function _applyFilters() {
-    let res = [...records];
+    // Separate active vs archived
+    const active = records.filter(r => !r.archived);
+    const archived = records.filter(r => r.archived);
+
+    let res = [...active];
 
     if (filterSearch) {
       const q = filterSearch.toLowerCase();
@@ -203,8 +209,10 @@ const StateInspections = (() => {
     }
 
     filteredRecords = res;
+    archivedRecords = archived;
     _renderList();
     _renderStats();
+    _renderArchivedSection();
   }
 
   // ── Stats bar ──────────────────────────────────────────────
@@ -266,15 +274,22 @@ const StateInspections = (() => {
     container.innerHTML = html;
   }
 
-  function _renderCard(r) {
+  function _renderCard(r, isArchived) {
     const statusClass = r.status === 'Pass' ? 'success' : r.status === 'Fail' ? 'danger' : 'warning';
     const statusIcon = r.status === 'Pass' ? 'fa-check-circle' : r.status === 'Fail' ? 'fa-times-circle' : 'fa-redo';
     const payAmt = r.paymentAmount !== undefined ? '$' + _parseMoney(r.paymentAmount).toFixed(2) : '';
     const payIcon = r.paymentType === 'Fleet' ? 'fa-truck' : 'fa-money-bill-wave';
     const payColor = r.paymentType === 'Fleet' ? '#e67e22' : '#27ae60';
 
+    const actionButtons = isArchived
+      ? `<button class="btn btn-sm btn-outline-success" onclick="StateInspections.restoreRecord('${r.id}')" title="Restore"><i class="fas fa-undo"></i></button>
+         <button class="btn btn-sm btn-outline-danger" onclick="StateInspections.permanentDelete('${r.id}')" title="Delete Permanently"><i class="fas fa-trash"></i></button>`
+      : `${r.tintAffidavitUrl ? `<button class="btn btn-sm btn-outline-info" onclick="StateInspections.viewTint('${r.id}')" title="View Tint Photo"><i class="fas fa-camera"></i></button>` : ''}
+         <button class="btn btn-sm btn-outline-primary" onclick="StateInspections.openEdit('${r.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+         <button class="btn btn-sm btn-outline-warning" onclick="StateInspections.archiveRecord('${r.id}')" title="Archive"><i class="fas fa-archive"></i></button>`;
+
     return `
-      <div class="si-record-card" data-id="${r.id}">
+      <div class="si-record-card${isArchived ? ' si-archived-card' : ''}" data-id="${r.id}">
         <div class="si-record-main">
           <div class="si-record-left">
             <i class="fas ${statusIcon} text-${statusClass} me-2"></i>
@@ -290,9 +305,7 @@ const StateInspections = (() => {
               <i class="fas ${payIcon} me-1"></i>${payAmt}
             </span>
             <div class="si-record-actions">
-              ${r.tintAffidavitUrl ? `<button class="btn btn-sm btn-outline-info" onclick="StateInspections.viewTint('${r.id}')" title="View Tint Photo"><i class="fas fa-camera"></i></button>` : ''}
-              <button class="btn btn-sm btn-outline-primary" onclick="StateInspections.openEdit('${r.id}')" title="Edit"><i class="fas fa-edit"></i></button>
-              <button class="btn btn-sm btn-outline-danger" onclick="StateInspections.deleteRecord('${r.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+              ${actionButtons}
             </div>
           </div>
         </div>
@@ -301,6 +314,59 @@ const StateInspections = (() => {
           ${r.paymentType ? `<span class="ms-3"><i class="fas fa-receipt me-1"></i>${_esc(r.paymentType)}</span>` : ''}
         </div>
       </div>`;
+  }
+
+  // ── Archived section rendering ─────────────────────────────
+  function _renderArchivedSection() {
+    let container = document.getElementById('si-archived-section');
+    if (!container) return;
+
+    const count = archivedRecords.length;
+    const toggleBtn = document.getElementById('si-toggle-archived');
+    if (toggleBtn) {
+      toggleBtn.innerHTML = `<i class="fas fa-archive me-1"></i>Archived (${count})`;
+      toggleBtn.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+
+    if (!showArchived || count === 0) {
+      container.innerHTML = '';
+      container.style.display = 'none';
+      return;
+    }
+
+    container.style.display = 'block';
+
+    // Group archived by date
+    const groups = {};
+    archivedRecords.forEach(r => {
+      const d = r.createdDate || 'Unknown';
+      if (!groups[d]) groups[d] = [];
+      groups[d].push(r);
+    });
+
+    let html = `<div class="si-archived-header">
+      <i class="fas fa-archive me-2"></i>Archived Records
+      <span class="badge bg-secondary ms-2">${count}</span>
+    </div>`;
+
+    Object.keys(groups).sort((a, b) => b.localeCompare(a)).forEach(date => {
+      const label = date === 'Unknown' ? 'Unknown Date' : _formatDate(date);
+      html += `
+        <div class="si-date-group">
+          <div class="si-date-header">
+            <span>${_esc(label)}</span>
+            <span class="badge bg-secondary ms-2">${groups[date].length}</span>
+          </div>
+          ${groups[date].map(r => _renderCard(r, true)).join('')}
+        </div>`;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function _toggleArchived() {
+    showArchived = !showArchived;
+    _renderArchivedSection();
   }
 
   // ── Modal: open/close ──────────────────────────────────────
@@ -752,9 +818,28 @@ const StateInspections = (() => {
     viewer.style.display = 'flex';
   }
 
-  // ── Delete ─────────────────────────────────────────────────
-  async function deleteRecord(id) {
-    if (!confirm('Delete this inspection record? This cannot be undone.')) return;
+  // ── Archive ────────────────────────────────────────────────
+  async function archiveRecord(id) {
+    if (!confirm('Archive this inspection record?')) return;
+    try {
+      await db.collection('state_inspections').doc(id).update({ archived: true });
+    } catch (e) {
+      alert('Archive failed: ' + e.message);
+    }
+  }
+
+  // ── Restore from archive ───────────────────────────────────
+  async function restoreRecord(id) {
+    try {
+      await db.collection('state_inspections').doc(id).update({ archived: false });
+    } catch (e) {
+      alert('Restore failed: ' + e.message);
+    }
+  }
+
+  // ── Permanent Delete (archived only) ───────────────────────
+  async function permanentDelete(id) {
+    if (!confirm('Permanently delete this record? This cannot be undone.')) return;
     try {
       await db.collection('state_inspections').doc(id).delete();
     } catch (e) {
@@ -1195,7 +1280,10 @@ const StateInspections = (() => {
   return {
     init,
     openEdit,
-    deleteRecord,
+    archiveRecord,
+    restoreRecord,
+    permanentDelete,
     viewTint,
+    toggleArchived: _toggleArchived,
   };
 })();

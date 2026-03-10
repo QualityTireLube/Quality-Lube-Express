@@ -2449,6 +2449,12 @@
       .si-chip-status.active[data-value="Fail"] { background:#ef4444; border-color:#ef4444; color:#fff; }
       .si-tint-thumb { max-width:200px; max-height:150px; border-radius:6px; border:1px solid #e2e8f0; margin-top:4px; }
 
+      /* Archived section */
+      .si-archived-header { font-size:.95rem; font-weight:700; color:#64748b; padding:12px 0 8px; margin-top:8px; border-top:2px solid #e2e8f0; display:flex; align-items:center; }
+      .si-archived-card { opacity:.7; background:#f9fafb !important; }
+      .si-archived-card:hover { opacity:1; }
+      .si-archive-controls { margin-bottom:8px; }
+
       /* Fleet combobox */
       .si-fleet-combobox { position:relative; }
       .si-fleet-dropdown { position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #cbd5e1; border-radius:0 0 8px 8px; box-shadow:0 4px 12px rgba(0,0,0,.12); max-height:220px; overflow-y:auto; z-index:1200; margin:0; padding:4px 0; list-style:none; }
@@ -3252,6 +3258,14 @@
 
           <!-- Records List -->
           <div id="si-records-list"></div>
+
+          <!-- Archive Toggle + Archived Section -->
+          <div class="si-archive-controls mt-3">
+            <button class="btn btn-sm btn-outline-secondary" id="si-toggle-archived" onclick="StateInspections.toggleArchived()" style="display:none;">
+              <i class="fas fa-archive me-1"></i>Archived (0)
+            </button>
+          </div>
+          <div id="si-archived-section" style="display:none;"></div>
         </div>
 
         <!-- State Inspections Modal -->
