@@ -819,15 +819,19 @@ const StateInspections = (() => {
     };
 
     // Pre-resolve column indices
-    const colDate      = _findCol(header, ['date created', 'date', 'created date', 'dateCreated', 'created_date', 'date_created', 'Time Created']);
-    const colBy        = _findCol(header, ['created by', 'createdby', 'employee', 'tech', 'technician', 'created_by', 'createdBy']);
-    const colSticker   = _findCol(header, ['sticker number', 'sticker', 'stickernumber', 'sticker_number', 'vsi number', 'vsi_number', 'Sticker Number']);
-    const colLastname  = _findCol(header, ['last name', 'lastname', 'last_name', 'customer', 'name', 'Last name']);
-    const colPayType   = _findCol(header, ['payment', 'payment type', 'paymenttype', 'payment_type', 'Payment']);
-    const colPayAmt    = _findCol(header, ['payment amount', 'paymentamount', 'amount', 'payment_amount', 'cost', 'price', 'Payment amount']);
-    const colFleet     = _findCol(header, ['fleet name', 'fleetname', 'fleet', 'fleet_name', 'fleet_account', 'fleetaccount', 'Fleet Name']);
-    const colStatus    = _findCol(header, ['status', 'result', 'pass/fail', 'Status']);
-    const colNotes     = _findCol(header, ['notes', 'note', 'comments', 'Notes']);
+    const colId        = _findCol(header, ['id', 'record id', 'inspection id', 'external_id', 'externalid']);
+    const colDate      = _findCol(header, ['date created', 'date', 'created date', 'datecreated', 'created_date', 'date_created']);
+    const colTime      = _findCol(header, ['time created', 'time', 'created time', 'timecreated', 'created_time', 'time_created']);
+    const colBy        = _findCol(header, ['created by', 'createdby', 'employee', 'tech', 'technician', 'created_by']);
+    const colSticker   = _findCol(header, ['sticker number', 'sticker', 'stickernumber', 'sticker_number', 'vsi number', 'vsi_number']);
+    const colLastname  = _findCol(header, ['last name', 'lastname', 'last_name', 'customer', 'name']);
+    const colPayType   = _findCol(header, ['payment', 'payment type', 'paymenttype', 'payment_type']);
+    const colPayAmt    = _findCol(header, ['payment amount', 'paymentamount', 'amount', 'payment_amount', 'cost', 'price']);
+    const colFleet     = _findCol(header, ['fleet name', 'fleetname', 'fleet', 'fleet_name', 'fleet_account', 'fleetaccount']);
+    const colStatus    = _findCol(header, ['status', 'result', 'pass/fail']);
+    const colNotes     = _findCol(header, ['notes', 'note', 'comments']);
+    const colTint      = _findCol(header, ['tint affidavit', 'tint', 'affidavit', 'tint_affidavit', 'tintaffidavit', 'tint url', 'affidavit url']);
+    const colCompanyId = _findCol(header, ['company_id', 'company id', 'companyid', 'company']);
 
     const today = _localToday();
 
@@ -862,6 +866,7 @@ const StateInspections = (() => {
 
           const record = {
             createdDate,
+            createdTime:    get(colTime),
             createdBy:      get(colBy) || 'Imported',
             stickerNumber:  get(colSticker),
             lastName:       get(colLastname),
@@ -870,14 +875,19 @@ const StateInspections = (() => {
             fleetAccount:   get(colFleet),
             status,
             notes:          get(colNotes),
-            tintAffidavitUrl: '',
+            tintAffidavitUrl: get(colTint),
+            companyId:      get(colCompanyId),
             createdAt:      new Date().toISOString(),
             updatedAt:      new Date().toISOString(),
             importedFromCsv: true
           };
 
-          const ref = db.collection('state_inspections').doc();
-          batch.set(ref, record);
+          // Use source ID as doc ref so re-importing the same CSV never duplicates records
+          const sourceId = get(colId);
+          const ref = sourceId
+            ? db.collection('state_inspections').doc(sourceId)
+            : db.collection('state_inspections').doc();
+          batch.set(ref, record, { merge: false });
           imported++;
         } catch (rowErr) {
           console.warn('[StateInspections] CSV row error:', rowErr, row);
