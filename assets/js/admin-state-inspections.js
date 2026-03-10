@@ -14,6 +14,12 @@ const StateInspections = (() => {
   let editingId = null;          // id of record being edited (null = new)
   let unsubscribe = null;        // Firestore real-time listener
 
+  // ── Pagination / lazy-render ──
+  const PAGE_SIZE = 50;
+  let renderedCount = 0;
+  let archivedRenderedCount = 0;
+  let _filterDebounceTimer = null;
+
   // Date filter state
   let filterDateFrom = '';
   let filterDateTo = '';
@@ -177,7 +183,8 @@ const StateInspections = (() => {
     filterDateFrom = (document.getElementById('si-filter-from') || {}).value || '';
     filterDateTo = (document.getElementById('si-filter-to') || {}).value || '';
     filterFleet = (document.getElementById('si-filter-fleet') || {}).value || '';
-    _applyFilters();
+    if (_filterDebounceTimer) clearTimeout(_filterDebounceTimer);
+    _filterDebounceTimer = setTimeout(() => { _filterDebounceTimer = null; _applyFilters(); }, 180);
   }
 
   function clearFilters() {
@@ -248,10 +255,11 @@ const StateInspections = (() => {
     return isNaN(n) ? 0 : n;
   }
 
-  // ── List rendering ─────────────────────────────────────────
+  // ── List rendering (chunked / lazy) ─────────────────────────
   function _renderList() {
     const container = document.getElementById('si-records-list');
     if (!container) return;
+    renderedCount = 0;
 
     if (filteredRecords.length === 0) {
       container.innerHTML = `
@@ -262,28 +270,75 @@ const StateInspections = (() => {
       return;
     }
 
-    // Group by date
-    const groups = {};
-    filteredRecords.forEach(r => {
+    container.innerHTML = '';
+    _appendRecordBatch(container, false);
+  }
+
+  /** Append the next PAGE_SIZE records to a container (active or archived). */
+  function _appendRecordBatch(container, isArchived) {
+    const source = isArchived ? archivedRecords : filteredRecords;
+    const count  = isArchived ? archivedRenderedCount : renderedCount;
+    const end    = Math.min(count + PAGE_SIZE, source.length);
+    const batch  = source.slice(count, end);
+    if (batch.length === 0) return;
+
+    // Remove existing "load more" button
+    const oldWrap = container.querySelector('.si-load-more-wrap');
+    if (oldWrap) oldWrap.remove();
+
+    // Continue into the last rendered date group if the first new record shares its date
+    const firstDate    = batch[0].createdDate || 'Unknown';
+    const lastGroupEl  = container.querySelector('.si-date-group:last-child');
+    const lastGroupDate = lastGroupEl ? (lastGroupEl.dataset.date || '') : '';
+    let currentGroupEl  = (firstDate === lastGroupDate) ? lastGroupEl : null;
+    let lastDate        = currentGroupEl ? lastGroupDate : '';
+
+    const frag = document.createDocumentFragment();
+
+    batch.forEach(r => {
       const d = r.createdDate || 'Unknown';
-      if (!groups[d]) groups[d] = [];
-      groups[d].push(r);
+      if (d !== lastDate || !currentGroupEl) {
+        const label = d === 'Unknown' ? 'Unknown Date' : _formatDate(d);
+        currentGroupEl = document.createElement('div');
+        currentGroupEl.className = 'si-date-group';
+        currentGroupEl.dataset.date = d;
+        const header = document.createElement('div');
+        header.className = 'si-date-header';
+        header.innerHTML = `<span>${_esc(label)}</span><span class="badge bg-secondary ms-2">0</span>`;
+        currentGroupEl.appendChild(header);
+        frag.appendChild(currentGroupEl);
+        lastDate = d;
+      }
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = _renderCard(r, isArchived);
+      currentGroupEl.appendChild(wrapper.firstElementChild);
+      const badge = currentGroupEl.querySelector('.si-date-header .badge');
+      if (badge) badge.textContent = currentGroupEl.querySelectorAll('.si-record-card').length;
     });
 
-    let html = '';
-    Object.keys(groups).sort((a, b) => b.localeCompare(a)).forEach(date => {
-      const label = date === 'Unknown' ? 'Unknown Date' : _formatDate(date);
-      html += `
-        <div class="si-date-group">
-          <div class="si-date-header">
-            <span>${_esc(label)}</span>
-            <span class="badge bg-secondary ms-2">${groups[date].length}</span>
-          </div>
-          ${groups[date].map(_renderCard).join('')}
-        </div>`;
-    });
+    container.appendChild(frag);
+    if (isArchived) { archivedRenderedCount = end; } else { renderedCount = end; }
 
-    container.innerHTML = html;
+    const remaining = source.length - end;
+    if (remaining > 0) {
+      const wrap = document.createElement('div');
+      wrap.className = 'si-load-more-wrap text-center py-3';
+      const fn = isArchived ? 'loadMoreArchived' : 'loadMore';
+      wrap.innerHTML = `<button class="btn btn-outline-secondary btn-sm si-load-more-btn" onclick="StateInspections.${fn}()">
+        <i class="fas fa-chevron-down me-1"></i>Load More (${remaining} remaining)
+      </button>`;
+      container.appendChild(wrap);
+    }
+  }
+
+  function _loadMore() {
+    const container = document.getElementById('si-records-list');
+    if (container) _appendRecordBatch(container, false);
+  }
+
+  function _loadMoreArchived() {
+    const container = document.getElementById('si-archived-records-inner');
+    if (container) _appendRecordBatch(container, true);
   }
 
   function _renderCard(r, isArchived) {
@@ -343,37 +398,21 @@ const StateInspections = (() => {
     if (!showArchived || count === 0) {
       container.innerHTML = '';
       container.style.display = 'none';
+      archivedRenderedCount = 0;
       return;
     }
 
     container.style.display = 'block';
+    archivedRenderedCount = 0;
 
-    // Group archived by date
-    const groups = {};
-    archivedRecords.forEach(r => {
-      const d = r.createdDate || 'Unknown';
-      if (!groups[d]) groups[d] = [];
-      groups[d].push(r);
-    });
-
-    let html = `<div class="si-archived-header">
+    container.innerHTML = `<div class="si-archived-header">
       <i class="fas fa-archive me-2"></i>Archived Records
       <span class="badge bg-secondary ms-2">${count}</span>
-    </div>`;
+    </div>
+    <div id="si-archived-records-inner"></div>`;
 
-    Object.keys(groups).sort((a, b) => b.localeCompare(a)).forEach(date => {
-      const label = date === 'Unknown' ? 'Unknown Date' : _formatDate(date);
-      html += `
-        <div class="si-date-group">
-          <div class="si-date-header">
-            <span>${_esc(label)}</span>
-            <span class="badge bg-secondary ms-2">${groups[date].length}</span>
-          </div>
-          ${groups[date].map(r => _renderCard(r, true)).join('')}
-        </div>`;
-    });
-
-    container.innerHTML = html;
+    const inner = document.getElementById('si-archived-records-inner');
+    if (inner) _appendRecordBatch(inner, true);
   }
 
   function _toggleArchived() {
@@ -1385,5 +1424,7 @@ const StateInspections = (() => {
     toggleArchived: _toggleArchived,
     removeSIEmployee: _removeSIEmployee,
     toggleSettings: _toggleSettings,
+    loadMore: _loadMore,
+    loadMoreArchived: _loadMoreArchived,
   };
 })();
