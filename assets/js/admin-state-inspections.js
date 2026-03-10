@@ -157,8 +157,24 @@ const StateInspections = (() => {
     unsubscribe = db.collection('state_inspections')
       .orderBy('createdDate', 'desc')
       .onSnapshot(snap => {
-        records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        _buildFleetFromRecords();
+        const fleetNames = new Set(knownFleetAccounts);
+        records = new Array(snap.docs.length);
+        for (let i = 0; i < snap.docs.length; i++) {
+          const d = snap.docs[i];
+          const data = d.data();
+          data.id = d.id;
+          // Pre-cache lowercase search fields once
+          data._lLastName    = (data.lastName || '').toLowerCase();
+          data._sSticker     = String(data.stickerNumber || '');
+          data._lCreatedBy   = (data.createdBy || '').toLowerCase();
+          data._lFleetAccount = (data.fleetAccount || '').toLowerCase();
+          data._payNum       = _parseMoney(data.paymentAmount);
+          records[i] = data;
+          if (data.fleetAccount && data.fleetAccount.trim()) fleetNames.add(data.fleetAccount.trim());
+        }
+        knownFleetAccounts = [...fleetNames].sort((a, b) => a.localeCompare(b));
+        _updateFleetDatalist();
+        _updateFleetFilterSuggestions();
         _applyFilters();
         _showLoading(false);
       }, err => {
@@ -197,58 +213,50 @@ const StateInspections = (() => {
   }
 
   function _applyFilters() {
-    // Separate active vs archived
-    const active = records.filter(r => !r.archived);
-    const archived = records.filter(r => r.archived);
+    // Single-pass: separate active/archived, apply filters, compute stats
+    const hasSearch = !!filterSearch;
+    const q = hasSearch ? filterSearch.toLowerCase() : '';
+    const hasStatus = !!filterStatus;
+    const hasFrom = !!filterDateFrom;
+    const hasTo = !!filterDateTo;
+    const hasFleet = !!filterFleet;
+    const fleetQ = hasFleet ? filterFleet.toLowerCase() : '';
 
-    let res = [...active];
+    const active = [];
+    const archived = [];
+    let statPass = 0, statRetest = 0, statFail = 0, statRevenue = 0;
 
-    if (filterSearch) {
-      const q = filterSearch.toLowerCase();
-      res = res.filter(r =>
-        (r.lastName || '').toLowerCase().includes(q) ||
-        String(r.stickerNumber || '').includes(q) ||
-        (r.createdBy || '').toLowerCase().includes(q) ||
-        (r.fleetAccount || '').toLowerCase().includes(q)
-      );
+    for (let i = 0; i < records.length; i++) {
+      const r = records[i];
+      if (r.archived) { archived.push(r); continue; }
+
+      // Apply filters on active records
+      if (hasSearch && !(r._lLastName.includes(q) || r._sSticker.includes(q) || r._lCreatedBy.includes(q) || r._lFleetAccount.includes(q))) continue;
+      if (hasStatus && r.status !== filterStatus) continue;
+      if (hasFrom && (r.createdDate || '') < filterDateFrom) continue;
+      if (hasTo && (r.createdDate || '') > filterDateTo) continue;
+      if (hasFleet && !r._lFleetAccount.includes(fleetQ)) continue;
+
+      active.push(r);
+
+      // Accumulate stats inline
+      if (r.status === 'Pass') statPass++;
+      else if (r.status === 'Retest') statRetest++;
+      else if (r.status === 'Fail') statFail++;
+      statRevenue += r._payNum;
     }
 
-    if (filterStatus) {
-      res = res.filter(r => r.status === filterStatus);
-    }
-
-    if (filterDateFrom) {
-      res = res.filter(r => (r.createdDate || '') >= filterDateFrom);
-    }
-    if (filterDateTo) {
-      res = res.filter(r => (r.createdDate || '') <= filterDateTo);
-    }
-
-    if (filterFleet) {
-      const q = filterFleet.toLowerCase();
-      res = res.filter(r => (r.fleetAccount || '').toLowerCase().includes(q));
-    }
-
-    filteredRecords = res;
+    filteredRecords = active;
     archivedRecords = archived;
+
+    _setText('si-stat-total', active.length);
+    _setText('si-stat-pass', statPass);
+    _setText('si-stat-retest', statRetest);
+    _setText('si-stat-fail', statFail);
+    _setText('si-stat-revenue', '$' + statRevenue.toFixed(2));
+
     _renderList();
-    _renderStats();
     _renderArchivedSection();
-  }
-
-  // ── Stats bar ──────────────────────────────────────────────
-  function _renderStats() {
-    const total = filteredRecords.length;
-    const pass = filteredRecords.filter(r => r.status === 'Pass').length;
-    const retest = filteredRecords.filter(r => r.status === 'Retest').length;
-    const fail = filteredRecords.filter(r => r.status === 'Fail').length;
-    const revenue = filteredRecords.reduce((s, r) => s + (_parseMoney(r.paymentAmount)), 0);
-
-    _setText('si-stat-total', total);
-    _setText('si-stat-pass', pass);
-    _setText('si-stat-retest', retest);
-    _setText('si-stat-fail', fail);
-    _setText('si-stat-revenue', '$' + revenue.toFixed(2));
   }
 
   function _parseMoney(val) {
@@ -367,7 +375,7 @@ const StateInspections = (() => {
   function _renderCard(r, isArchived) {
     const statusClass = r.status === 'Pass' ? 'success' : r.status === 'Fail' ? 'danger' : 'warning';
     const statusIcon = r.status === 'Pass' ? 'fa-check-circle' : r.status === 'Fail' ? 'fa-times-circle' : 'fa-redo';
-    const payAmt = r.paymentAmount !== undefined ? '$' + _parseMoney(r.paymentAmount).toFixed(2) : '';
+    const payAmt = r.paymentAmount !== undefined ? '$' + r._payNum.toFixed(2) : '';
     const payIcon = r.paymentType === 'Fleet' ? 'fa-truck' : 'fa-money-bill-wave';
     const payColor = r.paymentType === 'Fleet' ? '#e67e22' : '#27ae60';
 
@@ -1248,17 +1256,6 @@ const StateInspections = (() => {
 
   // ── Fleet Account Combobox ─────────────────────────────────
 
-  /** Build sorted unique fleet name list from current records. */
-  function _buildFleetFromRecords() {
-    const names = new Set(knownFleetAccounts);
-    records.forEach(r => {
-      if (r.fleetAccount && r.fleetAccount.trim()) names.add(r.fleetAccount.trim());
-    });
-    knownFleetAccounts = [...names].sort((a, b) => a.localeCompare(b));
-    _updateFleetDatalist();
-    _updateFleetFilterSuggestions();
-  }
-
   /** Also pull from the fleet_accounts collection if it exists. */
   function _loadFleetAccountsCollection() {
     if (typeof db === 'undefined') return;
@@ -1387,11 +1384,11 @@ const StateInspections = (() => {
   }
 
   // ── Helpers ────────────────────────────────────────────────
+  const _escMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  const _escRe  = /[&<>"']/g;
   function _esc(str) {
     if (!str) return '';
-    const d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
+    return String(str).replace(_escRe, ch => _escMap[ch]);
   }
 
   function _val(id, v) {
