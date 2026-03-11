@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-US">
   <head>
     <meta charset="utf-8" />
@@ -1786,6 +1786,344 @@
         font-family: var(--font-family) !important;
       }
     </style>
+
+    <!-- Careers Page Styles -->
+    <style id="careers-page-styles">
+      /* ── Layout containers ── */
+      .careers-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* ── Intro Section ── */
+      .careers-intro-section {
+        background: #fff;
+        padding: 40px 0 32px;
+        border-bottom: 1px solid #e8e8e8;
+      }
+      .careers-intro-text {
+        max-width: 780px;
+      }
+      .careers-intro-text p {
+        font-size: 16px;
+        line-height: 1.75;
+        color: #333;
+        margin-bottom: 14px;
+      }
+      .careers-intro-text p:last-child { margin-bottom: 0; }
+
+      /* ── Section titles ── */
+      .careers-section-title {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: #1a1a1a;
+        text-align: center;
+        letter-spacing: 0.04em;
+        margin-bottom: 32px;
+        text-transform: uppercase;
+      }
+
+      /* ── Openings Section ── */
+      .careers-openings-section {
+        background: #f2f2f2;
+        padding: 52px 0;
+      }
+
+      /* ── Job Cards Grid ── */
+      .careers-jobs-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+      }
+      @media (max-width: 768px) {
+        .careers-jobs-grid { grid-template-columns: 1fr; }
+      }
+
+      /* ── Individual Job Card ── */
+      .careers-job-card {
+        background: #ffffff;
+        border-radius: 6px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: box-shadow 0.25s;
+      }
+      .careers-job-card:hover {
+        box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+      }
+
+      .careers-job-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 20px 22px 16px;
+        border-bottom: 2px solid #f0f0f0;
+      }
+      .careers-job-icon {
+        width: 44px;
+        height: 44px;
+        background: #cc0000;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: #fff;
+      }
+      .careers-job-icon svg {
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .careers-job-header h3 {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        line-height: 1.3;
+      }
+
+      .careers-job-body {
+        padding: 18px 22px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .careers-job-section h4 {
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: #333;
+        margin: 0 0 8px;
+      }
+      .careers-job-section ul {
+        margin: 0;
+        padding-left: 18px;
+        list-style: disc;
+      }
+      .careers-job-section ul li {
+        font-size: 0.88rem;
+        color: #444;
+        line-height: 1.6;
+        margin-bottom: 3px;
+      }
+
+      .careers-job-footer {
+        padding: 14px 22px 18px;
+        display: flex;
+        justify-content: flex-end;
+        border-top: 1px solid #f0f0f0;
+      }
+      .careers-apply-btn {
+        background: #cc0000;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 9px 24px;
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: background 0.2s, transform 0.1s;
+      }
+      .careers-apply-btn:hover {
+        background: #aa0000;
+        transform: translateY(-1px);
+      }
+      .careers-apply-btn:active { transform: translateY(0); }
+
+      /* ── Benefits Section ── */
+      .careers-benefits-section {
+        background: #1a1a1a;
+        padding: 52px 0;
+        color: #fff;
+      }
+      .careers-benefits-title {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: #fff;
+        text-align: center;
+        letter-spacing: 0.04em;
+        margin-bottom: 36px;
+        text-transform: uppercase;
+      }
+      .careers-benefits-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px 40px;
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      @media (max-width: 600px) {
+        .careers-benefits-grid { grid-template-columns: 1fr; }
+      }
+      .careers-benefit-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        font-size: 0.97rem;
+        line-height: 1.5;
+      }
+      .careers-benefit-check {
+        background: #cc0000;
+        color: #fff;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 0.75rem;
+        margin-top: 1px;
+      }
+
+      /* ── Apply Form Section ── */
+      .careers-apply-section {
+        background: #fff;
+        padding: 56px 0 64px;
+      }
+      .careers-apply-header {
+        text-align: center;
+        margin-bottom: 36px;
+      }
+      .careers-apply-header h2 {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: #1a1a1a;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 10px;
+      }
+      .careers-apply-header p {
+        color: #555;
+        font-size: 0.97rem;
+        line-height: 1.6;
+      }
+      .careers-apply-header p a { color: #cc0000; font-weight: 600; }
+      .careers-apply-header p a:hover { text-decoration: underline; }
+
+      .careers-form-wrapper {
+        max-width: 820px;
+        margin: 0 auto;
+        background: #fafafa;
+        border: 1px solid #e5e5e5;
+        border-radius: 10px;
+        padding: 36px 40px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+      }
+      @media (max-width: 600px) {
+        .careers-form-wrapper { padding: 24px 18px; }
+      }
+
+      /* Position select highlight */
+      .careers-position-select-container {
+        background: #fff8f8;
+        border: 1px solid #ffd0d0;
+        border-radius: 8px;
+        padding: 16px 18px;
+        margin-bottom: 20px !important;
+      }
+      .careers-position-select-container label.wpforms-field-label {
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        color: #cc0000 !important;
+      }
+
+      /* File upload area */
+      .careers-file-upload-area {
+        position: relative;
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 28px 20px;
+        text-align: center;
+        background: #fafafa;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+      }
+      .careers-file-upload-area:hover,
+      .careers-file-upload-area.drag-over {
+        border-color: #cc0000;
+        background: #fff5f5;
+      }
+      .careers-file-input {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 2;
+      }
+      .careers-file-upload-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        pointer-events: none;
+      }
+      .careers-file-upload-label i {
+        font-size: 2rem;
+        color: #bbb;
+        margin-bottom: 4px;
+      }
+      .careers-file-upload-text { font-size: 0.92rem; color: #444; }
+      .careers-file-upload-hint { font-size: 0.78rem; color: #888; }
+      .careers-file-selected {
+        font-size: 0.85rem;
+        color: #28a745;
+        font-weight: 600;
+        margin-top: 4px;
+      }
+
+      /* Submit button */
+      .careers-submit-btn {
+        background: #cc0000 !important;
+        color: #fff !important;
+        border: none !important;
+        padding: 12px 40px !important;
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.04em !important;
+        border-radius: 4px !important;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: background 0.2s, transform 0.1s !important;
+        width: auto !important;
+      }
+      .careers-submit-btn:hover {
+        background: #aa0000 !important;
+        transform: translateY(-1px);
+      }
+
+      /* Success / error message */
+      .careers-form-message {
+        padding: 14px 18px;
+        border-radius: 6px;
+        margin-top: 16px;
+        font-weight: 600;
+        display: none;
+      }
+      .careers-form-message.success {
+        background: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #a5d6a7;
+      }
+      .careers-form-message.error {
+        background: #fce4ec;
+        color: #b71c1c;
+        border: 1px solid #ef9a9a;
+      }
+    </style>
   </head>
 
   <body
@@ -2086,22 +2424,17 @@
 
       <!-- MAIN CONTENT -->
       <main class="l-main" id="page-content">
-        <!-- Title Section -->
+
+        <!-- Page Title Section -->
         <section class="l-section wpb_row height_small">
           <div class="l-section-overlay" style="background: #f5f5f5"></div>
           <div class="l-section-h i-cf">
-            <div
-              class="g-cols vc_row via_flex valign_middle type_default stacking_default"
-            >
-              <div
-                class="vc_col-sm-6 wpb_column vc_column_container p-title-col"
-              >
+            <div class="g-cols vc_row via_flex valign_middle type_default stacking_default">
+              <div class="vc_col-sm-6 wpb_column vc_column_container p-title-col">
                 <div class="vc_column-inner">
                   <div class="wpb_wrapper">
-                    <h1
-                      class="w-post-elm post_title align_left entry-title color_link_inherit"
-                    >
-                      Careers
+                    <h1 class="w-post-elm post_title align_left entry-title color_link_inherit">
+                      Careers at Quality Tire &amp; Auto Service
                     </h1>
                   </div>
                 </div>
@@ -2109,9 +2442,7 @@
               <div class="vc_col-sm-6 wpb_column vc_column_container">
                 <div class="vc_column-inner">
                   <div class="wpb_wrapper">
-                    <nav
-                      class="g-breadcrumbs us_custom_e5aea6d2 separator_icon align_right"
-                    >
+                    <nav class="g-breadcrumbs us_custom_e5aea6d2 separator_icon align_right">
                       <div class="g-breadcrumbs-item">
                         <a href="/">Home</a><meta content="1" />
                       </div>
@@ -2129,388 +2460,407 @@
           </div>
         </section>
 
-        <!-- Form Section -->
-        <section class="l-section wpb_row height_medium">
-          <div class="l-section-h i-cf">
-            <div
-              class="g-cols vc_row via_flex valign_top type_default stacking_default"
-            >
-              <div class="vc_col-sm-12 wpb_column vc_column_container">
-                <div class="vc_column-inner">
-                  <div class="wpb_wrapper">
-                    <div
-                      class="wpforms-container wpforms-container-full"
-                      id="wpforms-936"
-                    >
-                      <form
-                        id="wpforms-form-careers"
-                        class="wpforms-form"
-                        data-formid="936"
-                        data-form-name="Careers"
-                      >
-                        <noscript class="wpforms-error-noscript"
-                          >Please enable JavaScript in your browser to complete
-                          this form.</noscript
-                        >
-                        <div class="wpforms-field-container">
-                          <div
-                            id="wpforms-936-field_1-container"
-                            class="wpforms-field wpforms-field-name"
-                            data-field-id="1"
-                          >
-                            <label class="wpforms-field-label"
-                              >Name
-                              <span class="wpforms-required-label"
-                                >*</span
-                              ></label
-                            >
-                            <div class="wpforms-field-row wpforms-field-large">
-                              <div
-                                class="wpforms-field-row-block wpforms-first wpforms-one-half"
-                              >
-                                <input
-                                  type="text"
-                                  id="wpforms-936-field_1"
-                                  class="wpforms-field-name-first wpforms-field-required"
-                                  name="wpforms[fields][1][first]"
-                                  required
-                                />
-                                <label
-                                  for="wpforms-936-field_1"
-                                  class="wpforms-field-sublabel after"
-                                  >First</label
-                                >
-                              </div>
-                              <div
-                                class="wpforms-field-row-block wpforms-one-half"
-                              >
-                                <input
-                                  type="text"
-                                  id="wpforms-936-field_1-last"
-                                  class="wpforms-field-name-last wpforms-field-required"
-                                  name="wpforms[fields][1][last]"
-                                  required
-                                />
-                                <label
-                                  for="wpforms-936-field_1-last"
-                                  class="wpforms-field-sublabel after"
-                                  >Last</label
-                                >
-                              </div>
-                            </div>
-                          </div>
-                          <div
-                            id="wpforms-936-field_2-container"
-                            class="wpforms-field wpforms-field-address"
-                            data-field-id="2"
-                          >
-                            <label class="wpforms-field-label"
-                              >Address
-                              <span class="wpforms-required-label"
-                                >*</span
-                              ></label
-                            >
-                            <div class="wpforms-field-row wpforms-field-large">
-                              <div>
-                                <input
-                                  type="text"
-                                  id="wpforms-936-field_2"
-                                  class="wpforms-field-address-address1 wpforms-field-required"
-                                  name="wpforms[fields][2][address1]"
-                                  required
-                                /><label
-                                  for="wpforms-936-field_2"
-                                  class="wpforms-field-sublabel after"
-                                  >Address Line 1</label
-                                >
-                              </div>
-                            </div>
-                            <div class="wpforms-field-row wpforms-field-large">
-                              <div>
-                                <input
-                                  type="text"
-                                  id="wpforms-936-field_2-address2"
-                                  class="wpforms-field-address-address2"
-                                  name="wpforms[fields][2][address2]"
-                                /><label
-                                  for="wpforms-936-field_2-address2"
-                                  class="wpforms-field-sublabel after"
-                                  >Address Line 2</label
-                                >
-                              </div>
-                            </div>
-                            <div class="wpforms-field-row wpforms-field-large">
-                              <div
-                                class="wpforms-field-row-block wpforms-one-half wpforms-first"
-                              >
-                                <input
-                                  type="text"
-                                  id="wpforms-936-field_2-city"
-                                  class="wpforms-field-address-city wpforms-field-required"
-                                  name="wpforms[fields][2][city]"
-                                  required
-                                />
-                                <label
-                                  for="wpforms-936-field_2-city"
-                                  class="wpforms-field-sublabel after"
-                                  >City</label
-                                >
-                              </div>
-                              <div
-                                class="wpforms-field-row-block wpforms-one-half"
-                              >
-                                <select
-                                  id="wpforms-936-field_2-state"
-                                  class="wpforms-field-address-state wpforms-field-required"
-                                  name="wpforms[fields][2][state]"
-                                  required
-                                >
-                                  <option
-                                    class="placeholder"
-                                    value=""
-                                    selected
-                                    disabled
-                                  >
-                                    --- Select state ---
-                                  </option>
-                                  <option value="LA" selected>Louisiana</option>
-                                  <option value="AL">Alabama</option>
-                                  <option value="AK">Alaska</option>
-                                  <option value="AZ">Arizona</option>
-                                  <option value="AR">Arkansas</option>
-                                  <option value="CA">California</option>
-                                  <option value="CO">Colorado</option>
-                                  <option value="CT">Connecticut</option>
-                                  <option value="DE">Delaware</option>
-                                  <option value="DC">
-                                    District of Columbia
-                                  </option>
-                                  <option value="FL">Florida</option>
-                                  <option value="GA">Georgia</option>
-                                  <option value="HI">Hawaii</option>
-                                  <option value="ID">Idaho</option>
-                                  <option value="IL">Illinois</option>
-                                  <option value="IN">Indiana</option>
-                                  <option value="IA">Iowa</option>
-                                  <option value="KS">Kansas</option>
-                                  <option value="KY">Kentucky</option>
-                                  <option value="MEA">Maine</option>
-                                  <option value="MD">Maryland</option>
-                                  <option value="MA">Massachusetts</option>
-                                  <option value="MI">Michigan</option>
-                                  <option value="MN">Minnesota</option>
-                                  <option value="MS">Mississippi</option>
-                                  <option value="MO">Missouri</option>
-                                  <option value="MT">Montana</option>
-                                  <option value="NE">Nebraska</option>
-                                  <option value="NV">Nevada</option>
-                                  <option value="NH">New Hampshire</option>
-                                  <option value="NJ">New Jersey</option>
-                                  <option value="NM">New Mexico</option>
-                                  <option value="NY">New York</option>
-                                  <option value="NC">North Carolina</option>
-                                  <option value="ND">North Dakota</option>
-                                  <option value="OH">Ohio</option>
-                                  <option value="OK">Oklahoma</option>
-                                  <option value="OR">Oregon</option>
-                                  <option value="PA">Pennsylvania</option>
-                                  <option value="RI">Rhode Island</option>
-                                  <option value="SC">South Carolina</option>
-                                  <option value="SD">South Dakota</option>
-                                  <option value="TN">Tennessee</option>
-                                  <option value="TX">Texas</option>
-                                  <option value="UT">Utah</option>
-                                  <option value="VT">Vermont</option>
-                                  <option value="VA">Virginia</option>
-                                  <option value="WA">Washington</option>
-                                  <option value="WV">West Virginia</option>
-                                  <option value="WI">Wisconsin</option>
-                                  <option value="WY">Wyoming</option>
-                                </select>
-                                <label
-                                  for="wpforms-936-field_2-state"
-                                  class="wpforms-field-sublabel after"
-                                  >State</label
-                                >
-                              </div>
-                            </div>
-                            <div class="wpforms-field-row wpforms-field-large">
-                              <div
-                                class="wpforms-field-row-block wpforms-one-half wpforms-first"
-                              >
-                                <input
-                                  type="text"
-                                  id="wpforms-936-field_2-postal"
-                                  class="wpforms-field-address-postal wpforms-field-required wpforms-masked-input"
-                                  data-inputmask-mask="(99999)|(99999-9999)"
-                                  data-inputmask-keepstatic="true"
-                                  data-rule-inputmask-incomplete="1"
-                                  name="wpforms[fields][2][postal]"
-                                  required
-                                />
-                                <label
-                                  for="wpforms-936-field_2-postal"
-                                  class="wpforms-field-sublabel after"
-                                  >Zip Code</label
-                                >
-                              </div>
-                            </div>
-                          </div>
-                          <div
-                            id="wpforms-936-field_3-container"
-                            class="wpforms-field wpforms-field-phone wpforms-one-half wpforms-first"
-                            data-field-id="3"
-                          >
-                            <label
-                              class="wpforms-field-label"
-                              for="wpforms-936-field_3"
-                              >Phone
-                              <span class="wpforms-required-label"
-                                >*</span
-                              ></label
-                            >
-                            <input
-                              type="tel"
-                              id="wpforms-936-field_3"
-                              class="wpforms-field-large wpforms-field-required wpforms-masked-input"
-                              data-inputmask="'mask': '(999) 999-9999'"
-                              data-rule-us-phone-field="true"
-                              data-inputmask-inputmode="tel"
-                              name="wpforms[fields][3]"
-                              aria-label="Phone"
-                              required
-                            />
-                          </div>
-                          <div
-                            id="wpforms-936-field_4-container"
-                            class="wpforms-field wpforms-field-email wpforms-one-half"
-                            data-field-id="4"
-                          >
-                            <label
-                              class="wpforms-field-label"
-                              for="wpforms-936-field_4"
-                              >Email
-                              <span class="wpforms-required-label"
-                                >*</span
-                              ></label
-                            >
-                            <input
-                              type="email"
-                              id="wpforms-936-field_4"
-                              class="wpforms-field-large wpforms-field-required"
-                              name="wpforms[fields][4]"
-                              spellcheck="false"
-                              required
-                            />
-                          </div>
-                          <div
-                            id="wpforms-936-field_7-container"
-                            class="wpforms-field wpforms-field-select"
-                            data-field-id="7"
-                          >
-                            <label
-                              class="wpforms-field-label"
-                              for="wpforms-936-field_7"
-                              >Position Applying For
-                              <span class="wpforms-required-label"
-                                >*</span
-                              ></label
-                            >
-                            <select
-                              id="wpforms-936-field_7"
-                              class="wpforms-field-large wpforms-field-required"
-                              name="wpforms[fields][7]"
-                              required
-                            >
-                              <option value="" disabled selected>--- Select Position ---</option>
-                              <option value="Lube Technician">Lube Technician</option>
-                              <option value="Automotive Technician">Automotive Technician</option>
-                              <option value="Service Advisor">Service Advisor</option>
-                              <option value="Store Manager">Store Manager</option>
-                              <option value="General Manager">General Manager</option>
-                            </select>
-                          </div>
-                          <div
-                            id="wpforms-936-field_5-container"
-                            class="wpforms-field wpforms-field-textarea"
-                            data-field-id="5"
-                          >
-                            <label
-                              class="wpforms-field-label"
-                              for="wpforms-936-field_5"
-                              >Tell Us About Yourself?
-                              <span class="wpforms-required-label"
-                                >*</span
-                              ></label
-                            >
-                            <textarea
-                              id="wpforms-936-field_5"
-                              class="wpforms-field-medium wpforms-field-required"
-                              name="wpforms[fields][5]"
-                              required
-                            ></textarea>
-                          </div>
-                          <div
-                            id="wpforms-936-field_6-container"
-                            class="wpforms-field wpforms-field-file-upload"
-                            data-field-id="6"
-                          >
-                            <label
-                              class="wpforms-field-label"
-                              for="wpforms-936-field_6"
-                              >Upload Resume</label
-                            >
-                            <!-- File input for resume -->
-                            <input
-                              type="file"
-                              id="wpforms-936-field_6"
-                              name="resume"
-                              accept=".pdf,.doc,.docx,.txt"
-                              class="wpforms-field-medium"
-                              style="
-                                padding: 10px;
-                                border: 1px dashed #ccc;
-                                width: 100%;
-                              "
-                            />
-                          </div>
-                        </div>
-                        <div class="wpforms-submit-container">
-                          <!-- hCaptcha Widget -->
-                          <div
-                            class="h-captcha"
-                            data-sitekey="68badb18-2182-432c-babe-08c40666976e"
-                          ></div>
-                          <button
-                            type="submit"
-                            name="wpforms[submit]"
-                            id="wpforms-submit-936"
-                            class="wpforms-submit"
-                            data-alt-text="Sending..."
-                            data-submit-text="Submit"
-                            aria-live="assertive"
-                            value="wpforms-submit"
-                          >
-                            Submit
-                          </button>
-                          <img
-                            alt="Loading"
-                            class="wpforms-submit-spinner"
-                            decoding="async"
-                            height="26"
-                            src="assets/img/submit-spin.svg"
-                            style="display: none"
-                            width="26"
-                          />
-                        </div>
-                      </form>
-                    </div>
+        <!-- Intro Section -->
+        <section class="careers-intro-section">
+          <div class="careers-container">
+            <div class="careers-intro-text">
+              <p>Quality Tire &amp; Auto Service is always looking for motivated individuals who want to grow in the automotive service industry.</p>
+              <p>We focus on quality workmanship, honest service, and a strong team environment. Whether you are starting your career or bringing years of experience, we offer opportunities for growth and advancement.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Current Openings Section -->
+        <section class="careers-openings-section">
+          <div class="careers-container">
+            <h2 class="careers-section-title">Current Openings</h2>
+            <div class="careers-jobs-grid">
+
+              <!-- Service Advisor -->
+              <div class="careers-job-card">
+                <div class="careers-job-header">
+                  <div class="careers-job-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg>
+                  </div>
+                  <h3>Service Advisor</h3>
+                </div>
+                <div class="careers-job-body">
+                  <div class="careers-job-section">
+                    <h4>Responsibilities</h4>
+                    <ul>
+                      <li>Greet customers and understand vehicle concerns</li>
+                      <li>Write repair orders and communicate service recommendations</li>
+                      <li>Provide accurate estimates and explain services clearly</li>
+                      <li>Coordinate workflow between technicians and customers</li>
+                      <li>Maintain strong customer relationships</li>
+                    </ul>
+                  </div>
+                  <div class="careers-job-section">
+                    <h4>Expectations</h4>
+                    <ul>
+                      <li>Strong communication and customer service skills</li>
+                      <li>Ability to multitask in a fast-paced environment</li>
+                      <li>Basic automotive knowledge preferred</li>
+                      <li>Organized and detail-oriented</li>
+                    </ul>
                   </div>
                 </div>
+                <div class="careers-job-footer">
+                  <button class="careers-apply-btn" onclick="applyForPosition('Service Advisor')">Apply Now</button>
+                </div>
+              </div>
+
+              <!-- Front Counter Assistant -->
+              <div class="careers-job-card">
+                <div class="careers-job-header">
+                  <div class="careers-job-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </div>
+                  <h3>Front Counter Assistant</h3>
+                </div>
+                <div class="careers-job-body">
+                  <div class="careers-job-section">
+                    <h4>Responsibilities</h4>
+                    <ul>
+                      <li>Assist with customer check-in and scheduling</li>
+                      <li>Answer phones and direct customer questions</li>
+                      <li>Help maintain organized service records</li>
+                      <li>Support service advisors with administrative tasks</li>
+                    </ul>
+                  </div>
+                  <div class="careers-job-section">
+                    <h4>Expectations</h4>
+                    <ul>
+                      <li>Friendly and professional attitude</li>
+                      <li>Strong communication skills</li>
+                      <li>Reliable and punctual</li>
+                      <li>Basic computer and phone skills</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="careers-job-footer">
+                  <button class="careers-apply-btn" onclick="applyForPosition('Front Counter Assistant')">Apply Now</button>
+                </div>
+              </div>
+
+              <!-- Tire / Lube Technician -->
+              <div class="careers-job-card">
+                <div class="careers-job-header">
+                  <div class="careers-job-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                  </div>
+                  <h3>Tire / Lube Technician</h3>
+                </div>
+                <div class="careers-job-body">
+                  <div class="careers-job-section">
+                    <h4>Responsibilities</h4>
+                    <ul>
+                      <li>Perform oil changes and basic maintenance services</li>
+                      <li>Mount and balance tires</li>
+                      <li>Inspect vehicles and report findings</li>
+                      <li>Maintain a clean and safe work environment</li>
+                    </ul>
+                  </div>
+                  <div class="careers-job-section">
+                    <h4>Expectations</h4>
+                    <ul>
+                      <li>Mechanical aptitude</li>
+                      <li>Ability to work efficiently in a team environment</li>
+                      <li>Dependable and motivated to learn</li>
+                      <li>Entry-level experience welcome</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="careers-job-footer">
+                  <button class="careers-apply-btn" onclick="applyForPosition('Tire / Lube Technician')">Apply Now</button>
+                </div>
+              </div>
+
+              <!-- Service Technician -->
+              <div class="careers-job-card">
+                <div class="careers-job-header">
+                  <div class="careers-job-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+                  </div>
+                  <h3>Service Technician</h3>
+                </div>
+                <div class="careers-job-body">
+                  <div class="careers-job-section">
+                    <h4>Responsibilities</h4>
+                    <ul>
+                      <li>Diagnose and repair vehicle issues</li>
+                      <li>Perform routine maintenance and mechanical repairs</li>
+                      <li>Use diagnostic equipment and service tools</li>
+                      <li>Follow company procedures and quality standards</li>
+                    </ul>
+                  </div>
+                  <div class="careers-job-section">
+                    <h4>Expectations</h4>
+                    <ul>
+                      <li>Prior automotive repair experience</li>
+                      <li>Strong problem-solving skills</li>
+                      <li>Ability to work independently and efficiently</li>
+                      <li>ASE certifications preferred</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="careers-job-footer">
+                  <button class="careers-apply-btn" onclick="applyForPosition('Service Technician')">Apply Now</button>
+                </div>
+              </div>
+
+              <!-- Master Technician -->
+              <div class="careers-job-card">
+                <div class="careers-job-header">
+                  <div class="careers-job-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  </div>
+                  <h3>Master Technician</h3>
+                </div>
+                <div class="careers-job-body">
+                  <div class="careers-job-section">
+                    <h4>Responsibilities</h4>
+                    <ul>
+                      <li>Perform advanced diagnostics and complex repairs</li>
+                      <li>Mentor and assist other technicians</li>
+                      <li>Ensure work meets quality and safety standards</li>
+                      <li>Handle complex drivability and electrical issues</li>
+                    </ul>
+                  </div>
+                  <div class="careers-job-section">
+                    <h4>Expectations</h4>
+                    <ul>
+                      <li>Extensive diagnostic experience</li>
+                      <li>ASE certifications or equivalent experience</li>
+                      <li>Leadership and mentorship ability</li>
+                      <li>Commitment to high-quality workmanship</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="careers-job-footer">
+                  <button class="careers-apply-btn" onclick="applyForPosition('Master Technician')">Apply Now</button>
+                </div>
+              </div>
+
+            </div><!-- /careers-jobs-grid -->
+          </div>
+        </section>
+
+        <!-- Why Work With Us -->
+        <section class="careers-benefits-section">
+          <div class="careers-container">
+            <h2 class="careers-benefits-title">Why Work With Us?</h2>
+            <div class="careers-benefits-grid">
+              <div class="careers-benefit-item">
+                <span class="careers-benefit-check"><i class="fas fa-check"></i></span>
+                <span><strong>Competitive</strong> pay based on experience</span>
+              </div>
+              <div class="careers-benefit-item">
+                <span class="careers-benefit-check"><i class="fas fa-check"></i></span>
+                <span><strong>Performance</strong>-based bonuses</span>
+              </div>
+              <div class="careers-benefit-item">
+                <span class="careers-benefit-check"><i class="fas fa-check"></i></span>
+                <span><strong>Paid training</strong> and career advancement</span>
+              </div>
+              <div class="careers-benefit-item">
+                <span class="careers-benefit-check"><i class="fas fa-check"></i></span>
+                <span><strong>Paid time off</strong></span>
+              </div>
+              <div class="careers-benefit-item">
+                <span class="careers-benefit-check"><i class="fas fa-check"></i></span>
+                <span><strong>Employee</strong> discounts</span>
+              </div>
+              <div class="careers-benefit-item">
+                <span class="careers-benefit-check"><i class="fas fa-check"></i></span>
+                <span><strong>Team-focused</strong> work environment</span>
               </div>
             </div>
           </div>
         </section>
+
+        <!-- Apply Section -->
+        <section class="careers-apply-section" id="careers-apply-form-section">
+          <div class="careers-container">
+            <div class="careers-apply-header">
+              <h2>Apply Now</h2>
+              <p>Interested candidates can apply by completing the form below or by contacting us directly at <a href="tel:2256589099">225-658-9099</a>.</p>
+            </div>
+
+            <div class="wpforms-container wpforms-container-full careers-form-wrapper" id="wpforms-936">
+              <form id="wpforms-form-careers" class="wpforms-form" data-formid="936" data-form-name="Careers">
+                <noscript class="wpforms-error-noscript">Please enable JavaScript in your browser to complete this form.</noscript>
+
+                <div class="wpforms-field-container">
+
+                  <!-- Position Selection -->
+                  <div id="wpforms-936-field_7-container" class="wpforms-field wpforms-field-select careers-position-select-container" data-field-id="7">
+                    <label class="wpforms-field-label" for="wpforms-936-field_7">
+                      Position Applying For <span class="wpforms-required-label">*</span>
+                    </label>
+                    <select id="wpforms-936-field_7" class="wpforms-field-large wpforms-field-required" name="wpforms[fields][7]" required>
+                      <option value="" disabled selected>--- Select a Position ---</option>
+                      <option value="Service Advisor">Service Advisor</option>
+                      <option value="Front Counter Assistant">Front Counter Assistant</option>
+                      <option value="Tire / Lube Technician">Tire / Lube Technician</option>
+                      <option value="Service Technician">Service Technician</option>
+                      <option value="Master Technician">Master Technician</option>
+                    </select>
+                  </div>
+
+                  <!-- Name -->
+                  <div id="wpforms-936-field_1-container" class="wpforms-field wpforms-field-name" data-field-id="1">
+                    <label class="wpforms-field-label">Name <span class="wpforms-required-label">*</span></label>
+                    <div class="wpforms-field-row wpforms-field-large">
+                      <div class="wpforms-field-row-block wpforms-first wpforms-one-half">
+                        <input type="text" id="wpforms-936-field_1" class="wpforms-field-name-first wpforms-field-required" name="wpforms[fields][1][first]" placeholder="First" required />
+                        <label for="wpforms-936-field_1" class="wpforms-field-sublabel after">First</label>
+                      </div>
+                      <div class="wpforms-field-row-block wpforms-one-half">
+                        <input type="text" id="wpforms-936-field_1-last" class="wpforms-field-name-last wpforms-field-required" name="wpforms[fields][1][last]" placeholder="Last" required />
+                        <label for="wpforms-936-field_1-last" class="wpforms-field-sublabel after">Last</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Phone & Email -->
+                  <div id="wpforms-936-field_3-container" class="wpforms-field wpforms-field-phone wpforms-one-half wpforms-first" data-field-id="3">
+                    <label class="wpforms-field-label" for="wpforms-936-field_3">Phone <span class="wpforms-required-label">*</span></label>
+                    <input type="tel" id="wpforms-936-field_3" class="wpforms-field-large wpforms-field-required wpforms-masked-input" data-inputmask="'mask': '(999) 999-9999'" data-rule-us-phone-field="true" data-inputmask-inputmode="tel" name="wpforms[fields][3]" placeholder="(225) 000-0000" aria-label="Phone" required />
+                  </div>
+                  <div id="wpforms-936-field_4-container" class="wpforms-field wpforms-field-email wpforms-one-half" data-field-id="4">
+                    <label class="wpforms-field-label" for="wpforms-936-field_4">Email <span class="wpforms-required-label">*</span></label>
+                    <input type="email" id="wpforms-936-field_4" class="wpforms-field-large wpforms-field-required" name="wpforms[fields][4]" placeholder="your@email.com" spellcheck="false" required />
+                  </div>
+
+                  <!-- Address -->
+                  <div id="wpforms-936-field_2-container" class="wpforms-field wpforms-field-address" data-field-id="2">
+                    <label class="wpforms-field-label">Address <span class="wpforms-required-label">*</span></label>
+                    <div class="wpforms-field-row wpforms-field-large">
+                      <div>
+                        <input type="text" id="wpforms-936-field_2" class="wpforms-field-address-address1 wpforms-field-required" name="wpforms[fields][2][address1]" placeholder="Street Address" required />
+                        <label for="wpforms-936-field_2" class="wpforms-field-sublabel after">Address Line 1</label>
+                      </div>
+                    </div>
+                    <div class="wpforms-field-row wpforms-field-large">
+                      <div>
+                        <input type="text" id="wpforms-936-field_2-address2" class="wpforms-field-address-address2" name="wpforms[fields][2][address2]" placeholder="Apt, Suite, Unit (optional)" />
+                        <label for="wpforms-936-field_2-address2" class="wpforms-field-sublabel after">Address Line 2</label>
+                      </div>
+                    </div>
+                    <div class="wpforms-field-row wpforms-field-large">
+                      <div class="wpforms-field-row-block wpforms-one-half wpforms-first">
+                        <input type="text" id="wpforms-936-field_2-city" class="wpforms-field-address-city wpforms-field-required" name="wpforms[fields][2][city]" placeholder="City" required />
+                        <label for="wpforms-936-field_2-city" class="wpforms-field-sublabel after">City</label>
+                      </div>
+                      <div class="wpforms-field-row-block wpforms-one-half">
+                        <select id="wpforms-936-field_2-state" class="wpforms-field-address-state wpforms-field-required" name="wpforms[fields][2][state]" required>
+                          <option class="placeholder" value="" selected disabled>--- State ---</option>
+                          <option value="LA" selected>Louisiana</option>
+                          <option value="AL">Alabama</option>
+                          <option value="AK">Alaska</option>
+                          <option value="AZ">Arizona</option>
+                          <option value="AR">Arkansas</option>
+                          <option value="CA">California</option>
+                          <option value="CO">Colorado</option>
+                          <option value="CT">Connecticut</option>
+                          <option value="DE">Delaware</option>
+                          <option value="DC">District of Columbia</option>
+                          <option value="FL">Florida</option>
+                          <option value="GA">Georgia</option>
+                          <option value="HI">Hawaii</option>
+                          <option value="ID">Idaho</option>
+                          <option value="IL">Illinois</option>
+                          <option value="IN">Indiana</option>
+                          <option value="IA">Iowa</option>
+                          <option value="KS">Kansas</option>
+                          <option value="KY">Kentucky</option>
+                          <option value="ME">Maine</option>
+                          <option value="MD">Maryland</option>
+                          <option value="MA">Massachusetts</option>
+                          <option value="MI">Michigan</option>
+                          <option value="MN">Minnesota</option>
+                          <option value="MS">Mississippi</option>
+                          <option value="MO">Missouri</option>
+                          <option value="MT">Montana</option>
+                          <option value="NE">Nebraska</option>
+                          <option value="NV">Nevada</option>
+                          <option value="NH">New Hampshire</option>
+                          <option value="NJ">New Jersey</option>
+                          <option value="NM">New Mexico</option>
+                          <option value="NY">New York</option>
+                          <option value="NC">North Carolina</option>
+                          <option value="ND">North Dakota</option>
+                          <option value="OH">Ohio</option>
+                          <option value="OK">Oklahoma</option>
+                          <option value="OR">Oregon</option>
+                          <option value="PA">Pennsylvania</option>
+                          <option value="RI">Rhode Island</option>
+                          <option value="SC">South Carolina</option>
+                          <option value="SD">South Dakota</option>
+                          <option value="TN">Tennessee</option>
+                          <option value="TX">Texas</option>
+                          <option value="UT">Utah</option>
+                          <option value="VT">Vermont</option>
+                          <option value="VA">Virginia</option>
+                          <option value="WA">Washington</option>
+                          <option value="WV">West Virginia</option>
+                          <option value="WI">Wisconsin</option>
+                          <option value="WY">Wyoming</option>
+                        </select>
+                        <label for="wpforms-936-field_2-state" class="wpforms-field-sublabel after">State</label>
+                      </div>
+                    </div>
+                    <div class="wpforms-field-row wpforms-field-large">
+                      <div class="wpforms-field-row-block wpforms-one-half wpforms-first">
+                        <input type="text" id="wpforms-936-field_2-postal" class="wpforms-field-address-postal wpforms-field-required wpforms-masked-input" data-inputmask-mask="(99999)|(99999-9999)" data-inputmask-keepstatic="true" data-rule-inputmask-incomplete="1" name="wpforms[fields][2][postal]" placeholder="Zip Code" required />
+                        <label for="wpforms-936-field_2-postal" class="wpforms-field-sublabel after">Zip Code</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Tell Us About Yourself -->
+                  <div id="wpforms-936-field_5-container" class="wpforms-field wpforms-field-textarea" data-field-id="5">
+                    <label class="wpforms-field-label" for="wpforms-936-field_5">Tell Us About Yourself <span class="wpforms-required-label">*</span></label>
+                    <textarea id="wpforms-936-field_5" class="wpforms-field-medium wpforms-field-required" name="wpforms[fields][5]" placeholder="Share your experience, skills, and why you'd be a great fit for our team…" rows="5" required></textarea>
+                  </div>
+
+                  <!-- Upload Resume -->
+                  <div id="wpforms-936-field_6-container" class="wpforms-field wpforms-field-file-upload" data-field-id="6">
+                    <label class="wpforms-field-label">Upload Resume <span style="font-size:0.82em;color:#888;font-weight:400;">(Optional)</span></label>
+                    <div class="careers-file-upload-area" id="careers-file-drop-zone">
+                      <input type="file" id="wpforms-936-field_6" name="resume" accept=".pdf,.doc,.docx,.txt" class="careers-file-input" />
+                      <div class="careers-file-upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span class="careers-file-upload-text">Drop your resume here or <strong>click to browse</strong></span>
+                        <span class="careers-file-upload-hint">PDF, DOC, DOCX, TXT — Max 10 MB</span>
+                        <span class="careers-file-selected" id="careers-file-selected-name" style="display:none;"></span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div><!-- /field-container -->
+
+                <div class="wpforms-submit-container" style="margin-top:24px;">
+                  <div class="h-captcha" data-sitekey="68badb18-2182-432c-babe-08c40666976e"></div>
+                  <button type="submit" name="wpforms[submit]" id="wpforms-submit-936" class="wpforms-submit careers-submit-btn" data-alt-text="Sending…" data-submit-text="Submit Application" aria-live="assertive" value="wpforms-submit">
+                    Submit Application
+                  </button>
+                  <img alt="Loading" class="wpforms-submit-spinner" decoding="async" height="26" src="assets/img/submit-spin.svg" style="display:none" width="26" />
+                </div>
+
+                <div class="careers-form-message" id="careers-form-success" role="alert">
+                  <i class="fas fa-check-circle me-2"></i>Thank you for applying! We will be in touch soon.
+                </div>
+                <div class="careers-form-message error" id="careers-form-error" role="alert">
+                  <i class="fas fa-exclamation-circle me-2"></i>There was an error submitting your application. Please try again or call us at <a href="tel:2256589099">225-658-9099</a>.
+                </div>
+
+              </form>
+            </div><!-- /form wrapper -->
+          </div>
+        </section>
+
       </main>
     </div>
 
@@ -3176,5 +3526,106 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="assets/js/firebase-init.js"></script>
     <script src="assets/js/tracking.js"></script>
+    <script src="assets/js/cta-banner.js"></script>
+
+    <script>
+    // Pre-fill position and scroll to form when clicking a job card's Apply Now
+    function applyForPosition(title) {
+      var sel = document.getElementById('wpforms-936-field_7');
+      if (sel) sel.value = title;
+      var section = document.getElementById('careers-apply-form-section');
+      if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // File upload — show selected filename
+    (function () {
+      var input = document.getElementById('wpforms-936-field_6');
+      var nameEl = document.getElementById('careers-file-selected-name');
+      var dropZone = document.getElementById('careers-file-drop-zone');
+
+      if (input) {
+        input.addEventListener('change', function () {
+          var name = this.files && this.files[0] ? this.files[0].name : '';
+          if (nameEl) { nameEl.textContent = name; nameEl.style.display = name ? 'block' : 'none'; }
+        });
+      }
+
+      if (dropZone) {
+        dropZone.addEventListener('dragover', function (e) { e.preventDefault(); dropZone.style.borderColor = '#cc0000'; });
+        dropZone.addEventListener('dragleave', function () { dropZone.style.borderColor = ''; });
+        dropZone.addEventListener('drop', function (e) {
+          e.preventDefault();
+          dropZone.style.borderColor = '';
+          if (input && e.dataTransfer.files.length) {
+            input.files = e.dataTransfer.files;
+            var name = e.dataTransfer.files[0].name;
+            if (nameEl) { nameEl.textContent = name; nameEl.style.display = 'block'; }
+          }
+        });
+      }
+    })();
+
+    // Careers form submission → Firestore
+    (function () {
+      var form = document.getElementById('wpforms-form-careers');
+      var successMsg = document.getElementById('careers-form-success');
+      var errorMsg = document.getElementById('careers-form-error');
+      var submitBtn = document.getElementById('wpforms-submit-936');
+      var spinner = form ? form.querySelector('.wpforms-submit-spinner') : null;
+
+      if (!form) return;
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        var captchaResponse = typeof hcaptcha !== 'undefined' ? hcaptcha.getResponse() : '';
+        if (!captchaResponse) {
+          alert('Please complete the CAPTCHA before submitting.');
+          return;
+        }
+
+        if (successMsg) successMsg.style.display = 'none';
+        if (errorMsg) errorMsg.style.display = 'none';
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
+        if (spinner) spinner.style.display = 'inline-block';
+
+        var firstName = (document.getElementById('wpforms-936-field_1') || {}).value || '';
+        var lastName  = (document.getElementById('wpforms-936-field_1-last') || {}).value || '';
+        var phone     = (document.getElementById('wpforms-936-field_3') || {}).value || '';
+        var email     = (document.getElementById('wpforms-936-field_4') || {}).value || '';
+        var position  = (document.getElementById('wpforms-936-field_7') || {}).value || '';
+        var about     = (document.getElementById('wpforms-936-field_5') || {}).value || '';
+        var addr1     = (document.getElementById('wpforms-936-field_2') || {}).value || '';
+        var addr2     = (document.getElementById('wpforms-936-field_2-address2') || {}).value || '';
+        var city      = (document.getElementById('wpforms-936-field_2-city') || {}).value || '';
+        var state     = (document.getElementById('wpforms-936-field_2-state') || {}).value || '';
+        var postal    = (document.getElementById('wpforms-936-field_2-postal') || {}).value || '';
+
+        var db = firebase.firestore();
+        db.collection('jobApplications').add({
+          name: firstName + ' ' + lastName,
+          phone: phone,
+          email: email,
+          position: position,
+          about: about,
+          address: { line1: addr1, line2: addr2, city: city, state: state, zip: postal },
+          submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          status: 'new'
+        }).then(function () {
+          if (successMsg) { successMsg.style.display = 'flex'; }
+          form.reset();
+          var nameEl = document.getElementById('careers-file-selected-name');
+          if (nameEl) nameEl.style.display = 'none';
+          if (typeof hcaptcha !== 'undefined') hcaptcha.reset();
+        }).catch(function (err) {
+          console.error('Application submission error:', err);
+          if (errorMsg) errorMsg.style.display = 'flex';
+        }).finally(function () {
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Application'; }
+          if (spinner) spinner.style.display = 'none';
+        });
+      });
+    })();
+    </script>
 </body>
 </html>
