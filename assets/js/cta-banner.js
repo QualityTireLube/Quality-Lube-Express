@@ -196,7 +196,6 @@
         });
         setTimeout(function () {
           banner.remove();
-          adjustCanvasMargin(0);
         }, 320);
       });
       banner.appendChild(close);
@@ -204,18 +203,6 @@
 
     // Insert at the very top of <body>
     document.body.insertBefore(banner, document.body.firstChild);
-
-    // Nudge the page canvas down to prevent overlap with fixed header
-    adjustCanvasMargin(banner.offsetHeight);
-    // Re-check after fonts/images load
-    window.addEventListener('load', function () {
-      adjustCanvasMargin(banner.offsetHeight);
-    });
-  }
-
-  function adjustCanvasMargin(px) {
-    const canvas = document.querySelector('.l-canvas');
-    if (canvas) canvas.style.marginTop = px ? px + 'px' : '';
   }
 
   // ─── Fetch config from Firestore ─────────────────────────────────────────────
