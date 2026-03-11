@@ -2075,6 +2075,8 @@
         background: #fafafa;
         cursor: pointer;
         transition: border-color 0.2s, background 0.2s;
+        max-width: 480px;
+        margin: 8px auto 0;
       }
       .careers-file-upload-area:hover,
       .careers-file-upload-area.drag-over {
@@ -2809,7 +2811,7 @@
                   </div>
 
                   <!-- Upload Resume -->
-                  <div id="wpforms-936-field_6-container" class="wpforms-field wpforms-field-file-upload" data-field-id="6">
+                  <div id="wpforms-936-field_6-container" class="wpforms-field wpforms-field-file-upload" data-field-id="6" style="text-align:center;">
                     <label class="wpforms-field-label">Upload Resume <span style="font-size:0.82em;color:#888;font-weight:400;">(Optional)</span></label>
                     <label class="careers-file-upload-area" id="careers-file-drop-zone" for="wpforms-936-field_6">
                       <input type="file" id="wpforms-936-field_6" name="resume" accept=".pdf,.doc,.docx,.txt" class="careers-file-input" />
@@ -2824,7 +2826,7 @@
 
                 </div><!-- /field-container -->
 
-                <div class="wpforms-submit-container" style="margin-top:24px;">
+                <div class="wpforms-submit-container" style="margin-top:24px;display:flex;flex-direction:column;align-items:center;gap:16px;">
                   <div class="h-captcha" data-sitekey="68badb18-2182-432c-babe-08c40666976e"></div>
                   <button type="submit" name="wpforms[submit]" id="wpforms-submit-936" class="wpforms-submit careers-submit-btn" data-alt-text="Sending…" data-submit-text="Submit Application" aria-live="assertive" value="wpforms-submit">
                     Submit Application
