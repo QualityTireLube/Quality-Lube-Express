@@ -1796,22 +1796,62 @@
         padding: 0 24px;
       }
 
-      /* ── Intro Section ── */
-      .careers-intro-section {
-        background: #fff;
-        padding: 40px 0 32px;
-        border-bottom: 1px solid #e8e8e8;
+      /* ── Hero Section ── */
+      .careers-hero {
+        position: relative;
+        width: 100%;
+        min-height: 380px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #111;
       }
-      .careers-intro-text {
-        max-width: 780px;
+      .careers-hero-bg {
+        position: absolute;
+        inset: 0;
+        background: url('assets/img/hm-slider-cl-main-01.jpg') center center / cover no-repeat;
+        opacity: 0.38;
       }
-      .careers-intro-text p {
-        font-size: 16px;
-        line-height: 1.75;
-        color: #333;
-        margin-bottom: 14px;
+      .careers-hero-content {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        padding: 64px 24px 56px;
+        width: 100%;
+        max-width: 820px;
+        margin: 0 auto;
       }
-      .careers-intro-text p:last-child { margin-bottom: 0; }
+      .careers-hero-title {
+        color: #fff;
+        font-size: clamp(1.8rem, 4vw, 2.75rem);
+        font-weight: 800;
+        margin: 0 0 14px;
+        text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+        letter-spacing: 0.01em;
+        line-height: 1.2;
+      }
+      .careers-hero-desc {
+        color: rgba(255,255,255,0.88);
+        font-size: 1.05rem;
+        line-height: 1.72;
+        margin: 0 0 22px;
+        text-shadow: 0 1px 6px rgba(0,0,0,0.45);
+      }
+      .careers-hero-breadcrumbs {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        color: rgba(255,255,255,0.55);
+      }
+      .careers-hero-breadcrumbs a {
+        color: rgba(255,255,255,0.65);
+        text-decoration: none;
+      }
+      .careers-hero-breadcrumbs a:hover { color: #fff; }
+      .careers-hero-breadcrumbs .sep { opacity: 0.45; }
 
       /* ── Section titles ── */
       .careers-section-title {
@@ -2425,47 +2465,16 @@
       <!-- MAIN CONTENT -->
       <main class="l-main" id="page-content">
 
-        <!-- Page Title Section -->
-        <section class="l-section wpb_row height_small">
-          <div class="l-section-overlay" style="background: #f5f5f5"></div>
-          <div class="l-section-h i-cf">
-            <div class="g-cols vc_row via_flex valign_middle type_default stacking_default">
-              <div class="vc_col-sm-6 wpb_column vc_column_container p-title-col">
-                <div class="vc_column-inner">
-                  <div class="wpb_wrapper">
-                    <h1 class="w-post-elm post_title align_left entry-title color_link_inherit">
-                      Careers at Quality Tire &amp; Auto Service
-                    </h1>
-                  </div>
-                </div>
-              </div>
-              <div class="vc_col-sm-6 wpb_column vc_column_container">
-                <div class="vc_column-inner">
-                  <div class="wpb_wrapper">
-                    <nav class="g-breadcrumbs us_custom_e5aea6d2 separator_icon align_right">
-                      <div class="g-breadcrumbs-item">
-                        <a href="/">Home</a><meta content="1" />
-                      </div>
-                      <div class="g-breadcrumbs-separator">
-                        <i class="fas fa-angle-right"></i>
-                      </div>
-                      <div class="g-breadcrumbs-item">
-                        <a href="/careers">Careers</a><meta content="2" />
-                      </div>
-                    </nav>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Intro Section -->
-        <section class="careers-intro-section">
-          <div class="careers-container">
-            <div class="careers-intro-text">
-              <p>Quality Tire &amp; Auto Service is always looking for motivated individuals who want to grow in the automotive service industry.</p>
-              <p>We focus on quality workmanship, honest service, and a strong team environment. Whether you are starting your career or bringing years of experience, we offer opportunities for growth and advancement.</p>
+        <!-- Hero Section -->
+        <section class="careers-hero">
+          <div class="careers-hero-bg"></div>
+          <div class="careers-hero-content">
+            <h1 class="careers-hero-title">Careers at Quality Tire &amp; Auto Service</h1>
+            <p class="careers-hero-desc">We're always looking for motivated individuals ready to grow in the automotive industry. We focus on quality workmanship, honest service, and a strong team environment — whether you're just starting out or bringing years of experience.</p>
+            <div class="careers-hero-breadcrumbs">
+              <a href="/">Home</a>
+              <span class="sep"><i class="fas fa-angle-right"></i></span>
+              <span>Careers</span>
             </div>
           </div>
         </section>
