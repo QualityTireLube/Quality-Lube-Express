@@ -66,8 +66,10 @@
       'text-align:' + align,
       'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif',
       'font-size:' + fontSize,
-      'position:relative',
-      'z-index:99999',
+      'position:fixed',
+      'top:0',
+      'left:0',
+      'z-index:100000',
       'width:100%',
       'box-sizing:border-box',
       'display:flex',
@@ -196,6 +198,7 @@
         });
         setTimeout(function () {
           banner.remove();
+          shiftCanvas(0);
         }, 320);
       });
       banner.appendChild(close);
@@ -203,6 +206,18 @@
 
     // Insert at the very top of <body>
     document.body.insertBefore(banner, document.body.firstChild);
+
+    // Push the canvas down by the banner height so the fixed site header
+    // still appears immediately below the banner.
+    function shiftCanvas(px) {
+      const canvas = document.querySelector('.l-canvas');
+      if (canvas) canvas.style.marginTop = px ? px + 'px' : '';
+    }
+    window.addEventListener('load', function () {
+      shiftCanvas(banner.offsetHeight);
+    });
+    // Also apply immediately in case DOM is already ready
+    shiftCanvas(banner.offsetHeight);
   }
 
   // ─── Fetch config from Firestore ─────────────────────────────────────────────
