@@ -1996,16 +1996,21 @@ const LabelSystem = {
     if (saved) {
       try {
         const settings = JSON.parse(saved);
-        const copiesEl = document.getElementById('label-default-copies');
-        const paperEl = document.getElementById('label-default-paper');
-        const serverEl = document.getElementById('label-print-server');
-        const tokenEl = document.getElementById('label-print-token');
+        const copiesEl   = document.getElementById('label-default-copies');
+        const paperEl    = document.getElementById('label-default-paper');
+        const serverEl   = document.getElementById('label-print-server');
+        const tokenEl    = document.getElementById('label-print-token');
         const autoSaveEl = document.getElementById('label-auto-save');
-        if (copiesEl) copiesEl.value = settings.defaultCopies || 1;
-        if (paperEl) paperEl.value = settings.defaultPaperSize || 'Brother-QL800';
-        if (serverEl) serverEl.value = settings.printServerUrl || 'https://us-central1-qualityexpress-c19f2.cloudfunctions.net/printApi';
-        if (tokenEl) tokenEl.value = settings.printClientToken || 'ql-print-2024';
+        if (copiesEl)   copiesEl.value   = settings.defaultCopies || 1;
+        if (paperEl)    paperEl.value    = settings.defaultPaperSize || 'Brother-QL800';
+        if (serverEl)   serverEl.value   = settings.printServerUrl || 'https://us-central1-qualityexpress-c19f2.cloudfunctions.net/printApi';
+        if (tokenEl)    tokenEl.value    = settings.printClientToken || 'ql-print-2024';
         if (autoSaveEl) autoSaveEl.checked = settings.autoSaveEnabled !== false;
+        // Sticker paper size
+        const stickerPaperEl = document.getElementById('sticker-paper-size');
+        if (stickerPaperEl && settings.defaultStickerPaperSize) {
+          stickerPaperEl.value = settings.defaultStickerPaperSize;
+        }
       } catch (e) {
         console.error('Error loading label settings:', e);
       }
@@ -2016,16 +2021,57 @@ const LabelSystem = {
     }
   },
 
+  // Helper: read the saved default printer for a given section ('sticker' or 'label')
+  getDefaultPrinter(section) {
+    try {
+      const settings = JSON.parse(localStorage.getItem('labelSettings') || '{}');
+      if (section === 'sticker') {
+        return {
+          id:         settings.defaultStickerPrinterId || '',
+          systemName: settings.defaultStickerPrinterSystemName || '',
+          name:       settings.defaultStickerPrinterName || ''
+        };
+      }
+      return {
+        id:         settings.defaultLabelPrinterId || '',
+        systemName: settings.defaultLabelPrinterSystemName || '',
+        name:       settings.defaultLabelPrinterName || ''
+      };
+    } catch(e) {
+      return { id: '', systemName: '', name: '' };
+    }
+  },
+
   saveSettings() {
+    // Capture selected sticker printer
+    const stickerPrinterSel = document.getElementById('ps-sticker-printer');
+    const stickerOpt = stickerPrinterSel ? stickerPrinterSel.options[stickerPrinterSel.selectedIndex] : null;
+    const defaultStickerPrinterId = stickerOpt && stickerOpt.value ? stickerOpt.value : '';
+    const defaultStickerPrinterSystemName = stickerOpt && stickerOpt.dataset.systemName ? stickerOpt.dataset.systemName : '';
+    const defaultStickerPrinterName = stickerOpt && stickerOpt.value ? stickerOpt.textContent.split(' (')[0] : '';
+
+    // Capture selected label printer
+    const labelPrinterSel = document.getElementById('ps-label-printer');
+    const labelOpt = labelPrinterSel ? labelPrinterSel.options[labelPrinterSel.selectedIndex] : null;
+    const defaultLabelPrinterId = labelOpt && labelOpt.value ? labelOpt.value : '';
+    const defaultLabelPrinterSystemName = labelOpt && labelOpt.dataset.systemName ? labelOpt.dataset.systemName : '';
+    const defaultLabelPrinterName = labelOpt && labelOpt.value ? labelOpt.textContent.split(' (')[0] : '';
+
     const settings = {
       defaultCopies: parseInt(document.getElementById('label-default-copies').value) || 1,
       defaultPaperSize: document.getElementById('label-default-paper').value,
       printServerUrl: document.getElementById('label-print-server').value || 'https://us-central1-qualityexpress-c19f2.cloudfunctions.net/printApi',
       printClientToken: document.getElementById('label-print-token').value || 'ql-print-2024',
-      autoSaveEnabled: document.getElementById('label-auto-save').checked
+      autoSaveEnabled: document.getElementById('label-auto-save').checked,
+      defaultStickerPrinterId,
+      defaultStickerPrinterSystemName,
+      defaultStickerPrinterName,
+      defaultLabelPrinterId,
+      defaultLabelPrinterSystemName,
+      defaultLabelPrinterName
     };
     localStorage.setItem('labelSettings', JSON.stringify(settings));
-    alert('Label settings saved!');
+    alert('Settings saved!');
   },
 
   renderSettings() {
@@ -2466,17 +2512,17 @@ const LabelSystem = {
       }
 
       const printClientUrl = this.getPrintClientUrl();
-      const printerSelect = document.getElementById('label-inline-printer-select');
-      const printerId = printerSelect ? printerSelect.value : '';
-      const selectedOption = printerSelect ? printerSelect.options[printerSelect.selectedIndex] : null;
-      const printerName = selectedOption ? selectedOption.textContent.split(' (')[0] : (printerId || 'default');
-      const systemName = selectedOption ? (selectedOption.dataset.systemName || printerName) : printerName;
+      // Use the saved default label printer from Print Settings
+      const savedPrinter = this.getDefaultPrinter('label');
+      const printerId = savedPrinter.id;
+      const printerName = savedPrinter.name || savedPrinter.systemName || printerId || 'default';
+      const systemName = savedPrinter.systemName || printerName;
       const paperKey = paper ? paper.key || template.paperSize : template.paperSize;
 
       if (!printerId) {
         LabelPdfGenerator.openPdfInNewTab(pdfBytes);
         this.closeCreateLabelModal();
-        alert('No printer selected in Label Settings. PDF opened for manual printing.');
+        alert('No default label printer set.\nOpen PRINT SETTINGS on the Labels card to select one, then try again.\nPDF opened for manual printing.');
         return;
       }
 
@@ -2717,15 +2763,15 @@ const LabelSystem = {
       }
 
       const printClientUrl = this.getPrintClientUrl();
-      const printerSelect = document.getElementById('label-inline-printer-select');
-      const printerId = printerSelect ? printerSelect.value : '';
-      const selectedOption = printerSelect ? printerSelect.options[printerSelect.selectedIndex] : null;
-      const printerName = selectedOption ? selectedOption.textContent.split(' (')[0] : (printerId || 'default');
-      const systemName = selectedOption ? (selectedOption.dataset.systemName || printerName) : printerName;
+      // Use the saved default label printer from Print Settings
+      const savedPrinter = this.getDefaultPrinter('label');
+      const printerId = savedPrinter.id;
+      const printerName = savedPrinter.name || savedPrinter.systemName || printerId || 'default';
+      const systemName = savedPrinter.systemName || printerName;
 
       if (!printerId) {
         LabelPdfGenerator.openPdfInNewTab(pdfBytes);
-        alert('No printer selected in Label Settings. PDF opened for manual printing.');
+        alert('No default label printer set.\nOpen PRINT SETTINGS on the Labels card to select one, then try again.\nPDF opened for manual printing.');
         return;
       }
 
@@ -3210,18 +3256,23 @@ const LabelSystem = {
       }
 
       const printClientUrl = LabelSystem.getPrintClientUrl();
+
+      // Use the saved default sticker printer; fall back to the inline dropdown if set
+      const savedPrinter = LabelSystem.getDefaultPrinter('sticker');
       const printerSelect = document.getElementById('sticker-printer-select');
-      const printerId = printerSelect ? printerSelect.value : '';
-      const selectedOption = printerSelect ? printerSelect.options[printerSelect.selectedIndex] : null;
-      const printerName = selectedOption ? selectedOption.textContent.split(' (')[0] : (printerId || 'default');
-      const systemName = selectedOption ? (selectedOption.dataset.systemName || printerName) : printerName;
+      const inlinePrinterId = printerSelect ? printerSelect.value : '';
+      const inlineOpt = printerSelect ? printerSelect.options[printerSelect.selectedIndex] : null;
+
+      const printerId  = savedPrinter.id || inlinePrinterId;
+      const printerName = savedPrinter.name || (inlineOpt ? inlineOpt.textContent.split(' (')[0] : (printerId || 'default'));
+      const systemName  = savedPrinter.systemName || (inlineOpt ? (inlineOpt.dataset.systemName || printerName) : printerName);
       const paperEl = document.getElementById('sticker-paper-size');
       const paperKey = paperEl ? paperEl.value : 'GODEX';
 
       if (!printerId) {
         // No printer configured — fall back to PDF
         LabelPdfGenerator.openPdfInNewTab(pdfBytes);
-        alert('No printer selected in Sticker Settings. PDF opened for manual printing.');
+        alert('No default sticker printer set.\nOpen PRINT SETTINGS on the Static Stickers card to select one, then try again.\nPDF opened for manual printing.');
         return;
       }
 
