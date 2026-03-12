@@ -2021,6 +2021,50 @@ const LabelSystem = {
     }
   },
 
+  // Save just the sticker printer settings (called from stickerPrintSettingsModal)
+  saveStickerPrintSettings() {
+    const stickerPrinterSel = document.getElementById('ps-sticker-printer');
+    const stickerOpt = stickerPrinterSel ? stickerPrinterSel.options[stickerPrinterSel.selectedIndex] : null;
+    const paperEl = document.getElementById('sticker-paper-size');
+
+    let settings = {};
+    try { settings = JSON.parse(localStorage.getItem('labelSettings') || '{}'); } catch(e) {}
+
+    settings.defaultStickerPrinterId         = stickerOpt && stickerOpt.value ? stickerOpt.value : '';
+    settings.defaultStickerPrinterSystemName = stickerOpt && stickerOpt.dataset.systemName ? stickerOpt.dataset.systemName : '';
+    settings.defaultStickerPrinterName       = stickerOpt && stickerOpt.value ? stickerOpt.textContent.split(' (')[0] : '';
+    settings.defaultStickerPaperSize         = paperEl ? paperEl.value : 'GODEX';
+
+    localStorage.setItem('labelSettings', JSON.stringify(settings));
+    bootstrap.Modal.getInstance(document.getElementById('stickerPrintSettingsModal')).hide();
+
+    const printerLabel = settings.defaultStickerPrinterName || 'none';
+    alert('Sticker print settings saved!\nDefault printer: ' + printerLabel);
+  },
+
+  // Save just the label printer settings (called from labelPrintSettingsModal)
+  saveLabelPrintSettings() {
+    const labelPrinterSel = document.getElementById('ps-label-printer');
+    const labelOpt = labelPrinterSel ? labelPrinterSel.options[labelPrinterSel.selectedIndex] : null;
+    const paperEl  = document.getElementById('label-default-paper');
+    const copiesEl = document.getElementById('label-default-copies');
+
+    let settings = {};
+    try { settings = JSON.parse(localStorage.getItem('labelSettings') || '{}'); } catch(e) {}
+
+    settings.defaultLabelPrinterId         = labelOpt && labelOpt.value ? labelOpt.value : '';
+    settings.defaultLabelPrinterSystemName = labelOpt && labelOpt.dataset.systemName ? labelOpt.dataset.systemName : '';
+    settings.defaultLabelPrinterName       = labelOpt && labelOpt.value ? labelOpt.textContent.split(' (')[0] : '';
+    settings.defaultPaperSize              = paperEl ? paperEl.value : '29mmx90mm';
+    settings.defaultCopies                 = copiesEl ? parseInt(copiesEl.value) || 1 : 1;
+
+    localStorage.setItem('labelSettings', JSON.stringify(settings));
+    bootstrap.Modal.getInstance(document.getElementById('labelPrintSettingsModal')).hide();
+
+    const printerLabel = settings.defaultLabelPrinterName || 'none';
+    alert('Label print settings saved!\nDefault printer: ' + printerLabel);
+  },
+
   // Helper: read the saved default printer for a given section ('sticker' or 'label')
   getDefaultPrinter(section) {
     try {

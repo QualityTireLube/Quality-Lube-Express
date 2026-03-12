@@ -456,73 +456,95 @@
 </div>
 
 
-<!-- â•â•â• PRINT SETTINGS MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- STICKER PRINT SETTINGS MODAL -->
+<div class="modal fade" id="stickerPrintSettingsModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2 px-3" style="background:#1565c0;">
+        <h6 class="modal-title text-white mb-0"><i class="fas fa-gas-pump me-2"></i>Sticker Print Settings</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-3 pt-3 pb-2">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold mb-1">Default Printer</label>
+          <select class="form-select form-select-sm" id="ps-sticker-printer">
+            <option value="">&#8212; select printer &#8212;</option>
+          </select>
+          <div class="form-text" id="ps-sticker-printer-hint" style="font-size:11px;color:#c00d4b;margin-top:4px;"></div>
+        </div>
+        <div>
+          <label class="form-label small fw-semibold mb-1">Paper Size</label>
+          <select class="form-select form-select-sm" id="sticker-paper-size">
+            <option value="GODEX">GODEX (1.8125x2.5 in)</option>
+            <option value="Dymo200i">Dymo 200i</option>
+            <option value="DymoStd">Dymo Standard</option>
+            <option value="BrotherSmall">Brother Small</option>
+            <option value="29mmx90mm">Brother DK1201</option>
+            <option value="Letter">Letter (8.5x11)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer py-2 px-3">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="LabelSystem.saveStickerPrintSettings();">
+          <i class="fas fa-save me-1"></i>Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LABEL PRINT SETTINGS MODAL -->
+<div class="modal fade" id="labelPrintSettingsModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2 px-3" style="background:#c00d4b;">
+        <h6 class="modal-title text-white mb-0"><i class="fas fa-tag me-2"></i>Label Print Settings</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-3 pt-3 pb-2">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold mb-1">Default Printer</label>
+          <select class="form-select form-select-sm" id="ps-label-printer">
+            <option value="">&#8212; select printer &#8212;</option>
+          </select>
+          <div class="form-text" id="ps-label-printer-hint" style="font-size:11px;color:#c00d4b;margin-top:4px;"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold mb-1">Default Paper</label>
+          <select class="form-select form-select-sm" id="label-default-paper">
+            <option value="29mmx90mm">Brother DK1201 (90x29mm)</option>
+            <option value="Brother-QL800">Brother QL-800 (62x29mm)</option>
+            <option value="Dymo-TwinTurbo">Dymo Twin Turbo (89x36mm)</option>
+            <option value="Dymo-30252">Dymo 30252 (89x28mm)</option>
+            <option value="Zebra-2x1">Zebra 2x1 in</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label small fw-semibold mb-1">Default Copies</label>
+          <input type="number" class="form-control form-control-sm" id="label-default-copies" value="1" min="1" max="20">
+        </div>
+      </div>
+      <div class="modal-footer py-2 px-3">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm" style="background:#c00d4b;color:#fff;" onclick="LabelSystem.saveLabelPrintSettings();">
+          <i class="fas fa-save me-1"></i>Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT SERVER SETTINGS MODAL (Label Settings tab) -->
 <div class="modal fade" id="printSettingsModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="printSettingsModalTitle"><i class="fas fa-cog me-2"></i>Print Settings</h5>
+        <h5 class="modal-title" id="printSettingsModalTitle"><i class="fas fa-cog me-2"></i>Print Server Settings</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-
-        <!-- Static Stickers Section -->
-        <div id="ps-section-sticker" class="ps-section mb-3 p-3 rounded" style="border:1.5px solid #e0e0e0;">
-          <div class="d-flex align-items-center gap-2 mb-2">
-            <i class="fas fa-gas-pump text-primary"></i>
-            <span class="fw-semibold" style="font-size:13px;">Static Stickers</span>
-          </div>
-          <div class="mb-2">
-            <label class="form-label small fw-semibold mb-1">Default Printer</label>
-            <select class="form-select form-select-sm" id="ps-sticker-printer">
-              <option value="">&#8212; select printer &#8212;</option>
-            </select>
-            <div class="form-text" id="ps-sticker-printer-hint" style="font-size:11px;"></div>
-          </div>
-          <div>
-            <label class="form-label small fw-semibold mb-1">Paper Size</label>
-            <select class="form-select form-select-sm" id="sticker-paper-size">
-              <option value="GODEX">GODEX (1.8125x2.5 in)</option>
-              <option value="Dymo200i">Dymo 200i</option>
-              <option value="DymoStd">Dymo Standard</option>
-              <option value="BrotherSmall">Brother Small</option>
-              <option value="29mmx90mm">Brother DK1201</option>
-              <option value="Letter">Letter (8.5x11)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Labels Section -->
-        <div id="ps-section-label" class="ps-section mb-3 p-3 rounded" style="border:1.5px solid #e0e0e0;">
-          <div class="d-flex align-items-center gap-2 mb-2">
-            <i class="fas fa-tag" style="color:#c00d4b;"></i>
-            <span class="fw-semibold" style="font-size:13px;">Labels</span>
-          </div>
-          <div class="mb-2">
-            <label class="form-label small fw-semibold mb-1">Default Printer</label>
-            <select class="form-select form-select-sm" id="ps-label-printer">
-              <option value="">&#8212; select printer &#8212;</option>
-            </select>
-            <div class="form-text" id="ps-label-printer-hint" style="font-size:11px;"></div>
-          </div>
-          <div class="mb-2">
-            <label class="form-label small fw-semibold mb-1">Default Paper</label>
-            <select class="form-select form-select-sm" id="label-default-paper">
-              <option value="29mmx90mm">Brother DK1201 (90x29mm)</option>
-              <option value="Brother-QL800">Brother QL-800 (62x29mm)</option>
-              <option value="Dymo-TwinTurbo">Dymo Twin Turbo (89x36mm)</option>
-              <option value="Dymo-30252">Dymo 30252 (89x28mm)</option>
-              <option value="Zebra-2x1">Zebra 2x1 in</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label small fw-semibold mb-1">Default Copies</label>
-            <input type="number" class="form-control form-control-sm" id="label-default-copies" value="1" min="1" max="20">
-          </div>
-        </div>
-
-        <!-- Server / Connection -->
-        <div class="mb-2">
+        <div class="mb-3">
           <label class="form-label small fw-semibold">Print Server URL</label>
           <input type="text" class="form-control form-control-sm" id="label-print-server"
                  value="https://us-central1-qualityexpress-c19f2.cloudfunctions.net/printApi">
@@ -719,7 +741,7 @@
     function fillSelect(selectId, filterFn, savedId, savedSystemName) {
       var sel = document.getElementById(selectId);
       if (!sel) return;
-      sel.innerHTML = '<option value="">\u2014 select printer \u2014</option>';
+      sel.innerHTML = '<option value="">— select printer —</option>';
       var list = filterFn ? printers.filter(filterFn) : printers;
       if (list.length === 0 && printers.length > 0 && filterFn) list = printers;
       list.forEach(function(p) {
@@ -741,42 +763,29 @@
     var saved = {};
     try { saved = JSON.parse(localStorage.getItem('labelSettings') || '{}'); } catch(e) {}
 
-    fillSelect('ps-sticker-printer',
-      function(p) { return (p.name || '').toUpperCase().includes('GODEX') || (p.systemName || '').toUpperCase().includes('GODEX'); },
-      saved.defaultStickerPrinterId, saved.defaultStickerPrinterSystemName);
-
-    fillSelect('ps-label-printer', null,
-      saved.defaultLabelPrinterId, saved.defaultLabelPrinterSystemName);
-
-    var noMsg = printers.length === 0 ? 'No printers detected \u2014 check print server connection.' : '';
-    var sh = document.getElementById('ps-sticker-printer-hint');
-    var lh = document.getElementById('ps-label-printer-hint');
-    if (sh) sh.textContent = noMsg;
-    if (lh) lh.textContent = noMsg;
-
-    var stickerSection = document.getElementById('ps-section-sticker');
-    var labelSection   = document.getElementById('ps-section-label');
-    var titleEl        = document.getElementById('printSettingsModalTitle');
-    if (stickerSection) stickerSection.style.border = '1.5px solid #e0e0e0';
-    if (labelSection)   labelSection.style.border   = '1.5px solid #e0e0e0';
+    var noMsg = printers.length === 0 ? 'No printers detected — check print server connection.' : '';
 
     if (context === 'sticker') {
-      if (stickerSection) stickerSection.style.border = '2px solid #1565c0';
-      if (titleEl) titleEl.innerHTML = '<i class="fas fa-gas-pump me-2 text-primary"></i>Sticker Print Settings';
+      fillSelect('ps-sticker-printer',
+        function(p) { return (p.name || '').toUpperCase().includes('GODEX') || (p.systemName || '').toUpperCase().includes('GODEX'); },
+        saved.defaultStickerPrinterId, saved.defaultStickerPrinterSystemName);
+      var sh = document.getElementById('ps-sticker-printer-hint');
+      if (sh) sh.textContent = noMsg;
+      var paperEl = document.getElementById('sticker-paper-size');
+      if (paperEl && saved.defaultStickerPaperSize) paperEl.value = saved.defaultStickerPaperSize;
+      new bootstrap.Modal(document.getElementById('stickerPrintSettingsModal')).show();
     } else if (context === 'label') {
-      if (labelSection) labelSection.style.border = '2px solid #c00d4b';
-      if (titleEl) titleEl.innerHTML = '<i class="fas fa-tag me-2" style="color:#c00d4b;"></i>Label Print Settings';
+      fillSelect('ps-label-printer', null, saved.defaultLabelPrinterId, saved.defaultLabelPrinterSystemName);
+      var lh = document.getElementById('ps-label-printer-hint');
+      if (lh) lh.textContent = noMsg;
+      var paperEl2 = document.getElementById('label-default-paper');
+      if (paperEl2 && saved.defaultPaperSize) paperEl2.value = saved.defaultPaperSize;
+      var copiesEl = document.getElementById('label-default-copies');
+      if (copiesEl && saved.defaultCopies) copiesEl.value = saved.defaultCopies;
+      new bootstrap.Modal(document.getElementById('labelPrintSettingsModal')).show();
     } else {
-      if (titleEl) titleEl.innerHTML = '<i class="fas fa-cog me-2"></i>Print Settings';
+      new bootstrap.Modal(document.getElementById('printSettingsModal')).show();
     }
-
-    var modalEl = document.getElementById('printSettingsModal');
-    new bootstrap.Modal(modalEl).show();
-    modalEl.addEventListener('shown.bs.modal', function onShown() {
-      modalEl.removeEventListener('shown.bs.modal', onShown);
-      var target = context === 'sticker' ? stickerSection : context === 'label' ? labelSection : null;
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    });
   }
 
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
