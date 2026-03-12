@@ -54,12 +54,21 @@
       a { text-decoration: none; }
       
       /* Tab Navigation */
+      #dashboardTabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      #dashboardTabs::-webkit-scrollbar { display: none; }
       .nav-tabs .nav-link {
         color: #666;
         border: none;
         border-bottom: 3px solid transparent;
         padding: 12px 20px;
         font-weight: 500;
+        white-space: nowrap;
       }
       .nav-tabs .nav-link:hover {
         border-color: #ddd;

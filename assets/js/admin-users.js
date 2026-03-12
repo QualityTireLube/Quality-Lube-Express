@@ -473,6 +473,15 @@ const UserManagement = (() => {
     if (doc.exists) {
       const data = doc.data();
       if (data.status === 'approved') {
+        // Migrate: add any tabs that were added after this account was created
+        const allTabIds = ALL_TABS.map(t => t.id);
+        const stored = data.allowedTabs || [];
+        const missing = allTabIds.filter(id => !stored.includes(id));
+        if (missing.length > 0 && data.role === 'admin') {
+          const merged = [...stored, ...missing];
+          await docRef.update({ allowedTabs: merged });
+          return { uid, ...data, allowedTabs: merged };
+        }
         return { uid, ...data };
       }
       // pending or denied
