@@ -14,7 +14,8 @@ const UserManagement = (() => {
     { id: 'settings-tab', label: 'Settings', icon: 'fa-cog' },
     { id: 'labels-tab', label: 'Labels & Stickers', icon: 'fa-tags' },
     { id: 'users-tab', label: 'User Management', icon: 'fa-user-shield' },
-    { id: 'state-inspections-tab', label: 'State Inspections', icon: 'fa-car' }
+    { id: 'state-inspections-tab', label: 'State Inspections', icon: 'fa-car' },
+    { id: 'wash-controller-tab', label: 'Wash Controller', icon: 'fa-water' }
   ];
 
   let allUsers = [];
