@@ -736,53 +736,10 @@
   // PRINT SETTINGS
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   function openPrintSettings(context) {
-    var printers = (LabelSystem.printClientPrinters || []);
-
-    function fillSelect(selectId, filterFn, savedId, savedSystemName) {
-      var sel = document.getElementById(selectId);
-      if (!sel) return;
-      sel.innerHTML = '<option value="">— select printer —</option>';
-      var list = filterFn ? printers.filter(filterFn) : printers;
-      if (list.length === 0 && printers.length > 0 && filterFn) list = printers;
-      list.forEach(function(p) {
-        var opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = p.name + (p.status ? ' (' + p.status + ')' : '');
-        opt.dataset.systemName = p.systemName || p.name;
-        sel.appendChild(opt);
-      });
-      if (savedId || savedSystemName) {
-        for (var i = 0; i < sel.options.length; i++) {
-          if (sel.options[i].value === savedId || sel.options[i].dataset.systemName === savedSystemName) {
-            sel.selectedIndex = i; break;
-          }
-        }
-      }
-    }
-
-    var saved = {};
-    try { saved = JSON.parse(localStorage.getItem('labelSettings') || '{}'); } catch(e) {}
-
-    var noMsg = printers.length === 0 ? 'No printers detected — check print server connection.' : '';
-
     if (context === 'sticker') {
-      fillSelect('ps-sticker-printer',
-        function(p) { return (p.name || '').toUpperCase().includes('GODEX') || (p.systemName || '').toUpperCase().includes('GODEX'); },
-        saved.defaultStickerPrinterId, saved.defaultStickerPrinterSystemName);
-      var sh = document.getElementById('ps-sticker-printer-hint');
-      if (sh) sh.textContent = noMsg;
-      var paperEl = document.getElementById('sticker-paper-size');
-      if (paperEl && saved.defaultStickerPaperSize) paperEl.value = saved.defaultStickerPaperSize;
-      new bootstrap.Modal(document.getElementById('stickerPrintSettingsModal')).show();
+      LabelSystem.openStickerPrintSettings();
     } else if (context === 'label') {
-      fillSelect('ps-label-printer', null, saved.defaultLabelPrinterId, saved.defaultLabelPrinterSystemName);
-      var lh = document.getElementById('ps-label-printer-hint');
-      if (lh) lh.textContent = noMsg;
-      var paperEl2 = document.getElementById('label-default-paper');
-      if (paperEl2 && saved.defaultPaperSize) paperEl2.value = saved.defaultPaperSize;
-      var copiesEl = document.getElementById('label-default-copies');
-      if (copiesEl && saved.defaultCopies) copiesEl.value = saved.defaultCopies;
-      new bootstrap.Modal(document.getElementById('labelPrintSettingsModal')).show();
+      LabelSystem.openLabelPrintSettings();
     } else {
       new bootstrap.Modal(document.getElementById('printSettingsModal')).show();
     }

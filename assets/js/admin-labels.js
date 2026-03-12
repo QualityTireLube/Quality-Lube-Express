@@ -2235,13 +2235,146 @@ const LabelSystem = {
     window.open('https://us-central1-qualityexpress-c19f2.cloudfunctions.net/printApi/api/print/printers', '_blank');
   },
 
+  _ensureStickerPrintModal() {
+    if (document.getElementById('stickerPrintSettingsModal')) return;
+    const div = document.createElement('div');
+    div.innerHTML = [
+      '<div class="modal fade" id="stickerPrintSettingsModal" tabindex="-1">',
+      '  <div class="modal-dialog modal-sm">',
+      '    <div class="modal-content">',
+      '      <div class="modal-header py-2 px-3" style="background:#1565c0;">',
+      '        <h6 class="modal-title text-white mb-0"><i class="fas fa-gas-pump me-2"></i>Sticker Print Settings</h6>',
+      '        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>',
+      '      </div>',
+      '      <div class="modal-body px-3 pt-3 pb-2">',
+      '        <div class="mb-3">',
+      '          <label class="form-label small fw-semibold mb-1">Default Printer</label>',
+      '          <select class="form-select form-select-sm" id="ps-sticker-printer"><option value="">\u2014 select printer \u2014</option></select>',
+      '          <div class="form-text" id="ps-sticker-printer-hint" style="font-size:11px;color:#c00d4b;margin-top:4px;"></div>',
+      '        </div>',
+      '        <div>',
+      '          <label class="form-label small fw-semibold mb-1">Paper Size</label>',
+      '          <select class="form-select form-select-sm" id="sticker-paper-size">',
+      '            <option value="GODEX">GODEX (1.8125x2.5 in)</option>',
+      '            <option value="Dymo200i">Dymo 200i</option>',
+      '            <option value="DymoStd">Dymo Standard</option>',
+      '            <option value="BrotherSmall">Brother Small</option>',
+      '            <option value="29mmx90mm">Brother DK1201</option>',
+      '            <option value="Letter">Letter (8.5x11)</option>',
+      '          </select>',
+      '        </div>',
+      '      </div>',
+      '      <div class="modal-footer py-2 px-3">',
+      '        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>',
+      '        <button type="button" class="btn btn-sm btn-primary" onclick="LabelSystem.saveStickerPrintSettings()">',
+      '          <i class="fas fa-save me-1"></i>Save',
+      '        </button>',
+      '      </div>',
+      '    </div>',
+      '  </div>',
+      '</div>'
+    ].join('\n');
+    document.body.appendChild(div.firstElementChild);
+  },
+
+  _ensureLabelPrintModal() {
+    if (document.getElementById('labelPrintSettingsModal')) return;
+    const div = document.createElement('div');
+    div.innerHTML = [
+      '<div class="modal fade" id="labelPrintSettingsModal" tabindex="-1">',
+      '  <div class="modal-dialog modal-sm">',
+      '    <div class="modal-content">',
+      '      <div class="modal-header py-2 px-3" style="background:#c00d4b;">',
+      '        <h6 class="modal-title text-white mb-0"><i class="fas fa-tag me-2"></i>Label Print Settings</h6>',
+      '        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>',
+      '      </div>',
+      '      <div class="modal-body px-3 pt-3 pb-2">',
+      '        <div class="mb-3">',
+      '          <label class="form-label small fw-semibold mb-1">Default Printer</label>',
+      '          <select class="form-select form-select-sm" id="ps-label-printer"><option value="">\u2014 select printer \u2014</option></select>',
+      '          <div class="form-text" id="ps-label-printer-hint" style="font-size:11px;color:#c00d4b;margin-top:4px;"></div>',
+      '        </div>',
+      '        <div class="mb-3">',
+      '          <label class="form-label small fw-semibold mb-1">Default Paper</label>',
+      '          <select class="form-select form-select-sm" id="label-default-paper">',
+      '            <option value="29mmx90mm">Brother DK1201 (90x29mm)</option>',
+      '            <option value="Brother-QL800">Brother QL-800 (62x29mm)</option>',
+      '            <option value="Dymo-TwinTurbo">Dymo Twin Turbo (89x36mm)</option>',
+      '            <option value="Dymo-30252">Dymo 30252 (89x28mm)</option>',
+      '            <option value="Zebra-2x1">Zebra 2x1 in</option>',
+      '          </select>',
+      '        </div>',
+      '        <div>',
+      '          <label class="form-label small fw-semibold mb-1">Default Copies</label>',
+      '          <input type="number" class="form-control form-control-sm" id="label-default-copies" value="1" min="1" max="20">',
+      '        </div>',
+      '      </div>',
+      '      <div class="modal-footer py-2 px-3">',
+      '        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>',
+      '        <button type="button" class="btn btn-sm" style="background:#c00d4b;color:#fff;" onclick="LabelSystem.saveLabelPrintSettings()">',
+      '          <i class="fas fa-save me-1"></i>Save',
+      '        </button>',
+      '      </div>',
+      '    </div>',
+      '  </div>',
+      '</div>'
+    ].join('\n');
+    document.body.appendChild(div.firstElementChild);
+  },
+
+  _populatePrintModalPrinters(selectId, hintId, filterFn, savedId, savedSystemName) {
+    const printers = this.printClientPrinters || [];
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">\u2014 select printer \u2014</option>';
+    let list = filterFn ? printers.filter(filterFn) : printers;
+    if (list.length === 0 && printers.length > 0 && filterFn) list = printers;
+    list.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.name + (p.status ? ' (' + p.status + ')' : '');
+      opt.dataset.systemName = p.systemName || p.name;
+      sel.appendChild(opt);
+    });
+    if (savedId || savedSystemName) {
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === savedId || sel.options[i].dataset.systemName === savedSystemName) {
+          sel.selectedIndex = i; break;
+        }
+      }
+    }
+    const hint = document.getElementById(hintId);
+    if (hint) hint.textContent = printers.length === 0 ? 'No printers detected \u2014 check print server connection.' : '';
+  },
+
   openStickerPrintSettings() {
-    StickerSystem.showCreateForm && StickerSystem.showCreateForm();
-    this.showLsTab('stickers');
+    this._ensureStickerPrintModal();
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('labelSettings') || '{}'); } catch(e) {}
+    this._populatePrintModalPrinters(
+      'ps-sticker-printer', 'ps-sticker-printer-hint',
+      p => (p.name || '').toUpperCase().includes('GODEX') || (p.systemName || '').toUpperCase().includes('GODEX'),
+      saved.defaultStickerPrinterId, saved.defaultStickerPrinterSystemName
+    );
+    const paperEl = document.getElementById('sticker-paper-size');
+    if (paperEl && saved.defaultStickerPaperSize) paperEl.value = saved.defaultStickerPaperSize;
+    new bootstrap.Modal(document.getElementById('stickerPrintSettingsModal')).show();
   },
 
   openLabelPrintSettings() {
-    this.showView('settings');
+    this._ensureLabelPrintModal();
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('labelSettings') || '{}'); } catch(e) {}
+    this._populatePrintModalPrinters(
+      'ps-label-printer', 'ps-label-printer-hint',
+      null,
+      saved.defaultLabelPrinterId, saved.defaultLabelPrinterSystemName
+    );
+    const paperEl = document.getElementById('label-default-paper');
+    if (paperEl && saved.defaultPaperSize) paperEl.value = saved.defaultPaperSize;
+    const copiesEl = document.getElementById('label-default-copies');
+    if (copiesEl && saved.defaultCopies) copiesEl.value = saved.defaultCopies;
+    new bootstrap.Modal(document.getElementById('labelPrintSettingsModal')).show();
   },
 
   // ---- Create Label Modal ----
