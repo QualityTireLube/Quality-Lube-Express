@@ -4704,6 +4704,25 @@
       </div>
     </div>
 
+    <!-- ─── Wash Action Banner ───────────────────────────────────────────── -->
+    <div id="wash-banner" style="
+      position:fixed;top:0;left:0;right:0;z-index:9999;
+      display:none;pointer-events:none;">
+      <div id="wash-banner-inner" style="
+        margin:18px auto;max-width:460px;
+        border-radius:14px;padding:16px 24px;
+        box-shadow:0 8px 32px rgba(0,0,0,.22);
+        display:flex;align-items:center;gap:14px;
+        font-size:1.05rem;font-weight:600;
+        backdrop-filter:blur(6px);
+        transition:opacity .35s ease,transform .35s ease;
+        opacity:0;transform:translateY(-18px);">
+        <span id="wash-banner-icon" style="font-size:1.4rem;"></span>
+        <span id="wash-banner-text"></span>
+      </div>
+    </div>
+    <!-- ─── End Wash Action Banner ────────────────────────────────────────── -->
+
     <!-- ─── Wash Logs Modal ──────────────────────────────────────────────── -->
     <div class="modal fade" id="washLogsModal" tabindex="-1">
       <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -9131,6 +9150,35 @@
           return 'Unknown User';
         }
 
+        // ── Banner helper ──────────────────────────────────────────────────
+        let bannerTimeout = null;
+        function showBanner(text, icon, bg, color) {
+          const wrap  = document.getElementById('wash-banner');
+          const inner = document.getElementById('wash-banner-inner');
+          const iconEl = document.getElementById('wash-banner-icon');
+          const textEl = document.getElementById('wash-banner-text');
+          if (!wrap) return;
+          clearTimeout(bannerTimeout);
+
+          iconEl.innerHTML = icon;
+          textEl.textContent = text;
+          inner.style.background = bg;
+          inner.style.color = color;
+
+          wrap.style.display = 'block';
+          // Trigger animation on next tick
+          requestAnimationFrame(() => {
+            inner.style.opacity = '1';
+            inner.style.transform = 'translateY(0)';
+          });
+
+          bannerTimeout = setTimeout(() => {
+            inner.style.opacity = '0';
+            inner.style.transform = 'translateY(-18px)';
+            setTimeout(() => { wrap.style.display = 'none'; }, 380);
+          }, 3200);
+        }
+
         // ── Status helper ──────────────────────────────────────────────────
         function setStatus(icon, colorClass, text) {
           const iconEl = document.getElementById('wash-status-icon');
@@ -9147,6 +9195,11 @@
             const textEl = document.getElementById('wash-status-text');
             if (textEl && textEl.textContent === 'Wash starting…') {
               setStatus('fa-check-circle', 'text-success', 'Wash started!');
+              showBanner('Wash Started!', '<i class="fas fa-check-circle"></i>', '#1b5e20', '#ffffff');
+              clearTimeout(statusTimeout);
+              statusTimeout = setTimeout(() => setStatus('fa-circle', 'text-secondary', 'Ready'), 4000);
+            } else if (textEl && textEl.textContent === 'Stopping wash…') {
+              setStatus('fa-stop-circle', 'text-danger', 'Wash stopped!');
               clearTimeout(statusTimeout);
               statusTimeout = setTimeout(() => setStatus('fa-circle', 'text-secondary', 'Ready'), 4000);
             }
@@ -9180,7 +9233,29 @@
           try {
             // 1. Push command to RTDB for the ESP32
             await commandRef.set({ wash_type: washType, status: 'pending' });
-            setStatus('fa-hourglass-half', 'text-warning', 'Wash starting…');
+            setStatus(
+              washType === 'Reset' ? 'fa-stop-circle' : 'fa-hourglass-half',
+              washType === 'Reset' ? 'text-danger'    : 'text-warning',
+              washType === 'Reset' ? 'Stopping wash…' : 'Wash starting…'
+            );
+
+            // Show "selected" banner immediately
+            const BANNER_COLORS = {
+              Premium:  { bg: '#1b5e20', icon: '<i class="fas fa-star"></i>',         label: 'Premium — $10' },
+              Deluxe:   { bg: '#0d47a1', icon: '<i class="fas fa-gem"></i>',           label: 'Deluxe — $9'   },
+              Standard: { bg: '#e65100', icon: '<i class="fas fa-check-circle"></i>',  label: 'Standard — $8' },
+              Basic:    { bg: '#4a148c', icon: '<i class="fas fa-tint"></i>',          label: 'Basic — $7'    },
+              Reset:    { bg: '#b71c1c', icon: '<i class="fas fa-stop-circle"></i>',   label: 'Reset'         },
+              '6':      { bg: '#37474f', icon: '<i class="fas fa-plug"></i>',          label: 'Extra 6'       },
+              '7':      { bg: '#37474f', icon: '<i class="fas fa-plug"></i>',          label: 'Extra 7'       },
+              '8':      { bg: '#37474f', icon: '<i class="fas fa-plug"></i>',          label: 'Extra 8'       },
+            };
+            const bc = BANNER_COLORS[washType] || { bg: '#37474f', icon: '<i class="fas fa-water"></i>', label: washType };
+            if (washType === 'Reset') {
+              showBanner('Wash Stopped', bc.icon, bc.bg, '#ffffff');
+            } else {
+              showBanner(`${bc.label} Selected`, bc.icon, bc.bg, '#ffffff');
+            }
 
             if (!user) return; // no user = no logging
 
