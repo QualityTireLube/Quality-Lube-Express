@@ -9115,6 +9115,22 @@
         let lastWashTime   = null; // JS Date of that wash
         let allLogs        = [];   // cached for client-side filter
 
+        // Resolve a human name for the logged-in user from admin_users Firestore doc.
+        // Falls back gracefully so it never returns an email or raw UID.
+        async function resolveDisplayName(user) {
+          try {
+            const doc = await db.collection('admin_users').doc(user.uid).get();
+            if (doc.exists) {
+              const name = doc.data().displayName || '';
+              // If the stored value looks like an email address, skip it
+              if (name && !name.includes('@')) return name;
+            }
+          } catch (_) { /* non-blocking */ }
+          // Firebase Auth displayName (set during registration or profile update)
+          if (user.displayName && !user.displayName.includes('@')) return user.displayName;
+          return 'Unknown User';
+        }
+
         // ── Status helper ──────────────────────────────────────────────────
         function setStatus(icon, colorClass, text) {
           const iconEl = document.getElementById('wash-status-icon');
@@ -9168,7 +9184,7 @@
 
             if (!user) return; // no user = no logging
 
-            const userDisplayName = user.displayName || user.email || user.uid;
+            const userDisplayName = await resolveDisplayName(user);
             const now = new Date();
 
             if (washType === 'Reset') {
@@ -9297,7 +9313,7 @@
             logsSnap.forEach(doc => {
               const d = { id: doc.id, ...doc.data() };
               allLogs.push(d);
-              if (d.userId) usersMap[d.userId] = d.userDisplayName || d.userEmail || d.userId;
+              if (d.userId) usersMap[d.userId] = d.userDisplayName || 'Unknown User';
             });
 
             // Populate user filter dropdown
@@ -9327,7 +9343,7 @@
                   <div class="col-12 col-sm-6 col-md-4">
                     <div class="rounded-3 border p-3">
                       <div class="fw-semibold mb-2 text-truncate">
-                        <i class="fas fa-user-circle me-1 text-muted"></i>${s.userDisplayName || s.userEmail || s.id}
+                        <i class="fas fa-user-circle me-1 text-muted"></i>${s.userDisplayName || 'Unknown User'}
                       </div>
                       <div class="d-flex gap-3">
                         <span>
@@ -9395,7 +9411,7 @@
             return `
               <tr${l.cancelled ? ' style="opacity:0.5"' : ''}>
                 <td><small class="text-muted">${ts}</small></td>
-                <td><small>${l.userDisplayName || l.userEmail || l.userId || '—'}</small></td>
+                <td><small>${l.userDisplayName || 'Unknown User'}</small></td>
                 <td>${badge}${cancelNote}</td>
               </tr>`;
           }).join('');
