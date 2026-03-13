@@ -55,11 +55,17 @@
       
       /* Tab Navigation */
       #dashboardTabs {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          overflow: visible;
+          padding-bottom: 8px;
+        }
+        #dashboardTabs .nav-item {
+          margin-bottom: 0;
+        }
+        #dashboardTabs .nav-link {
+          height: 100%;
       }
       #dashboardTabs::-webkit-scrollbar { display: none; }
       .nav-tabs .nav-link {
@@ -2389,6 +2395,18 @@
       }
 
       @media (max-width: 768px) {
+        #dashboardTabs {
+          flex-wrap: nowrap;
+          gap: 0;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding-bottom: 0;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+        #dashboardTabs .nav-item {
+          flex: 0 0 auto;
+        }
         .label-cards-grid {
           grid-template-columns: 1fr;
         }
