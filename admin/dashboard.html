@@ -4604,11 +4604,33 @@
           <div class="row justify-content-center">
             <div class="col-12 col-md-8 col-lg-6">
 
-              <div class="d-flex align-items-center mb-4">
-                <i class="fas fa-water fa-lg me-3 text-primary"></i>
-                <div>
-                  <h5 class="mb-0">Wash Controller</h5>
-                  <small class="text-muted">Send a wash command to the car wash machine via Firebase</small>
+              <!-- Header row with title + logs button -->
+              <div class="d-flex align-items-center justify-content-between mb-4">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-water fa-lg me-3 text-primary"></i>
+                  <div>
+                    <h5 class="mb-0">Wash Controller</h5>
+                    <small class="text-muted">Send a wash command to the car wash machine via Firebase</small>
+                  </div>
+                </div>
+                <button class="btn btn-outline-info btn-sm" onclick="WashController.openLogs()">
+                  <i class="fas fa-history me-1"></i>Wash Logs
+                </button>
+              </div>
+
+              <!-- Stats Bar -->
+              <div class="row g-2 mb-4">
+                <div class="col-6">
+                  <div class="rounded-3 p-3 text-center" style="background:#e8f5e9;border:1px solid #c8e6c9;">
+                    <div class="fw-bold fs-4 text-success" id="wash-stat-total">—</div>
+                    <small class="text-muted">Total Washes</small>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="rounded-3 p-3 text-center" style="background:#fce4ec;border:1px solid #f8bbd0;">
+                    <div class="fw-bold fs-4 text-danger" id="wash-stat-resets">—</div>
+                    <small class="text-muted">Total Resets</small>
+                  </div>
                 </div>
               </div>
 
@@ -4681,6 +4703,57 @@
 
       </div>
     </div>
+
+    <!-- ─── Wash Logs Modal ──────────────────────────────────────────────── -->
+    <div class="modal fade" id="washLogsModal" tabindex="-1">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-history me-2 text-info"></i>Wash Logs</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+
+            <!-- Per-User Stats Cards -->
+            <div class="mb-1">
+              <span class="fw-semibold small text-muted text-uppercase letter-spacing-1">
+                <i class="fas fa-chart-bar me-1"></i>User Stats
+              </span>
+            </div>
+            <div class="row g-2 mb-4" id="wash-logs-stats">
+              <div class="col-12 text-muted small py-2">Loading stats…</div>
+            </div>
+
+            <!-- Filter + Refresh row -->
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+              <label class="fw-semibold mb-0 text-nowrap" style="font-size:.9rem;">
+                <i class="fas fa-filter me-1 text-muted"></i>Filter by user:
+              </label>
+              <select class="form-select form-select-sm" id="wash-logs-user-filter"
+                      style="max-width:220px;" onchange="WashController.filterLogs()">
+                <option value="">All Users</option>
+              </select>
+              <button class="btn btn-outline-secondary btn-sm" onclick="WashController.refreshLogs()">
+                <i class="fas fa-sync-alt me-1"></i>Refresh
+              </button>
+              <span id="wash-logs-count" class="ms-auto text-muted small"></span>
+            </div>
+
+            <!-- Logs Table -->
+            <div id="wash-logs-table-wrap">
+              <div class="text-center text-muted py-5">
+                <i class="fas fa-spinner fa-spin me-2"></i>Loading…
+              </div>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ─── End Wash Logs Modal ───────────────────────────────────────────── -->
 
     <!-- QR Code Viewer Modal -->
     <div class="modal fade" id="stickerQrModal" tabindex="-1">
@@ -9022,18 +9095,36 @@
         const rtdb = firebase.database();
         const commandRef = rtdb.ref('carwash/command');
 
-        let statusTimeout = null;
+        // Wash types that count toward the total (not utility/reset commands)
+        const COUNTED_WASH_TYPES = ['Premium', 'Deluxe', 'Standard', 'Basic'];
 
+        // Badge colors per wash type for the logs table
+        const WASH_COLORS = {
+          Premium:  '#4CAF50',
+          Deluxe:   '#2196F3',
+          Standard: '#FF9800',
+          Basic:    '#9C27B0',
+          Reset:    '#f44336',
+          '6':      '#607d8b',
+          '7':      '#607d8b',
+          '8':      '#607d8b',
+        };
+
+        let statusTimeout  = null;
+        let lastWashLogId  = null; // Firestore doc ID of the most recent counted wash
+        let lastWashTime   = null; // JS Date of that wash
+        let allLogs        = [];   // cached for client-side filter
+
+        // ── Status helper ──────────────────────────────────────────────────
         function setStatus(icon, colorClass, text) {
-          const box = document.getElementById('wash-status-box');
           const iconEl = document.getElementById('wash-status-icon');
           const textEl = document.getElementById('wash-status-text');
-          if (!box) return;
+          if (!iconEl) return;
           iconEl.innerHTML = `<i class="fas ${icon} ${colorClass}"></i>`;
           textEl.textContent = text;
         }
 
-        // Real-time listener: when the command is cleared by the ESP32, relay fired
+        // ── RTDB listener (ESP32 clears node when relay fires) ─────────────
         commandRef.on('value', (snapshot) => {
           const data = snapshot.val();
           if (!data) {
@@ -9046,18 +9137,115 @@
           }
         });
 
+        // ── Load overall stats into the stats bar ──────────────────────────
+        async function loadStats() {
+          try {
+            const snap = await db.collection('washStats').get();
+            let totalWashes = 0, totalResets = 0;
+            snap.forEach(doc => {
+              const d = doc.data();
+              totalWashes += (d.totalWashes || 0);
+              totalResets += (d.resetCount  || 0);
+            });
+            const totalEl  = document.getElementById('wash-stat-total');
+            const resetEl  = document.getElementById('wash-stat-resets');
+            if (totalEl) totalEl.textContent = totalWashes;
+            if (resetEl) resetEl.textContent = totalResets;
+          } catch (e) {
+            console.warn('WashController: could not load stats', e);
+          }
+        }
+
+        // ── Send a command ─────────────────────────────────────────────────
         async function send(washType) {
           setStatus('fa-spinner fa-spin', 'text-primary', `Sending ${washType}…`);
+          const user = auth.currentUser;
+
           try {
+            // 1. Push command to RTDB for the ESP32
             await commandRef.set({ wash_type: washType, status: 'pending' });
             setStatus('fa-hourglass-half', 'text-warning', 'Wash starting…');
+
+            if (!user) return; // no user = no logging
+
+            const userDisplayName = user.displayName || user.email || user.uid;
+            const now = new Date();
+
+            if (washType === 'Reset') {
+              // Check if the last counted wash was within the past 5 minutes
+              const fiveMinAgo = now.getTime() - 5 * 60 * 1000;
+              const shouldCancel = lastWashLogId && lastWashTime && lastWashTime.getTime() > fiveMinAgo;
+
+              // Log the reset event
+              await db.collection('washLogs').add({
+                userId:           user.uid,
+                userEmail:        user.email,
+                userDisplayName,
+                washType:         'Reset',
+                timestamp:        firebase.firestore.FieldValue.serverTimestamp(),
+                isReset:          true,
+                cancelled:        false,
+                cancelledLogId:   shouldCancel ? lastWashLogId : null,
+              });
+
+              const statsRef = db.collection('washStats').doc(user.uid);
+
+              if (shouldCancel) {
+                // Mark the original wash log as cancelled
+                await db.collection('washLogs').doc(lastWashLogId).update({
+                  cancelled:   true,
+                  cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+                // Decrement wash count + increment reset count
+                await statsRef.set({
+                  userId: user.uid, userEmail: user.email, userDisplayName,
+                  totalWashes: firebase.firestore.FieldValue.increment(-1),
+                  resetCount:  firebase.firestore.FieldValue.increment(1),
+                }, { merge: true });
+                lastWashLogId = null;
+                lastWashTime  = null;
+              } else {
+                // Reset pressed but no recent wash to cancel — only count the reset
+                await statsRef.set({
+                  userId: user.uid, userEmail: user.email, userDisplayName,
+                  resetCount: firebase.firestore.FieldValue.increment(1),
+                }, { merge: true });
+              }
+
+            } else if (COUNTED_WASH_TYPES.includes(washType)) {
+              // Log the counted wash event
+              const logRef = await db.collection('washLogs').add({
+                userId:          user.uid,
+                userEmail:       user.email,
+                userDisplayName,
+                washType,
+                timestamp:       firebase.firestore.FieldValue.serverTimestamp(),
+                isReset:         false,
+                cancelled:       false,
+                cancelledAt:     null,
+              });
+
+              lastWashLogId = logRef.id;
+              lastWashTime  = now;
+
+              // Increment wash count
+              await db.collection('washStats').doc(user.uid).set({
+                userId: user.uid, userEmail: user.email, userDisplayName,
+                totalWashes: firebase.firestore.FieldValue.increment(1),
+              }, { merge: true });
+            }
+
+            // Refresh the stats bar
+            loadStats();
+
           } catch (err) {
             setStatus('fa-exclamation-circle', 'text-danger', `Error: ${err.message}`);
           }
         }
 
+        // ── RFID customer lookup (unchanged) ───────────────────────────────
         async function lookupCustomer() {
-          const tagId = (document.getElementById('wash-rfid-input')?.value || '').trim();
+          const tagId   = (document.getElementById('wash-rfid-input')?.value || '').trim();
           const resultEl = document.getElementById('wash-customer-result');
           if (!tagId) return;
 
@@ -9070,15 +9258,6 @@
               return;
             }
             const { wash_type, remaining_washes } = snap.val();
-            document.getElementById('wash-customer-name').textContent = `Tag: ${tagId}`;
-            document.getElementById('wash-customer-washes').textContent =
-              `${remaining_washes ?? 0} wash${remaining_washes === 1 ? '' : 'es'} remaining`;
-            document.getElementById('wash-customer-plan').textContent =
-              `Wash type: ${wash_type ?? 'N/A'}`;
-            resultEl.innerHTML = '';
-            resultEl.style.display = 'none';
-
-            // Re-build result cleanly
             resultEl.innerHTML = `
               <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="fw-semibold"><i class="fas fa-id-badge me-1 text-muted"></i>Tag: ${tagId}</span>
@@ -9092,7 +9271,154 @@
           }
         }
 
-        return { send, lookupCustomer };
+        // ── Open the Wash Logs overlay ─────────────────────────────────────
+        async function openLogs() {
+          const modal = new bootstrap.Modal(document.getElementById('washLogsModal'));
+          modal.show();
+          await refreshLogs();
+        }
+
+        // ── Fetch logs + stats and render everything ───────────────────────
+        async function refreshLogs() {
+          const wrap      = document.getElementById('wash-logs-table-wrap');
+          const statsWrap = document.getElementById('wash-logs-stats');
+          if (wrap) wrap.innerHTML = '<div class="text-center text-muted py-5"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</div>';
+
+          try {
+            // Load last 300 log entries ordered newest-first
+            const logsSnap = await db.collection('washLogs')
+              .orderBy('timestamp', 'desc')
+              .limit(300)
+              .get();
+
+            allLogs = [];
+            const usersMap = {}; // uid → displayName
+
+            logsSnap.forEach(doc => {
+              const d = { id: doc.id, ...doc.data() };
+              allLogs.push(d);
+              if (d.userId) usersMap[d.userId] = d.userDisplayName || d.userEmail || d.userId;
+            });
+
+            // Populate user filter dropdown
+            const filterEl = document.getElementById('wash-logs-user-filter');
+            if (filterEl) {
+              const currentVal = filterEl.value;
+              filterEl.innerHTML = '<option value="">All Users</option>';
+              Object.entries(usersMap).forEach(([uid, name]) => {
+                const opt = document.createElement('option');
+                opt.value = uid;
+                opt.textContent = name;
+                if (uid === currentVal) opt.selected = true;
+                filterEl.appendChild(opt);
+              });
+            }
+
+            // Load per-user stats for the stats panel
+            const statsSnap = await db.collection('washStats').get();
+            const statsArr  = [];
+            statsSnap.forEach(doc => statsArr.push({ id: doc.id, ...doc.data() }));
+
+            if (statsWrap) {
+              if (statsArr.length === 0) {
+                statsWrap.innerHTML = '<div class="col-12 text-muted small">No stats yet.</div>';
+              } else {
+                statsWrap.innerHTML = statsArr.map(s => `
+                  <div class="col-12 col-sm-6 col-md-4">
+                    <div class="rounded-3 border p-3">
+                      <div class="fw-semibold mb-2 text-truncate">
+                        <i class="fas fa-user-circle me-1 text-muted"></i>${s.userDisplayName || s.userEmail || s.id}
+                      </div>
+                      <div class="d-flex gap-3">
+                        <span>
+                          <span class="fw-bold text-success fs-5">${s.totalWashes || 0}</span>
+                          <small class="text-muted ms-1">washes</small>
+                        </span>
+                        <span>
+                          <span class="fw-bold text-danger fs-5">${s.resetCount || 0}</span>
+                          <small class="text-muted ms-1">resets</small>
+                        </span>
+                      </div>
+                    </div>
+                  </div>`).join('');
+              }
+            }
+
+            renderLogsTable(allLogs);
+
+          } catch (err) {
+            if (wrap) wrap.innerHTML = `<div class="text-danger p-3"><i class="fas fa-exclamation-circle me-1"></i>${err.message}</div>`;
+          }
+        }
+
+        // ── Client-side filter by selected user ────────────────────────────
+        function filterLogs() {
+          const filterEl = document.getElementById('wash-logs-user-filter');
+          const userId   = filterEl ? filterEl.value : '';
+          const filtered = userId ? allLogs.filter(l => l.userId === userId) : allLogs;
+          renderLogsTable(filtered);
+        }
+
+        // ── Render logs into the table ─────────────────────────────────────
+        function renderLogsTable(logs) {
+          const wrap    = document.getElementById('wash-logs-table-wrap');
+          const countEl = document.getElementById('wash-logs-count');
+          if (!wrap) return;
+
+          const counted = logs.filter(l => COUNTED_WASH_TYPES.includes(l.washType) && !l.cancelled).length;
+          if (countEl) countEl.textContent = `${logs.length} event${logs.length !== 1 ? 's' : ''} · ${counted} completed wash${counted !== 1 ? 'es' : ''}`;
+
+          if (logs.length === 0) {
+            wrap.innerHTML = '<div class="text-center text-muted py-4">No logs found.</div>';
+            return;
+          }
+
+          const rows = logs.map(l => {
+            const ts    = l.timestamp ? new Date(l.timestamp.seconds * 1000).toLocaleString() : '—';
+            const color = WASH_COLORS[l.washType] || '#607d8b';
+
+            let badge;
+            if (l.cancelled) {
+              badge = `<span class="badge" style="background:#9e9e9e">${l.washType} <i class="fas fa-ban ms-1"></i></span>`;
+            } else if (l.isReset) {
+              badge = `<span class="badge" style="background:#f44336"><i class="fas fa-redo me-1"></i>Reset</span>`;
+            } else {
+              badge = `<span class="badge" style="background:${color}">${l.washType}</span>`;
+            }
+
+            const cancelNote = l.cancelled
+              ? `<br><small class="text-muted"><i class="fas fa-undo me-1"></i>Cancelled by reset — not counted</small>`
+              : (l.isReset && l.cancelledLogId
+                ? `<br><small class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>Removed previous wash from count</small>`
+                : '');
+
+            return `
+              <tr${l.cancelled ? ' style="opacity:0.5"' : ''}>
+                <td><small class="text-muted">${ts}</small></td>
+                <td><small>${l.userDisplayName || l.userEmail || l.userId || '—'}</small></td>
+                <td>${badge}${cancelNote}</td>
+              </tr>`;
+          }).join('');
+
+          wrap.innerHTML = `
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="white-space:nowrap">Time</th>
+                    <th>User</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>`;
+        }
+
+        // Initialize stats bar when the module loads
+        loadStats();
+
+        return { send, lookupCustomer, openLogs, refreshLogs, filterLogs };
       })();
     </script>
     <!-- ─── End Wash Controller Module ───────────────────────────────────── -->
