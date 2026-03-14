@@ -24,7 +24,9 @@ const PRINT_CLIENT_TOKEN = process.env.PRINT_CLIENT_TOKEN || '';
 const allowedOrigins = [
   'https://qualitytirelube.com',
   'https://www.qualitytirelube.com',
+  'https://main.d1jdc96l1z02o7.amplifyapp.com',  // Inspectionapp AWS Amplify
   'http://localhost',
+  'http://localhost:3000',  // Inspectionapp dev
   'http://localhost:7010'   // Print Client dashboard
 ];
 
