@@ -2002,7 +2002,7 @@ const LabelSystem = {
         const tokenEl    = document.getElementById('label-print-token');
         const autoSaveEl = document.getElementById('label-auto-save');
         if (copiesEl)   copiesEl.value   = settings.defaultCopies || 1;
-        if (paperEl)    paperEl.value    = settings.defaultPaperSize || 'Brother-QL800';
+        if (paperEl)    paperEl.value    = settings.defaultPaperSize || DEFAULT_PAPER_SIZE;
         if (serverEl)   serverEl.value   = settings.printServerUrl || 'https://us-central1-qualityexpress-c19f2.cloudfunctions.net/printApi';
         if (tokenEl)    tokenEl.value    = settings.printClientToken || 'ql-print-2024';
         if (autoSaveEl) autoSaveEl.checked = settings.autoSaveEnabled !== false;
