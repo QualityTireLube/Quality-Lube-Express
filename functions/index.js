@@ -89,7 +89,7 @@ app.get('/health', (_req, res) => {
 // POST /api/print/jobs — create
 app.post('/api/print/jobs', authMiddleware, async (req, res) => {
   try {
-    const { templateName, formName, printer, printerName, printerId, copies, pdfData, labelData, paperSize, locationId } = req.body;
+    const { templateName, formName, printer, printerName, printerId, copies, pdfData, labelData, paperSize, orientation, locationId } = req.body;
     if (!pdfData) return res.status(400).json({ error: 'pdfData (base64 PDF) is required' });
 
     const resolvedName = templateName || formName || 'Unnamed';
@@ -104,6 +104,7 @@ app.post('/api/print/jobs', authMiddleware, async (req, res) => {
       pdfData,
       labelData: labelData || {},
       paperSize: paperSize || 'Brother-QL800',
+      orientation: orientation || 'landscape',
       locationId: locationId || null,
       status: 'pending',
       createdAt: new Date().toISOString(),
