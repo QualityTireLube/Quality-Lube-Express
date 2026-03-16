@@ -16,12 +16,12 @@
 // ============================================================
 
 const PAPER_SIZES = {
-  '29mmx90mm':       { name: 'Brother DK1201 (90×29mm)', width: 90, height: 29, unit: 'mm' },
-  'Brother-QL800':   { name: 'Brother QL-800 (62×29mm)', width: 62, height: 29, unit: 'mm' },
-  'Dymo-TwinTurbo':  { name: 'Dymo Twin Turbo (89×36mm)', width: 89, height: 36, unit: 'mm' },
-  'Dymo-30252':      { name: 'Dymo 30252 (89×28mm)', width: 89, height: 28, unit: 'mm' },
-  'Brother-DK2205':  { name: 'Brother DK-2205 (62mm cont.)', width: 62, height: 100, unit: 'mm' },
-  'Zebra-2x1':       { name: 'Zebra 2×1" (51×25mm)', width: 51, height: 25, unit: 'mm' }
+  '29mmx90mm':       { name: 'Brother DK1201 (90×29mm)',      width: 90,  height: 29,  unit: 'mm', cupsMedia: 'DC29x90mm' },
+  'Brother-QL800':   { name: 'Brother QL-800 (62×29mm)',      width: 62,  height: 29,  unit: 'mm', cupsMedia: 'DC29x62mm' },
+  'Dymo-TwinTurbo':  { name: 'Dymo Twin Turbo (89×36mm)',     width: 89,  height: 36,  unit: 'mm', cupsMedia: 'Custom.89x36mm' },
+  'Dymo-30252':      { name: 'Dymo 30252 (89×28mm)',          width: 89,  height: 28,  unit: 'mm', cupsMedia: 'Custom.89x28mm' },
+  'Brother-DK2205':  { name: 'Brother DK-2205 (62mm cont.)',  width: 62,  height: 100, unit: 'mm', cupsMedia: 'DC62mm' },
+  'Zebra-2x1':       { name: 'Zebra 2×1" (51×25mm)',          width: 51,  height: 25,  unit: 'mm', cupsMedia: 'Custom.51x25mm' }
 };
 
 const DEFAULT_PAPER_SIZE = '29mmx90mm';
@@ -1816,7 +1816,7 @@ const LabelSystem = {
           copies: copies,
           pdfData: base64Pdf,
           templateName: template.labelName,
-          paperSize: selectedPaperSize,
+          paperSize: (PAPER_SIZES[selectedPaperSize] && PAPER_SIZES[selectedPaperSize].cupsMedia) || selectedPaperSize,
           labelData: this.creatorLabelData
         })
       });
@@ -2712,7 +2712,7 @@ const LabelSystem = {
           printerId, printerName: systemName, copies: 1,
           pdfData: base64Pdf,
           templateName: template.labelName,
-          paperSize: paperKey,
+          paperSize: (PAPER_SIZES[paperKey] && PAPER_SIZES[paperKey].cupsMedia) || paperKey,
           labelData: this.clmLabelData
         })
       });
@@ -2967,7 +2967,7 @@ const LabelSystem = {
           printerId, printerName: systemName, copies: 1,
           pdfData: base64Pdf,
           templateName: template.labelName,
-          paperSize: paperKey,
+          paperSize: (PAPER_SIZES[paperKey] && PAPER_SIZES[paperKey].cupsMedia) || paperKey,
           labelData: label.fields
         })
       });
@@ -3468,7 +3468,7 @@ const LabelSystem = {
           printerId, printerName: systemName, copies: 1,
           pdfData: base64Pdf,
           templateName: 'Oil Change Sticker - ' + sticker.vin,
-          paperSize: paperKey,
+          paperSize: (PAPER_SIZES[paperKey] && PAPER_SIZES[paperKey].cupsMedia) || paperKey,
           labelData: { vin: sticker.vin, oilType: sticker.oilTypeName, mileage: sticker.mileage, templateId: sticker.templateId }
         })
       });
@@ -4137,7 +4137,7 @@ const StickerSystem = {
           printerId, printerName: systemName, copies,
           pdfData: base64Pdf,
           templateName: 'Oil Change Sticker - ' + data.vin,
-          paperSize: paperKey,
+          paperSize: (PAPER_SIZES[paperKey] && PAPER_SIZES[paperKey].cupsMedia) || paperKey,
           labelData: {
             vin: data.vin, oilType: data.oilTypeName,
             mileage: data.mileage, qrCode: data.qrCode,
