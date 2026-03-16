@@ -174,13 +174,32 @@ const LabelPdfGenerator = {
     if (!paperConfig) throw new Error('Unknown paper size: ' + template.paperSize);
 
     const mmToPoints = (mm) => mm * 2.834645669;
-    const pageWidth = mmToPoints(paperConfig.width);
-    const pageHeight = mmToPoints(paperConfig.height);
+    const contentWidth = mmToPoints(paperConfig.width);
+    const contentHeight = mmToPoints(paperConfig.height);
+
+    // For landscape labels (width > height), generate a portrait PDF so that
+    // label printers (Brother QL-800) receive a page whose dimensions match
+    // the physical tape feed without needing CUPS to rotate.  A coordinate
+    // transform maps the landscape editor layout into the portrait page.
+    const isLandscape = paperConfig.width > paperConfig.height;
+    const canTransform = !!(PDFLib.pushGraphicsState && PDFLib.translate && PDFLib.rotateDegrees && PDFLib.popGraphicsState);
+    const usePortrait = isLandscape && canTransform;
+
+    const pdfPageW = usePortrait ? contentHeight : contentWidth;
+    const pdfPageH = usePortrait ? contentWidth  : contentHeight;
 
     copies = copies || 1;
 
     for (let copy = 0; copy < copies; copy++) {
-      const page = pdfDoc.addPage([pageWidth, pageHeight]);
+      const page = pdfDoc.addPage([pdfPageW, pdfPageH]);
+
+      if (usePortrait) {
+        page.pushOperators(
+          PDFLib.pushGraphicsState(),
+          PDFLib.translate(pdfPageW, 0),
+          PDFLib.rotateDegrees(90)
+        );
+      }
 
       for (const field of template.fields) {
         const value = this.getFieldValue(field, labelData);
@@ -188,8 +207,8 @@ const LabelPdfGenerator = {
 
         const canvasWidth = 400;
         const canvasHeight = Math.round((paperConfig.height / paperConfig.width) * canvasWidth);
-        const scaleX = pageWidth / canvasWidth;
-        const scaleY = pageHeight / canvasHeight;
+        const scaleX = contentWidth / canvasWidth;
+        const scaleY = contentHeight / canvasHeight;
 
         const selectedFont = (field.fontFamily && (field.fontFamily.includes('bold') || field.fontFamily.includes('Bold')))
           ? boldFont : font;
@@ -203,10 +222,9 @@ const LabelPdfGenerator = {
           case 'right': x = x - textWidth; break;
         }
 
-        const y = pageHeight - (field.position.y * scaleY) - fontSize;
+        const y = contentHeight - (field.position.y * scaleY) - fontSize;
 
         const rotation = field.rotation || 0;
-        const rotateRadians = (rotation * Math.PI) / 180;
 
         page.drawText(value, {
           x, y,
@@ -215,6 +233,10 @@ const LabelPdfGenerator = {
           color: this.parseColor(field.color || '#000000'),
           rotate: PDFLib.degrees(rotation)
         });
+      }
+
+      if (usePortrait) {
+        page.pushOperators(PDFLib.popGraphicsState());
       }
     }
 
