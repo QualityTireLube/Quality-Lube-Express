@@ -1,0 +1,11 @@
+{
+  "PRINT_SERVER": "https://192.168.0.134:5001",
+  "LOGIN_URL": "https://192.168.0.134:5001/api/login",
+  "CLIENT_ID": "4fe57552-7ec3-432a-a5b4-f5a69ab8726e",
+  "CLIENT_NAME": "Quality Lube Express (Main Office)?",
+  "LOCATION_ID": "",
+  "USE_DYNAMIC_IP": false,
+  "USE_CLOUD_WEBSOCKET": false,
+  "PRINT_CLIENT_EMAIL": "a@a.com",
+  "PRINT_CLIENT_PASSWORD": "123456"
+}
