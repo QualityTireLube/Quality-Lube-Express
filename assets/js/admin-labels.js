@@ -2915,7 +2915,11 @@ const LabelSystem = {
     const template = this.templates.find(t => t.id === label.templateId);
     if (!template) { alert('Template not found — it may have been deleted.'); return; }
     const copies = parseInt((label.fields && label.fields['Copies to be Printed']) || '1') || 1;
-    LabelPdfGenerator.generateLabelPdf(template, label.fields, copies).then(pdfBytes => {
+    let savedSettings = {};
+    try { savedSettings = JSON.parse(localStorage.getItem('labelSettings') || '{}'); } catch(e) {}
+    const paperKey = savedSettings.defaultPaperSize || template.paperSize || DEFAULT_PAPER_SIZE;
+    const effectiveTemplate = Object.assign({}, template, { paperSize: paperKey });
+    LabelPdfGenerator.generateLabelPdf(effectiveTemplate, label.fields, copies).then(pdfBytes => {
       LabelPdfGenerator.openPdfInNewTab(pdfBytes);
     }).catch(err => { alert('PDF failed: ' + err.message); });
   },
@@ -2927,8 +2931,12 @@ const LabelSystem = {
     if (!template) { alert('Template not found — it may have been deleted.'); return; }
 
     try {
+      let savedSettings = {};
+      try { savedSettings = JSON.parse(localStorage.getItem('labelSettings') || '{}'); } catch(e) {}
+      const paperKey = savedSettings.defaultPaperSize || template.paperSize || DEFAULT_PAPER_SIZE;
+      const effectiveTemplate = Object.assign({}, template, { paperSize: paperKey });
       const copies = parseInt((label.fields && label.fields['Copies to be Printed']) || '1') || 1;
-      const pdfBytes = await LabelPdfGenerator.generateLabelPdf(template, label.fields, copies);
+      const pdfBytes = await LabelPdfGenerator.generateLabelPdf(effectiveTemplate, label.fields, copies);
 
       if (this.testMode) {
         this.addTestLog('success', 'LABEL PRINT INTERCEPTED — Template: "' + template.labelName + '"');
