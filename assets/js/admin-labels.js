@@ -73,9 +73,11 @@ function createField(name, yPosition) {
   };
 }
 
+// Canvas coordinate system uses a 400-wide reference (matches canvas-editor.js)
+const CANVAS_REF_WIDTH = 400;
 const CUSTOM_PAPER_SIZE = {
-  width: inchesToPixels(3.5),  // 336
-  height: inchesToPixels(1.1)  // 106
+  width: CANVAS_REF_WIDTH,
+  height: Math.round((PAPER_SIZES[DEFAULT_PAPER_SIZE].height / PAPER_SIZES[DEFAULT_PAPER_SIZE].width) * CANVAS_REF_WIDTH)
 };
 
 // Predefined templates
@@ -184,6 +186,9 @@ const LabelPdfGenerator = {
     const isLandscape = paperConfig.width > paperConfig.height;
     const canTransform = !!(PDFLib.pushGraphicsState && PDFLib.translate && PDFLib.rotateDegrees && PDFLib.popGraphicsState);
     const usePortrait = isLandscape && canTransform;
+    if (isLandscape && !canTransform) {
+      console.warn('[LabelPdf] pdf-lib operators missing — landscape PDF will be sent to printer, CUPS may rotate it sideways');
+    }
 
     const pdfPageW = usePortrait ? contentHeight : contentWidth;
     const pdfPageH = usePortrait ? contentWidth  : contentHeight;
@@ -2941,7 +2946,7 @@ const LabelSystem = {
     const copies = parseInt((label.fields && label.fields['Copies to be Printed']) || '1') || 1;
     let savedSettings = {};
     try { savedSettings = JSON.parse(localStorage.getItem('labelSettings') || '{}'); } catch(e) {}
-    const paperKey = savedSettings.defaultPaperSize || template.paperSize || DEFAULT_PAPER_SIZE;
+    const paperKey = template.paperSize || savedSettings.defaultPaperSize || DEFAULT_PAPER_SIZE;
     const effectiveTemplate = Object.assign({}, template, { paperSize: paperKey });
     LabelPdfGenerator.generateLabelPdf(effectiveTemplate, label.fields, copies).then(pdfBytes => {
       LabelPdfGenerator.openPdfInNewTab(pdfBytes);
@@ -2957,7 +2962,7 @@ const LabelSystem = {
     try {
       let savedSettings = {};
       try { savedSettings = JSON.parse(localStorage.getItem('labelSettings') || '{}'); } catch(e) {}
-      const paperKey = savedSettings.defaultPaperSize || template.paperSize || DEFAULT_PAPER_SIZE;
+      const paperKey = template.paperSize || savedSettings.defaultPaperSize || DEFAULT_PAPER_SIZE;
       const effectiveTemplate = Object.assign({}, template, { paperSize: paperKey });
       const copies = parseInt((label.fields && label.fields['Copies to be Printed']) || '1') || 1;
       const pdfBytes = await LabelPdfGenerator.generateLabelPdf(effectiveTemplate, label.fields, copies);
