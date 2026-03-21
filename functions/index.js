@@ -114,6 +114,17 @@ app.post('/api/print/jobs', authMiddleware, async (req, res) => {
     };
 
     await db.collection(JOBS_COL).doc(id).set(job);
+
+    // Wake up the Print Client instantly via RTDB instead of waiting for next poll
+    try {
+      await admin.database().ref('printers/pendingSignal').set({
+        jobId: id,
+        t: new Date().toISOString()
+      });
+    } catch (rtdbErr) {
+      console.warn('RTDB wake-up signal failed (non-blocking):', rtdbErr.message);
+    }
+
     console.log(`Job created: ${id} — ${resolvedName}`);
     res.status(201).json({ id, status: 'pending', message: 'Print job queued' });
   } catch (err) {

@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "carwash": {
+      "command": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "printers": {
+      "pendingSignal": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
