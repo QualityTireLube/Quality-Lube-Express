@@ -356,6 +356,9 @@ const LabelSystem = {
   dragState: null,            // for canvas field dragging
   testMode: false,            // test mode — intercepts prints, shows PDF preview instead
   testLog: [],                // test mode log entries
+  _printJobsFilter: 'all',   // active tab filter for Print Jobs card
+  _printJobsInterval: null,  // auto-refresh interval handle
+  _printJobsCache: [],       // last-fetched jobs array
 
   // ============================================================
   // INITIALIZATION
@@ -372,6 +375,9 @@ const LabelSystem = {
 
     // Auto-connect to print server on init
     this.testPrintClientConnection();
+
+    // Start Print Jobs live feed
+    this.initPrintJobs();
 
     // Refresh SSE status whenever the Print Server Settings modal opens
     const psModal = document.getElementById('printSettingsModal');
@@ -2033,6 +2039,161 @@ const LabelSystem = {
       alert('Clean Up failed: ' + (err.message || err));
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-broom"></i> Clean Up'; }
+    }
+  },
+
+  // ============================================================
+  // PRINT JOBS LIVE FEED
+  // ============================================================
+
+  initPrintJobs() {
+    this.refreshPrintJobs();
+    if (this._printJobsInterval) clearInterval(this._printJobsInterval);
+    this._printJobsInterval = setInterval(() => this.refreshPrintJobs(), 5000);
+  },
+
+  setPrintJobsFilter(filter) {
+    this._printJobsFilter = filter;
+    ['all', 'pending', 'printing', 'completed', 'failed'].forEach(f => {
+      const btn = document.getElementById('pj-tab-' + f);
+      if (btn) btn.classList.toggle('active', f === filter);
+    });
+    this._renderPrintJobsList(this._printJobsCache);
+  },
+
+  async refreshPrintJobs() {
+    const listEl = document.getElementById('pj-jobs-list');
+    if (!listEl) return;
+    const printClientUrl = this.getPrintClientUrl();
+    try {
+      const resp = await fetch(printClientUrl + '/api/print/jobs', {
+        method: 'GET', mode: 'cors',
+        headers: this.getPrintClientHeaders(false)
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      const jobs = Array.isArray(data) ? data : (data.jobs || []);
+      this._printJobsCache = jobs;
+      this._renderPrintJobsList(jobs);
+    } catch (err) {
+      if (!listEl.querySelector('.pj-row')) {
+        listEl.innerHTML = '<p class="pj-empty mb-0"><i class="fas fa-exclamation-circle me-1 text-warning"></i>Cannot reach print server — ' + this.escHtml(err.message) + '</p>';
+      }
+    }
+  },
+
+  _renderPrintJobsList(jobs) {
+    const listEl = document.getElementById('pj-jobs-list');
+    if (!listEl) return;
+
+    // Update tab counts
+    const counts = { all: jobs.length, pending: 0, printing: 0, completed: 0, failed: 0 };
+    jobs.forEach(j => { if (counts[j.status] !== undefined) counts[j.status]++; });
+    Object.keys(counts).forEach(k => {
+      const el = document.getElementById('pj-count-' + k);
+      if (el) el.textContent = counts[k] > 0 ? '(' + counts[k] + ')' : '';
+    });
+
+    const filter  = this._printJobsFilter;
+    const visible = filter === 'all' ? jobs : jobs.filter(j => j.status === filter);
+
+    if (visible.length === 0) {
+      const msg = filter === 'all' ? 'No print jobs in the queue.' : 'No ' + filter + ' jobs.';
+      listEl.innerHTML = '<p class="pj-empty mb-0"><i class="fas fa-check-circle me-1 text-success"></i>' + msg + '</p>';
+      return;
+    }
+
+    // Sort: active work first, then by newest
+    const order = { pending: 0, printing: 1, failed: 2, completed: 3 };
+    visible.sort((a, b) => {
+      const od = (order[a.status] ?? 9) - (order[b.status] ?? 9);
+      return od !== 0 ? od : (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+
+    const now = Date.now();
+    listEl.innerHTML = visible.map(j => {
+      const jobId   = j.id || j._docId;
+      const status  = j.status || 'pending';
+      const name    = this.escHtml(j.templateName || j.formName || 'Untitled');
+      const printer = this.escHtml(j.printerName || j.printer || j.printerId || '—');
+      const copies  = j.copies > 1 ? ' <span style="color:#888;">×' + j.copies + '</span>' : '';
+      const age     = j.createdAt ? this._pjRelTime(new Date(j.createdAt), now) : '—';
+      const errMsg  = j.errorMessage ? this.escHtml(j.errorMessage) : '';
+
+      return '<div class="pj-row">' +
+        '<span class="pj-badge pj-badge-' + status + '">' + status.charAt(0).toUpperCase() + status.slice(1) + '</span>' +
+        '<span class="pj-row-name" title="' + name + '">' + name + copies + '</span>' +
+        (errMsg
+          ? '<span class="pj-row-error" title="' + errMsg + '"><i class="fas fa-exclamation-circle me-1"></i>' + errMsg + '</span>'
+          : '<span class="pj-row-printer" title="' + printer + '"><i class="fas fa-print me-1" style="color:#aaa;font-size:10px;"></i>' + printer + '</span>'
+        ) +
+        '<span class="pj-row-time">' + age + '</span>' +
+        '<span class="pj-row-actions">' +
+          (status === 'failed'
+            ? '<button class="pj-btn-retry" onclick="LabelSystem.retryJob(\'' + jobId + '\')" title="Retry job"><i class="fas fa-redo"></i></button>'
+            : '') +
+          '<button class="pj-btn-del" onclick="LabelSystem.deleteJob(\'' + jobId + '\')" title="Delete"><i class="fas fa-trash"></i></button>' +
+        '</span>' +
+      '</div>';
+    }).join('');
+  },
+
+  _pjRelTime(date, now) {
+    const s = Math.floor((now - date) / 1000);
+    if (s < 5)   return 'just now';
+    if (s < 60)  return s + 's ago';
+    const m = Math.floor(s / 60);
+    if (m < 60)  return m + 'm ago';
+    const h = Math.floor(m / 60);
+    if (h < 24)  return h + 'h ago';
+    return Math.floor(h / 24) + 'd ago';
+  },
+
+  async retryJob(jobId) {
+    const printClientUrl = this.getPrintClientUrl();
+    try {
+      const resp = await fetch(printClientUrl + '/api/print/jobs/' + jobId + '/retry', {
+        method: 'POST', mode: 'cors',
+        headers: this.getPrintClientHeaders(false)
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      this.refreshPrintJobs();
+    } catch (err) {
+      alert('Retry failed: ' + err.message);
+    }
+  },
+
+  async deleteJob(jobId) {
+    if (!confirm('Delete this print job?')) return;
+    const printClientUrl = this.getPrintClientUrl();
+    try {
+      const resp = await fetch(printClientUrl + '/api/print/jobs/' + jobId, {
+        method: 'DELETE', mode: 'cors',
+        headers: this.getPrintClientHeaders(false)
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      this.refreshPrintJobs();
+    } catch (err) {
+      alert('Delete failed: ' + err.message);
+    }
+  },
+
+  async clearCompletedJobs() {
+    const btn = document.getElementById('pj-clear-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing…'; }
+    const printClientUrl = this.getPrintClientUrl();
+    try {
+      const resp = await fetch(printClientUrl + '/api/print/jobs/clear', {
+        method: 'DELETE', mode: 'cors',
+        headers: this.getPrintClientHeaders(false)
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      this.refreshPrintJobs();
+    } catch (err) {
+      alert('Failed to clear completed jobs: ' + err.message);
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-broom"></i> CLEAR DONE'; }
     }
   },
 

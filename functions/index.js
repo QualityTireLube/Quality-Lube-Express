@@ -286,6 +286,26 @@ app.post('/api/print/jobs/:id/fail', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/print/jobs/:id/retry — reset a failed job back to pending so it can be re-attempted
+app.post('/api/print/jobs/:id/retry', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ref = db.collection(JOBS_COL).doc(id);
+    const doc = await ref.get();
+    if (!doc.exists) return res.status(404).json({ error: 'Job not found' });
+    await ref.update({
+      status:       'pending',
+      claimedBy:    null,
+      claimedAt:    null,
+      errorMessage: null,
+      retriedAt:    new Date().toISOString(),
+    });
+    res.json({ message: 'Job reset to pending' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE /api/print/jobs/:id
 app.delete('/api/print/jobs/:id', authMiddleware, async (req, res) => {
   try {
