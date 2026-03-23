@@ -360,6 +360,7 @@ const LabelSystem = {
   _printJobsInterval: null,  // auto-refresh interval handle
   _printJobsCache: [],       // last-fetched jobs array
   _lastSseReconnect: 0,      // timestamp of last forced SSE reconnect
+  _lastTunnelUrl: null,      // most recently seen Cloudflare tunnel URL for the active client
 
   // ============================================================
   // INITIALIZATION
@@ -2129,6 +2130,9 @@ const LabelSystem = {
       chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#fff3cd;color:#856404;';
     }
 
+    // Cache tunnel URL so forceReconnectSse can use it
+    this._lastTunnelUrl = client.tunnelUrl || null;
+
     // Cloudflare Tunnel chip
     if (tunnelChip) {
       const tunnelUrl = client.tunnelUrl;
@@ -2154,6 +2158,9 @@ const LabelSystem = {
     const client = onlineClients && onlineClients[0];
     if (!client) return;
 
+    // Only attempt reconnect if we have a tunnel URL to reach the Flask server
+    if (!client.tunnelUrl) return;
+
     // If SSE is already reported as down, the chip already shows that — no action needed
     // (the print client will reconnect on its own via its reconnect loop)
     if (client.rtdbConnected !== true) return;
@@ -2177,20 +2184,29 @@ const LabelSystem = {
   },
 
   async forceReconnectSse(silent) {
-    const printClientUrl = this.getPrintClientUrl();
-    const hdrs = this.getPrintClientHeaders(false);
+    // /api/polling/stop and /api/polling/start are Flask routes on the LOCAL print client.
+    // They are only reachable via the Cloudflare Tunnel URL, not the Cloud Function URL.
+    const tunnelUrl = this._lastTunnelUrl;
     const chip = document.getElementById('pj-sse-chip');
+
+    if (!tunnelUrl) {
+      const msg = 'Cannot reconnect: no Cloudflare Tunnel URL registered for this client.\n\nHave your boss run setup_cloudflared.command and restart the print client.';
+      if (!silent) alert(msg);
+      else console.warn('[LabelSystem] forceReconnectSse: no tunnelUrl available');
+      return;
+    }
 
     if (chip) {
       chip.textContent = '⟳ RECONNECTING SSE...';
       chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#fff3cd;color:#856404;';
     }
 
+    const hdrs = this.getPrintClientHeaders(false);
     try {
-      await fetch(printClientUrl + '/api/polling/stop',  { method: 'POST', mode: 'cors', headers: hdrs });
+      await fetch(tunnelUrl + '/api/polling/stop',  { method: 'POST', mode: 'cors', headers: hdrs });
       await new Promise(r => setTimeout(r, 600));
-      await fetch(printClientUrl + '/api/polling/start', { method: 'POST', mode: 'cors', headers: hdrs });
-      if (!silent) alert('Print client SSE reconnected.');
+      await fetch(tunnelUrl + '/api/polling/start', { method: 'POST', mode: 'cors', headers: hdrs });
+      if (!silent) alert('Print client reconnected.');
     } catch (e) {
       console.warn('[LabelSystem] SSE force-reconnect failed:', e.message);
       if (!silent) alert('Reconnect failed: ' + e.message);
