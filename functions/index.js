@@ -78,6 +78,37 @@ const JOBS_COL     = 'printJobs';
 const PRINTERS_COL = 'printers';
 const CLIENTS_COL  = 'printClients';
 
+// ─── Cloudflare Tunnel direct-push helper ──────────────────────────
+// Looks up the client's registered tunnel URL from Firestore and POSTs
+// the job payload directly to the print client Flask server.
+// Returns true if the push was accepted (HTTP 2xx), false otherwise.
+// Callers fall back to the RTDB wake signal when this returns false.
+async function tryTunnelPush(clientId, jobPayload) {
+  if (!clientId) return false;
+  try {
+    const snap = await db.collection(CLIENTS_COL).doc(clientId).get();
+    const tunnelUrl = snap.exists ? snap.data().tunnelUrl : null;
+    if (!tunnelUrl) return false;
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    try {
+      const r = await fetch(`${tunnelUrl}/api/print/jobs/receive`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+        body:    JSON.stringify(jobPayload),
+        signal:  ctrl.signal,
+      });
+      return r.ok;
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (e) {
+    console.warn(`Tunnel push to ${clientId} failed (will use RTDB fallback):`, e.message);
+    return false;
+  }
+}
+
 async function readAll(collection) {
   const snap = await db.collection(collection).get();
   return snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
@@ -121,14 +152,31 @@ app.post('/api/print/jobs', authMiddleware, async (req, res) => {
 
     await db.collection(JOBS_COL).doc(id).set(job);
 
-    // Wake up the Print Client instantly via RTDB instead of waiting for next poll
-    try {
-      await admin.database().ref('printers/pendingSignal').set({
-        jobId: id,
-        t: new Date().toISOString()
-      });
-    } catch (rtdbErr) {
-      console.warn('RTDB wake-up signal failed (non-blocking):', rtdbErr.message);
+    // Resolve which print client owns this printer so we can push directly via tunnel
+    let targetClientId = null;
+    if (job.printerId) {
+      const pDoc = await db.collection(PRINTERS_COL).doc(job.printerId).get();
+      if (pDoc.exists) targetClientId = pDoc.data().clientId || null;
+    }
+    if (!targetClientId && job.printer) {
+      const pSnap = await db.collection(PRINTERS_COL)
+        .where('systemName', '==', job.printer).limit(1).get();
+      if (!pSnap.empty) targetClientId = pSnap.docs[0].data().clientId || null;
+    }
+
+    // Try instant delivery via Cloudflare Tunnel; fall back to RTDB signal if unavailable
+    const pushed = await tryTunnelPush(targetClientId, { ...job, id });
+    if (!pushed) {
+      try {
+        await admin.database().ref('printers/pendingSignal').set({
+          jobId: id,
+          t: new Date().toISOString()
+        });
+      } catch (rtdbErr) {
+        console.warn('RTDB wake-up signal failed (non-blocking):', rtdbErr.message);
+      }
+    } else {
+      console.log(`Job ${id} delivered directly via Cloudflare Tunnel to ${targetClientId}`);
     }
 
     console.log(`Job created: ${id} — ${resolvedName}`);
@@ -310,8 +358,22 @@ app.post('/api/print/jobs/:id/resume', authMiddleware, async (req, res) => {
     if (doc.data().status !== 'paused')
       return res.status(409).json({ error: 'Only paused jobs can be resumed' });
     await ref.update({ status: 'pending', pausedAt: null });
-    // Wake up print client immediately
-    await admin.database().ref('printers/pendingSignal').set({ jobId: id, ts: Date.now() });
+
+    const jobData = doc.data();
+    let resumeClientId = null;
+    if (jobData.printerId) {
+      const pDoc = await db.collection(PRINTERS_COL).doc(jobData.printerId).get();
+      if (pDoc.exists) resumeClientId = pDoc.data().clientId || null;
+    }
+    if (!resumeClientId && jobData.printer) {
+      const pSnap = await db.collection(PRINTERS_COL)
+        .where('systemName', '==', jobData.printer).limit(1).get();
+      if (!pSnap.empty) resumeClientId = pSnap.docs[0].data().clientId || null;
+    }
+    const pushed = await tryTunnelPush(resumeClientId, { ...jobData, id, status: 'pending' });
+    if (!pushed) {
+      await admin.database().ref('printers/pendingSignal').set({ jobId: id, ts: Date.now() });
+    }
     res.json({ message: 'Job resumed' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -380,8 +442,29 @@ app.post('/api/print/jobs/:id/reprint', authMiddleware, async (req, res) => {
       reprintOf:    id,
     });
 
-    // Wake up the print client immediately
-    await admin.database().ref('printers/pendingSignal').set({ jobId: newId, ts: Date.now() });
+    const reprintJob = { id: newId, templateName: data.templateName || null,
+      formName: data.formName || null, printer: data.printer || null,
+      printerId: data.printerId || null, copies: data.copies || 1,
+      pdfData: data.pdfData, labelData: data.labelData || {},
+      paperSize: data.paperSize || null, orientation: data.orientation || 'landscape',
+      locationId: data.locationId || null, status: 'pending',
+      createdAt: new Date().toISOString(), reprintOf: id };
+
+    let targetClientId = null;
+    if (data.printerId) {
+      const pDoc = await db.collection(PRINTERS_COL).doc(data.printerId).get();
+      if (pDoc.exists) targetClientId = pDoc.data().clientId || null;
+    }
+    if (!targetClientId && data.printer) {
+      const pSnap = await db.collection(PRINTERS_COL)
+        .where('systemName', '==', data.printer).limit(1).get();
+      if (!pSnap.empty) targetClientId = pSnap.docs[0].data().clientId || null;
+    }
+
+    const pushed = await tryTunnelPush(targetClientId, reprintJob);
+    if (!pushed) {
+      await admin.database().ref('printers/pendingSignal').set({ jobId: newId, ts: Date.now() });
+    }
     res.json({ message: 'Reprint job queued', newJobId: newId });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -725,7 +808,7 @@ app.delete('/api/print/logs', authMiddleware, async (_req, res) => {
 // POST /api/print/clients/heartbeat — Print Client periodic heartbeat
 app.post('/api/print/clients/heartbeat', authMiddleware, async (req, res) => {
   try {
-    const { clientId, printerCount, stats, rtdbConnected, sseWakes, fallbackWakes } = req.body;
+    const { clientId, printerCount, stats, rtdbConnected, sseWakes, fallbackWakes, tunnelUrl } = req.body;
     if (!clientId) return res.status(400).json({ error: 'clientId required' });
 
     const ref = db.collection(CLIENTS_COL).doc(clientId);
@@ -737,6 +820,7 @@ app.post('/api/print/clients/heartbeat', authMiddleware, async (req, res) => {
       rtdbConnected: rtdbConnected === true,
       sseWakes:      sseWakes      ?? null,
       fallbackWakes: fallbackWakes ?? null,
+      tunnelUrl:     tunnelUrl     || null,
     }, { merge: true });
     res.json({ message: 'heartbeat ok' });
   } catch (err) {
