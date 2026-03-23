@@ -301,7 +301,9 @@ app.post('/api/print/jobs/:id/complete', authMiddleware, async (req, res) => {
     const doc = await ref.get();
     if (!doc.exists) return res.status(404).json({ error: 'Job not found' });
 
-    await ref.update({ status: 'completed', completedAt: new Date().toISOString(), printDetails: printDetails || {}, pdfData: admin.firestore.FieldValue.delete() });
+    await ref.update({ status: 'completed', completedAt: new Date().toISOString(), printDetails: printDetails || {} });
+    // pdfData is intentionally kept so View and Reprint work on completed jobs.
+    // Jobs are cleaned up explicitly via DELETE /api/print/jobs/clear.
     console.log(`Job ${id} completed`);
     res.json({ message: 'Job completed' });
   } catch (err) {

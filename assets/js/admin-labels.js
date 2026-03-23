@@ -2435,8 +2435,12 @@ const LabelSystem = {
   },
 
   async _reprintFromLabelData(job) {
-    // Try to find the original template so we can regenerate the PDF
-    const template = (this.templates || []).find(t => t.labelName === job.templateName);
+    // Try to find the original template by exact name, then by prefix match
+    // (job names are often "Template Name - VIN" so the template is the prefix)
+    const templates = this.templates || [];
+    const jobName   = job.templateName || job.formName || '';
+    const template  = templates.find(t => t.labelName === jobName)
+      || templates.find(t => jobName.startsWith(t.labelName + ' - ') || jobName.startsWith(t.labelName + '-'));
     if (!template) {
       alert(
         'Cannot reprint: the PDF was removed after printing and the original template "' +
