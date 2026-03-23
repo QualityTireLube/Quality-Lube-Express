@@ -306,6 +306,56 @@ app.post('/api/print/jobs/:id/retry', authMiddleware, async (req, res) => {
   }
 });
 
+// GET /api/print/jobs/:id — single job including pdfData (for View / Reprint)
+app.get('/api/print/jobs/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await db.collection(JOBS_COL).doc(id).get();
+    if (!doc.exists) return res.status(404).json({ error: 'Job not found' });
+    res.json({ id, ...doc.data() });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/print/jobs/:id/reprint — clone a job as a new pending job
+// If pdfData was already deleted (completed jobs), returns 422 with job metadata
+// so the browser can regenerate the PDF from labelData + template.
+app.post('/api/print/jobs/:id/reprint', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await db.collection(JOBS_COL).doc(id).get();
+    if (!doc.exists) return res.status(404).json({ error: 'Job not found' });
+    const data = doc.data();
+
+    if (!data.pdfData) {
+      // PDF was cleared after printing — return metadata so client can regenerate
+      const { pdfData: _dropped, ...meta } = data;
+      return res.status(422).json({ error: 'pdfData no longer stored', job: { id, ...meta } });
+    }
+
+    const newId = uuidv4();
+    await db.collection(JOBS_COL).doc(newId).set({
+      templateName: data.templateName || null,
+      formName:     data.formName     || null,
+      printer:      data.printer      || null,
+      printerName:  data.printerName  || null,
+      printerId:    data.printerId    || null,
+      copies:       data.copies       || 1,
+      pdfData:      data.pdfData,
+      labelData:    data.labelData    || {},
+      paperSize:    data.paperSize    || null,
+      orientation:  data.orientation  || 'landscape',
+      locationId:   data.locationId   || null,
+      status:       'pending',
+      createdAt:    new Date().toISOString(),
+      reprintOf:    id,
+    });
+
+    // Wake up the print client immediately
+    await admin.database().ref('printers/pendingSignal').set({ jobId: newId, ts: Date.now() });
+    res.json({ message: 'Reprint job queued', newJobId: newId });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // DELETE /api/print/jobs/:id
 app.delete('/api/print/jobs/:id', authMiddleware, async (req, res) => {
   try {

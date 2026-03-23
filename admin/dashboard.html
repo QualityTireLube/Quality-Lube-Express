@@ -1551,10 +1551,12 @@
       .pj-row-error   { color:#842029; font-size:11px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
       .pj-row-time    { color:#999; font-size:11px; min-width:64px; text-align:right; flex-shrink:0; }
       .pj-row-actions { display:flex; gap:4px; flex-shrink:0; }
-      .pj-btn-retry { padding:2px 8px; font-size:11px; border:1px solid #0a58ca; color:#0a58ca; background:transparent; border-radius:4px; cursor:pointer; }
-      .pj-btn-retry:hover { background:#e8f0fe; }
-      .pj-btn-del   { padding:2px 6px; font-size:11px; border:1px solid #dc3545; color:#dc3545; background:transparent; border-radius:4px; cursor:pointer; }
-      .pj-btn-del:hover { background:#fff0f0; }
+      .pj-btn-view    { padding:2px 7px; font-size:11px; border:1px solid #6c757d; color:#6c757d; background:transparent; border-radius:4px; cursor:pointer; }
+      .pj-btn-view:hover    { background:#f5f5f5; }
+      .pj-btn-reprint { padding:2px 7px; font-size:11px; border:1px solid #0a58ca; color:#0a58ca; background:transparent; border-radius:4px; cursor:pointer; }
+      .pj-btn-reprint:hover { background:#e8f0fe; }
+      .pj-btn-del     { padding:2px 6px; font-size:11px; border:1px solid #dc3545; color:#dc3545; background:transparent; border-radius:4px; cursor:pointer; }
+      .pj-btn-del:hover     { background:#fff0f0; }
       .pj-empty { font-size:13px; color:#888; }
 
       /* ===== Content Area ===== */
@@ -9606,6 +9608,50 @@
       })();
     </script>
     <!-- ─── End Wash Controller Module ───────────────────────────────────── -->
+
+  <!-- ── Print Job View Modal ── -->
+  <div class="modal fade" id="printJobViewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title mb-0">
+            <i class="fas fa-print me-2 text-primary"></i>
+            <span id="pjvm-title">Print Job</span>
+            <span id="pjvm-status-badge" class="ms-2"></span>
+          </h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0" style="min-height:480px;">
+          <div class="row g-0 h-100">
+            <!-- Left: metadata -->
+            <div class="col-md-4 border-end p-4" id="pjvm-meta">
+              <div class="text-center text-muted py-4">
+                <i class="fas fa-spinner fa-spin fa-lg d-block mb-2"></i>Loading…
+              </div>
+            </div>
+            <!-- Right: PDF preview -->
+            <div class="col-md-8 d-flex flex-column align-items-center justify-content-center bg-light p-3" id="pjvm-preview-col" style="min-height:480px;">
+              <div id="pjvm-preview" class="text-center text-muted w-100 h-100 d-flex align-items-center justify-content-center">
+                <span><i class="fas fa-spinner fa-spin fa-2x d-block mb-2"></i>Loading PDF…</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="pjvm-download-btn" style="display:none;" onclick="LabelSystem.downloadJobPdf()">
+            <i class="fas fa-download me-1"></i>Download PDF
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-warning" id="pjvm-retry-btn" style="display:none;" onclick="LabelSystem.retryJob(LabelSystem._viewingJobId)">
+            <i class="fas fa-undo me-1"></i>Retry (reset to pending)
+          </button>
+          <button type="button" class="btn btn-sm btn-primary" id="pjvm-reprint-btn" onclick="LabelSystem.reprintJob(LabelSystem._viewingJobId)">
+            <i class="fas fa-redo me-1"></i>Reprint
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   </body>
 </html>

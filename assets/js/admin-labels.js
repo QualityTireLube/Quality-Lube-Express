@@ -2141,9 +2141,8 @@ const LabelSystem = {
         ) +
         '<span class="pj-row-time">' + age + '</span>' +
         '<span class="pj-row-actions">' +
-          (status === 'failed'
-            ? '<button class="pj-btn-retry" onclick="LabelSystem.retryJob(\'' + jobId + '\')" title="Retry job"><i class="fas fa-redo"></i></button>'
-            : '') +
+          '<button class="pj-btn-view" onclick="LabelSystem.viewJob(\'' + jobId + '\')" title="View details &amp; PDF"><i class="fas fa-eye"></i></button>' +
+          '<button class="pj-btn-reprint" onclick="LabelSystem.reprintJob(\'' + jobId + '\')" title="Reprint"><i class="fas fa-redo"></i></button>' +
           '<button class="pj-btn-del" onclick="LabelSystem.deleteJob(\'' + jobId + '\')" title="Delete"><i class="fas fa-trash"></i></button>' +
         '</span>' +
       '</div>';
@@ -2161,6 +2160,184 @@ const LabelSystem = {
     return Math.floor(h / 24) + 'd ago';
   },
 
+  // ── Job currently open in the View modal ──
+  _viewingJobId: null,
+  _viewingJobPdfUrl: null,
+
+  async viewJob(jobId) {
+    this._viewingJobId = jobId;
+    if (this._viewingJobPdfUrl) { URL.revokeObjectURL(this._viewingJobPdfUrl); this._viewingJobPdfUrl = null; }
+
+    const modalEl = document.getElementById('printJobViewModal');
+    if (!modalEl) return;
+    const modal = bootstrap.Modal.getOrCreate(modalEl);
+    modal.show();
+
+    // Reset modal to loading state
+    document.getElementById('pjvm-title').textContent = 'Print Job';
+    document.getElementById('pjvm-status-badge').innerHTML = '';
+    document.getElementById('pjvm-meta').innerHTML =
+      '<div class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin fa-lg d-block mb-2"></i>Loading…</div>';
+    document.getElementById('pjvm-preview').innerHTML =
+      '<span><i class="fas fa-spinner fa-spin fa-2x d-block mb-2"></i>Loading PDF…</span>';
+    const dlBtn     = document.getElementById('pjvm-download-btn');
+    const retryBtn  = document.getElementById('pjvm-retry-btn');
+    if (dlBtn)    dlBtn.style.display    = 'none';
+    if (retryBtn) retryBtn.style.display = 'none';
+
+    try {
+      const resp = await fetch(this.getPrintClientUrl() + '/api/print/jobs/' + jobId, {
+        method: 'GET', mode: 'cors', headers: this.getPrintClientHeaders(false)
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const job = await resp.json();
+
+      const status  = job.status || 'unknown';
+      const name    = job.templateName || job.formName || 'Print Job';
+      const printer = job.printerName || job.printer || job.printerId || '—';
+      const copies  = job.copies || 1;
+
+      document.getElementById('pjvm-title').textContent = name;
+      document.getElementById('pjvm-status-badge').innerHTML =
+        '<span class="pj-badge pj-badge-' + status + '">' + status.charAt(0).toUpperCase() + status.slice(1) + '</span>';
+
+      // Show Retry button for failed jobs
+      if (retryBtn) retryBtn.style.display = status === 'failed' ? '' : 'none';
+
+      // Metadata panel
+      const fmtDate = d => d ? new Date(d).toLocaleString() : '—';
+      const rows = [
+        ['Printer',    this.escHtml(printer)],
+        ['Copies',     copies],
+        ['Paper',      job.paperSize ? this.escHtml(job.paperSize) : null],
+        ['Orientation',job.orientation ? this.escHtml(job.orientation) : null],
+        ['Created',    fmtDate(job.createdAt)],
+        ['Completed',  job.completedAt ? fmtDate(job.completedAt) : null],
+        ['Claimed by', job.claimedBy ? this.escHtml(job.claimedBy) : null],
+        ['Reprint of', job.reprintOf ? '<code style="font-size:10px;">' + this.escHtml(job.reprintOf.slice(0,8)) + '…</code>' : null],
+      ].filter(r => r[1] !== null);
+
+      document.getElementById('pjvm-meta').innerHTML =
+        '<dl class="row g-1 mb-0" style="font-size:13px;">' +
+        rows.map(([k, v]) =>
+          '<dt class="col-5 text-muted fw-normal">' + k + '</dt><dd class="col-7 mb-1">' + v + '</dd>'
+        ).join('') +
+        '</dl>' +
+        (job.errorMessage
+          ? '<div class="alert alert-danger p-2 mt-3 mb-0" style="font-size:12px;">' +
+            '<strong>Error:</strong> ' + this.escHtml(job.errorMessage) + '</div>'
+          : '') +
+        (job.labelData && Object.keys(job.labelData).length
+          ? '<div class="mt-3"><div class="text-muted mb-1" style="font-size:11px;font-weight:600;">LABEL DATA</div>' +
+            '<pre class="bg-light rounded p-2 mb-0" style="font-size:10px;max-height:140px;overflow:auto;">' +
+            this.escHtml(JSON.stringify(job.labelData, null, 2)) + '</pre></div>'
+          : '');
+
+      // PDF preview
+      if (job.pdfData) {
+        try {
+          const bytes = Uint8Array.from(atob(job.pdfData), c => c.charCodeAt(0));
+          const blob  = new Blob([bytes], { type: 'application/pdf' });
+          this._viewingJobPdfUrl = URL.createObjectURL(blob);
+          document.getElementById('pjvm-preview').innerHTML =
+            '<iframe src="' + this._viewingJobPdfUrl + '#toolbar=1" ' +
+            'style="width:100%;height:520px;border:none;" title="PDF Preview"></iframe>';
+          if (dlBtn) dlBtn.style.display = '';
+        } catch (e) {
+          document.getElementById('pjvm-preview').innerHTML =
+            '<div class="text-warning"><i class="fas fa-exclamation-triangle me-1"></i>Could not render PDF</div>';
+        }
+      } else {
+        document.getElementById('pjvm-preview').innerHTML =
+          '<div class="text-center text-muted py-5">' +
+          '<i class="fas fa-file-pdf fa-3x mb-3 d-block opacity-25"></i>' +
+          '<div>PDF removed after printing</div>' +
+          '<small class="text-muted">Use Reprint to regenerate from label data</small></div>';
+      }
+    } catch (err) {
+      document.getElementById('pjvm-meta').innerHTML =
+        '<div class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>' + this.escHtml(err.message) + '</div>';
+      document.getElementById('pjvm-preview').innerHTML = '';
+    }
+  },
+
+  downloadJobPdf() {
+    if (!this._viewingJobPdfUrl) return;
+    const a = document.createElement('a');
+    a.href     = this._viewingJobPdfUrl;
+    a.download = (document.getElementById('pjvm-title')?.textContent || 'print-job') + '.pdf';
+    a.click();
+  },
+
+  async reprintJob(jobId) {
+    if (!jobId) return;
+    const printClientUrl = this.getPrintClientUrl();
+    try {
+      const resp = await fetch(printClientUrl + '/api/print/jobs/' + jobId + '/reprint', {
+        method: 'POST', mode: 'cors', headers: this.getPrintClientHeaders(false)
+      });
+
+      if (resp.ok) {
+        // Cloned successfully from stored pdfData
+        const modalEl = document.getElementById('printJobViewModal');
+        if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+        this.refreshPrintJobs();
+        return;
+      }
+
+      if (resp.status === 422) {
+        // PDF was cleared — attempt client-side regeneration from labelData
+        const { job } = await resp.json();
+        await this._reprintFromLabelData(job);
+        return;
+      }
+
+      throw new Error('HTTP ' + resp.status);
+    } catch (err) {
+      alert('Reprint failed: ' + err.message);
+    }
+  },
+
+  async _reprintFromLabelData(job) {
+    // Try to find the original template so we can regenerate the PDF
+    const template = (this.templates || []).find(t => t.labelName === job.templateName);
+    if (!template) {
+      alert(
+        'Cannot reprint: the PDF was removed after printing and the original template "' +
+        (job.templateName || '(unknown)') + '" could not be found.\n\n' +
+        'Please recreate the label manually.'
+      );
+      return;
+    }
+    try {
+      const copies   = job.copies || 1;
+      const pdfBytes = await LabelPdfGenerator.generateLabelPdf(template, job.labelData || {}, copies);
+      const base64   = this.uint8ArrayToBase64(pdfBytes);
+      const resp = await fetch(this.getPrintClientUrl() + '/api/print/jobs', {
+        method: 'POST', mode: 'cors',
+        headers: this.getPrintClientHeaders(true),
+        body: JSON.stringify({
+          templateName: job.templateName,
+          printer:      job.printer     || null,
+          printerName:  job.printerName || null,
+          printerId:    job.printerId   || null,
+          copies,
+          pdfData:      base64,
+          labelData:    job.labelData   || {},
+          paperSize:    job.paperSize   || null,
+          orientation:  job.orientation || 'landscape',
+          reprintOf:    job.id,
+        })
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const modalEl = document.getElementById('printJobViewModal');
+      if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+      this.refreshPrintJobs();
+    } catch (err) {
+      alert('Reprint (regenerated) failed: ' + err.message);
+    }
+  },
+
   async retryJob(jobId) {
     const printClientUrl = this.getPrintClientUrl();
     try {
@@ -2170,6 +2347,9 @@ const LabelSystem = {
       });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       this.refreshPrintJobs();
+      // Update the modal retry button state if open
+      const retryBtn = document.getElementById('pjvm-retry-btn');
+      if (retryBtn) retryBtn.style.display = 'none';
     } catch (err) {
       alert('Retry failed: ' + err.message);
     }
