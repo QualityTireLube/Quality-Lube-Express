@@ -11,7 +11,11 @@ const cors      = require('cors');
 const { v4: uuidv4 } = require('uuid');
 
 // ─── Firebase init ─────────────────────────────────────────────────
-admin.initializeApp();
+// firebase-admin v10+ requires databaseURL to be explicit; it is no longer
+// inferred from the project ID at runtime.
+admin.initializeApp({
+  databaseURL: 'https://qualityexpress-c19f2-default-rtdb.firebaseio.com'
+});
 const db = admin.firestore();
 
 const app = express();
