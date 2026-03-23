@@ -563,7 +563,7 @@ app.delete('/api/print/logs', authMiddleware, async (_req, res) => {
 // POST /api/print/clients/heartbeat — Print Client periodic heartbeat
 app.post('/api/print/clients/heartbeat', authMiddleware, async (req, res) => {
   try {
-    const { clientId, printerCount, stats } = req.body;
+    const { clientId, printerCount, stats, rtdbConnected } = req.body;
     if (!clientId) return res.status(400).json({ error: 'clientId required' });
 
     const ref = db.collection(CLIENTS_COL).doc(clientId);
@@ -571,7 +571,8 @@ app.post('/api/print/clients/heartbeat', authMiddleware, async (req, res) => {
       lastSeen: new Date().toISOString(),
       printerCount: printerCount || 0,
       stats: stats || {},
-      status: 'online'
+      status: 'online',
+      rtdbConnected: rtdbConnected === true
     }, { merge: true });
     res.json({ message: 'heartbeat ok' });
   } catch (err) {
