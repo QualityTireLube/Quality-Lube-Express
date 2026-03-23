@@ -339,14 +339,24 @@ app.get('/api/print/stats/polling', authMiddleware, statsHandler);
 app.get('/api/print/printers', authMiddleware, async (req, res) => {
   try {
     const all = await readAll(PRINTERS_COL);
-    // Deduplicate by systemName — keep the most recently seen entry
+    // Deduplicate by systemName — a currently connected printer (heartbeat < 2 min)
+    // always wins over a stale one with the same name, regardless of timestamp.
+    // Only if both have the same connection state do we fall back to most-recent.
+    const cutoff2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     const seen = {};
     for (const p of all) {
       const key = (p.systemName || p.name || '').toLowerCase();
       if (!key) continue;
       const prev = seen[key];
-      if (!prev || (p.lastSeen && (!prev.lastSeen || p.lastSeen > prev.lastSeen))) {
-        seen[key] = p;
+      if (!prev) { seen[key] = p; continue; }
+      const pConn    = p.lastSeen    >= cutoff2min;
+      const prevConn = prev.lastSeen >= cutoff2min;
+      if (pConn && !prevConn) {
+        seen[key] = p;                                     // p connected, prev stale → take p
+      } else if (!pConn && prevConn) {
+        // prev connected, p stale → keep prev (do nothing)
+      } else if (p.lastSeen && (!prev.lastSeen || p.lastSeen > prev.lastSeen)) {
+        seen[key] = p;                                     // same state → prefer more recent
       }
     }
     res.json(Object.values(seen));

@@ -1691,8 +1691,15 @@ const LabelSystem = {
           locationId: p.locationId || null,
           lastSeen: p.lastSeen || null
         }));
+        // Filter to connected-only first (heartbeat < 2 min), THEN deduplicate.
+        // This ensures a connected printer is never dropped in favour of a stale
+        // duplicate that happens to have a newer stored timestamp.
+        const cutoffConnected = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+        const connectedPrinters = mapped.filter(p =>
+          p.lastSeen && p.lastSeen >= cutoffConnected
+        );
         const seen = {};
-        for (const p of mapped) {
+        for (const p of connectedPrinters) {
           const key = (p.systemName || p.name || '').toLowerCase();
           if (!key) continue;
           const prev = seen[key];
@@ -1700,11 +1707,7 @@ const LabelSystem = {
             seen[key] = p;
           }
         }
-        // Only surface printers whose client is currently connected (heartbeat < 2 min)
-        const cutoffConnected = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-        this.printClientPrinters = Object.values(seen).filter(p =>
-          p.lastSeen && p.lastSeen >= cutoffConnected
-        );
+        this.printClientPrinters = Object.values(seen);
 
         bar.classList.remove('disconnected');
         if (!this.testMode) bar.classList.remove('test-mode');
