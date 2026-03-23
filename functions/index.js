@@ -339,24 +339,14 @@ app.get('/api/print/stats/polling', authMiddleware, statsHandler);
 app.get('/api/print/printers', authMiddleware, async (req, res) => {
   try {
     const all = await readAll(PRINTERS_COL);
-    // Deduplicate by systemName — a currently connected printer (heartbeat < 2 min)
-    // always wins over a stale one with the same name, regardless of timestamp.
-    // Only if both have the same connection state do we fall back to most-recent.
-    const cutoff2min = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    // Deduplicate by systemName — keep the most recently seen entry
     const seen = {};
     for (const p of all) {
       const key = (p.systemName || p.name || '').toLowerCase();
       if (!key) continue;
       const prev = seen[key];
-      if (!prev) { seen[key] = p; continue; }
-      const pConn    = p.lastSeen    >= cutoff2min;
-      const prevConn = prev.lastSeen >= cutoff2min;
-      if (pConn && !prevConn) {
-        seen[key] = p;                                     // p connected, prev stale → take p
-      } else if (!pConn && prevConn) {
-        // prev connected, p stale → keep prev (do nothing)
-      } else if (p.lastSeen && (!prev.lastSeen || p.lastSeen > prev.lastSeen)) {
-        seen[key] = p;                                     // same state → prefer more recent
+      if (!prev || (p.lastSeen && (!prev.lastSeen || p.lastSeen > prev.lastSeen))) {
+        seen[key] = p;
       }
     }
     res.json(Object.values(seen));
@@ -432,37 +422,43 @@ app.put('/api/print/client/printer-status', authMiddleware, async (req, res) => 
   app.handle(req, res);
 });
 
-// DELETE /api/print/printers/stale — remove printers not seen in > staleDays (default 2)
+// DELETE /api/print/printers/stale — remove disconnected printers not seen in > staleDays (default 2)
+// NEVER removes a printer that is currently connected (lastSeen within last 5 minutes).
 app.delete('/api/print/printers/stale', authMiddleware, async (req, res) => {
   try {
     const staleDays = parseFloat(req.query.days || '2');
-    const cutoff = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000).toISOString();
+    const cutoff          = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000).toISOString();
+    const connectedCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5-min safety window
     const snap = await db.collection(PRINTERS_COL).get();
     const batch = db.batch();
-    let removed = 0;
+    let removed = 0, skipped = 0;
     snap.docs.forEach(d => {
       const lastSeen = d.data().lastSeen || '';
+      if (lastSeen >= connectedCutoff) { skipped++; return; } // currently connected — never touch it
       if (!lastSeen || lastSeen < cutoff) { batch.delete(d.ref); removed++; }
     });
     await batch.commit();
-    res.json({ message: `Removed ${removed} stale printer(s) (not seen since ${cutoff})` });
+    res.json({ message: `Removed ${removed} disconnected printer(s). Skipped ${skipped} connected printer(s).` });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DELETE /api/print/clients/stale — remove clients not seen in > staleDays (default 2)
+// DELETE /api/print/clients/stale — remove disconnected clients not seen in > staleDays (default 2)
+// NEVER removes a client that is currently connected (lastSeen within last 5 minutes).
 app.delete('/api/print/clients/stale', authMiddleware, async (req, res) => {
   try {
     const staleDays = parseFloat(req.query.days || '2');
-    const cutoff = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000).toISOString();
+    const cutoff          = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000).toISOString();
+    const connectedCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5-min safety window
     const snap = await db.collection(CLIENTS_COL).get();
     const batch = db.batch();
-    let removed = 0;
+    let removed = 0, skipped = 0;
     snap.docs.forEach(d => {
       const lastSeen = d.data().lastSeen || '';
+      if (lastSeen >= connectedCutoff) { skipped++; return; } // currently connected — never touch it
       if (!lastSeen || lastSeen < cutoff) { batch.delete(d.ref); removed++; }
     });
     await batch.commit();
-    res.json({ message: `Removed ${removed} stale client(s) (not seen since ${cutoff})` });
+    res.json({ message: `Removed ${removed} disconnected client(s). Skipped ${skipped} connected client(s).` });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

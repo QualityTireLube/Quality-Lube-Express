@@ -1691,23 +1691,28 @@ const LabelSystem = {
           locationId: p.locationId || null,
           lastSeen: p.lastSeen || null
         }));
-        // Filter to connected-only first (heartbeat < 2 min), THEN deduplicate.
-        // This ensures a connected printer is never dropped in favour of a stale
-        // duplicate that happens to have a newer stored timestamp.
+        // "Connected" = heartbeat within the last 2 minutes
         const cutoffConnected = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-        const connectedPrinters = mapped.filter(p =>
-          p.lastSeen && p.lastSeen >= cutoffConnected
-        );
+        const isConnected = p => p.lastSeen && p.lastSeen >= cutoffConnected;
+
+        // Deduplicate by systemName: a connected entry always beats a disconnected one;
+        // if both (or neither) are connected, keep the more recently seen.
         const seen = {};
-        for (const p of connectedPrinters) {
+        for (const p of mapped) {
           const key = (p.systemName || p.name || '').toLowerCase();
           if (!key) continue;
           const prev = seen[key];
-          if (!prev || (p.lastSeen && (!prev.lastSeen || p.lastSeen > prev.lastSeen))) {
-            seen[key] = p;
-          }
+          if (!prev) { seen[key] = p; continue; }
+          const pConn    = isConnected(p);
+          const prevConn = isConnected(prev);
+          // Connected always wins over disconnected
+          if (pConn && !prevConn) { seen[key] = p; continue; }
+          if (!pConn && prevConn) { continue; }
+          // Both same connection state — keep the more recently seen
+          if (p.lastSeen && (!prev.lastSeen || p.lastSeen > prev.lastSeen)) seen[key] = p;
         }
-        this.printClientPrinters = Object.values(seen);
+        // Only surface printers that are currently connected
+        this.printClientPrinters = Object.values(seen).filter(isConnected);
 
         bar.classList.remove('disconnected');
         if (!this.testMode) bar.classList.remove('test-mode');
