@@ -359,6 +359,7 @@ const LabelSystem = {
   _printJobsFilter: 'all',   // active tab filter for Print Jobs card
   _printJobsInterval: null,  // auto-refresh interval handle
   _printJobsCache: [],       // last-fetched jobs array
+  _lastSseReconnect: 0,      // timestamp of last forced SSE reconnect
 
   // ============================================================
   // INITIALIZATION
@@ -2083,13 +2084,14 @@ const LabelSystem = {
       this._printJobsCache = jobs;
       this._renderPrintJobsList(jobs);
 
-      // Update SSE status chip
+      // Update SSE status chip + auto-heal stuck SSE
       if (clientsResp.ok) {
         const raw = await clientsResp.json();
         const clients = Array.isArray(raw) ? raw : (raw.clients || []);
         const cutoff  = new Date(Date.now() - 2 * 60 * 1000).toISOString();
         const online  = clients.filter(c => c.lastSeen && c.lastSeen >= cutoff);
         this._updateSseChip(online);
+        this._checkSseHealth(jobs, online);
       }
     } catch (err) {
       if (!listEl.querySelector('.pj-row')) {
@@ -2121,6 +2123,57 @@ const LabelSystem = {
     } else {
       chip.textContent = '⚠ SSE RECONNECTING — using fallback poll';
       chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#fff3cd;color:#856404;';
+    }
+  },
+
+  // Auto-detect a stuck SSE connection: if a job has been pending for >20s
+  // and the client reports rtdbConnected=true, the TCP socket is likely silently
+  // dead. Force a reconnect by cycling stop/start on the print client Flask API.
+  // Works with existing build (91d4bdd) which already has those endpoints.
+  async _checkSseHealth(jobs, onlineClients) {
+    const client = onlineClients && onlineClients[0];
+    if (!client) return;
+
+    // If SSE is already reported as down, the chip already shows that — no action needed
+    // (the print client will reconnect on its own via its reconnect loop)
+    if (client.rtdbConnected !== true) return;
+
+    // Find a job that has been sitting in 'pending' for over 20 seconds
+    const nowMs = Date.now();
+    const stuckJob = jobs.find(j => {
+      if (j.status !== 'pending') return false;
+      const created = j.createdAt || j.queuedAt || j.createdAt;
+      if (!created) return false;
+      return (nowMs - new Date(created).getTime()) > 20000;
+    });
+    if (!stuckJob) return;
+
+    // Rate-limit: don't reconnect more than once per 60 seconds
+    if (nowMs - this._lastSseReconnect < 60000) return;
+    this._lastSseReconnect = nowMs;
+
+    console.warn('[LabelSystem] Detected stuck pending job with SSE "connected" — forcing SSE reconnect');
+    await this.forceReconnectSse(true);
+  },
+
+  async forceReconnectSse(silent) {
+    const printClientUrl = this.getPrintClientUrl();
+    const hdrs = this.getPrintClientHeaders(false);
+    const chip = document.getElementById('pj-sse-chip');
+
+    if (chip) {
+      chip.textContent = '⟳ RECONNECTING SSE...';
+      chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#fff3cd;color:#856404;';
+    }
+
+    try {
+      await fetch(printClientUrl + '/api/polling/stop',  { method: 'POST', mode: 'cors', headers: hdrs });
+      await new Promise(r => setTimeout(r, 600));
+      await fetch(printClientUrl + '/api/polling/start', { method: 'POST', mode: 'cors', headers: hdrs });
+      if (!silent) alert('Print client SSE reconnected.');
+    } catch (e) {
+      console.warn('[LabelSystem] SSE force-reconnect failed:', e.message);
+      if (!silent) alert('Reconnect failed: ' + e.message);
     }
   },
 
