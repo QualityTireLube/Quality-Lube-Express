@@ -2070,20 +2070,57 @@ const LabelSystem = {
     const listEl = document.getElementById('pj-jobs-list');
     if (!listEl) return;
     const printClientUrl = this.getPrintClientUrl();
+    const hdrs = this.getPrintClientHeaders(false);
     try {
-      const resp = await fetch(printClientUrl + '/api/print/jobs', {
-        method: 'GET', mode: 'cors',
-        headers: this.getPrintClientHeaders(false)
-      });
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const data = await resp.json();
+      // Fetch jobs and client status in parallel
+      const [jobsResp, clientsResp] = await Promise.all([
+        fetch(printClientUrl + '/api/print/jobs',    { method: 'GET', mode: 'cors', headers: hdrs }),
+        fetch(printClientUrl + '/api/print/clients', { method: 'GET', mode: 'cors', headers: hdrs }),
+      ]);
+      if (!jobsResp.ok) throw new Error('HTTP ' + jobsResp.status);
+      const data = await jobsResp.json();
       const jobs = Array.isArray(data) ? data : (data.jobs || []);
       this._printJobsCache = jobs;
       this._renderPrintJobsList(jobs);
+
+      // Update SSE status chip
+      if (clientsResp.ok) {
+        const raw = await clientsResp.json();
+        const clients = Array.isArray(raw) ? raw : (raw.clients || []);
+        const cutoff  = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+        const online  = clients.filter(c => c.lastSeen && c.lastSeen >= cutoff);
+        this._updateSseChip(online);
+      }
     } catch (err) {
       if (!listEl.querySelector('.pj-row')) {
         listEl.innerHTML = '<p class="pj-empty mb-0"><i class="fas fa-exclamation-circle me-1 text-warning"></i>Cannot reach print server — ' + this.escHtml(err.message) + '</p>';
       }
+    }
+  },
+
+  _updateSseChip(onlineClients) {
+    const chip = document.getElementById('pj-sse-chip');
+    if (!chip) return;
+    if (!onlineClients || onlineClients.length === 0) {
+      chip.textContent = '● NO CLIENT';
+      chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#e9ecef;color:#6c757d;';
+      return;
+    }
+    // Use the most recently seen client
+    const client = onlineClients.sort((a, b) => (b.lastSeen || '').localeCompare(a.lastSeen || ''))[0];
+    const sseOk  = client.rtdbConnected === true;
+    const fb     = client.fallbackWakes;
+    const sseW   = client.sseWakes;
+
+    if (sseOk) {
+      const detail = (typeof sseW === 'number' && typeof fb === 'number')
+        ? ' · ' + sseW + ' SSE' + (fb > 0 ? ' / ⚠' + fb + ' fallback' : '')
+        : '';
+      chip.textContent = '● SSE LIVE' + detail;
+      chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#d1e7dd;color:#0f5132;';
+    } else {
+      chip.textContent = '⚠ SSE RECONNECTING — using fallback poll';
+      chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#fff3cd;color:#856404;';
     }
   },
 
