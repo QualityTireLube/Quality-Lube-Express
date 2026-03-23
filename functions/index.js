@@ -286,6 +286,36 @@ app.post('/api/print/jobs/:id/fail', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/print/jobs/:id/pause — hold a pending job so the print client skips it
+app.post('/api/print/jobs/:id/pause', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ref = db.collection(JOBS_COL).doc(id);
+    const doc = await ref.get();
+    if (!doc.exists) return res.status(404).json({ error: 'Job not found' });
+    if (doc.data().status !== 'pending')
+      return res.status(409).json({ error: 'Only pending jobs can be paused' });
+    await ref.update({ status: 'paused', pausedAt: new Date().toISOString() });
+    res.json({ message: 'Job paused' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/print/jobs/:id/resume — release a paused job back to pending
+app.post('/api/print/jobs/:id/resume', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ref = db.collection(JOBS_COL).doc(id);
+    const doc = await ref.get();
+    if (!doc.exists) return res.status(404).json({ error: 'Job not found' });
+    if (doc.data().status !== 'paused')
+      return res.status(409).json({ error: 'Only paused jobs can be resumed' });
+    await ref.update({ status: 'pending', pausedAt: null });
+    // Wake up print client immediately
+    await admin.database().ref('printers/pendingSignal').set({ jobId: id, ts: Date.now() });
+    res.json({ message: 'Job resumed' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST /api/print/jobs/:id/retry — reset a failed job back to pending so it can be re-attempted
 app.post('/api/print/jobs/:id/retry', authMiddleware, async (req, res) => {
   try {

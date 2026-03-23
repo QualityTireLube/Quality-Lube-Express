@@ -2059,7 +2059,7 @@ const LabelSystem = {
 
   setPrintJobsFilter(filter) {
     this._printJobsFilter = filter;
-    ['all', 'pending', 'printing', 'completed', 'failed'].forEach(f => {
+    ['all', 'pending', 'printing', 'completed', 'failed', 'paused'].forEach(f => {
       const btn = document.getElementById('pj-tab-' + f);
       if (btn) btn.classList.toggle('active', f === filter);
     });
@@ -2092,7 +2092,7 @@ const LabelSystem = {
     if (!listEl) return;
 
     // Update tab counts
-    const counts = { all: jobs.length, pending: 0, printing: 0, completed: 0, failed: 0 };
+    const counts = { all: jobs.length, pending: 0, printing: 0, completed: 0, failed: 0, paused: 0 };
     jobs.forEach(j => { if (counts[j.status] !== undefined) counts[j.status]++; });
     Object.keys(counts).forEach(k => {
       const el = document.getElementById('pj-count-' + k);
@@ -2116,7 +2116,7 @@ const LabelSystem = {
     }
 
     // Sort: active work first, then by newest
-    const order = { pending: 0, printing: 1, failed: 2, completed: 3 };
+    const order = { pending: 0, printing: 1, paused: 2, failed: 3, completed: 4 };
     visible.sort((a, b) => {
       const od = (order[a.status] ?? 9) - (order[b.status] ?? 9);
       return od !== 0 ? od : (b.createdAt || '').localeCompare(a.createdAt || '');
@@ -2142,6 +2142,12 @@ const LabelSystem = {
         '<span class="pj-row-time">' + age + '</span>' +
         '<span class="pj-row-actions">' +
           '<button class="pj-btn-view" onclick="LabelSystem.viewJob(\'' + jobId + '\')" title="View details &amp; PDF"><i class="fas fa-eye"></i></button>' +
+          (status === 'pending'
+            ? '<button class="pj-btn-pause"  onclick="LabelSystem.pauseJob(\''  + jobId + '\')" title="Pause — hold this job"><i class="fas fa-pause"></i></button>'
+            : '') +
+          (status === 'paused'
+            ? '<button class="pj-btn-resume" onclick="LabelSystem.resumeJob(\'' + jobId + '\')" title="Resume — send back to queue"><i class="fas fa-play"></i></button>'
+            : '') +
           '<button class="pj-btn-reprint" onclick="LabelSystem.reprintJob(\'' + jobId + '\')" title="Reprint"><i class="fas fa-redo"></i></button>' +
           '<button class="pj-btn-del" onclick="LabelSystem.deleteJob(\'' + jobId + '\')" title="Delete"><i class="fas fa-trash"></i></button>' +
         '</span>' +
@@ -2353,6 +2359,26 @@ const LabelSystem = {
     } catch (err) {
       alert('Retry failed: ' + err.message);
     }
+  },
+
+  async pauseJob(jobId) {
+    try {
+      const resp = await fetch(this.getPrintClientUrl() + '/api/print/jobs/' + jobId + '/pause', {
+        method: 'POST', mode: 'cors', headers: this.getPrintClientHeaders(false)
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      this.refreshPrintJobs();
+    } catch (err) { alert('Pause failed: ' + err.message); }
+  },
+
+  async resumeJob(jobId) {
+    try {
+      const resp = await fetch(this.getPrintClientUrl() + '/api/print/jobs/' + jobId + '/resume', {
+        method: 'POST', mode: 'cors', headers: this.getPrintClientHeaders(false)
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      this.refreshPrintJobs();
+    } catch (err) { alert('Resume failed: ' + err.message); }
   },
 
   async deleteJob(jobId) {
