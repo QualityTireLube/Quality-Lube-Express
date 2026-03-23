@@ -376,7 +376,7 @@ const LabelSystem = {
     // Auto-connect to print server on init
     this.testPrintClientConnection();
 
-    // Start Print Jobs live feed
+    // Start Print Jobs live feed (keeps the nav badge count current even before visiting the tab)
     this.initPrintJobs();
 
     // Refresh SSE status whenever the Print Server Settings modal opens
@@ -575,7 +575,7 @@ const LabelSystem = {
     }
 
     // For new tab views - delegate to showLsTab
-    if (['stickers', 'restocking', 'archived', 'templates', 'create-labels'].includes(viewName)) {
+    if (['stickers', 'restocking', 'archived', 'templates', 'create-labels', 'print-jobs'].includes(viewName)) {
       this.showLsTab(viewName);
       return;
     }
@@ -596,6 +596,11 @@ const LabelSystem = {
     document.querySelectorAll('.ls-tab').forEach(t => {
       t.classList.toggle('active', t.dataset.lsView === tabName);
     });
+
+    // Kick off Print Jobs live feed when that tab is first shown
+    if (tabName === 'print-jobs') {
+      this.initPrintJobs();
+    }
 
     // Init StickerSystem when stickers tab is shown
     if (tabName === 'stickers') {
@@ -2093,6 +2098,13 @@ const LabelSystem = {
       const el = document.getElementById('pj-count-' + k);
       if (el) el.textContent = counts[k] > 0 ? '(' + counts[k] + ')' : '';
     });
+    // Update the "PRINT JOBS" nav tab badge with active job count
+    const activeBadge = document.getElementById('pj-active-count');
+    if (activeBadge) {
+      const active = counts.pending + counts.printing;
+      activeBadge.textContent = active;
+      activeBadge.style.display = active > 0 ? '' : 'none';
+    }
 
     const filter  = this._printJobsFilter;
     const visible = filter === 'all' ? jobs : jobs.filter(j => j.status === filter);
