@@ -1700,14 +1700,18 @@ const LabelSystem = {
             seen[key] = p;
           }
         }
-        this.printClientPrinters = Object.values(seen);
+        // Only surface printers whose client is currently connected (heartbeat < 2 min)
+        const cutoffConnected = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+        this.printClientPrinters = Object.values(seen).filter(p =>
+          p.lastSeen && p.lastSeen >= cutoffConnected
+        );
 
         bar.classList.remove('disconnected');
         if (!this.testMode) bar.classList.remove('test-mode');
         statusEl.textContent = 'Print Server: Connected';
         this.printClientConnected = true;
         jobsEl.textContent = '';
-        printersEl.textContent = 'Printers: ' + this.printClientPrinters.length + ' registered';
+        printersEl.textContent = 'Printers: ' + this.printClientPrinters.length + ' active';
 
         // Sync printers to sticker system
         if (typeof StickerSystem !== 'undefined' && StickerSystem.populatePrinters) {
@@ -1966,50 +1970,76 @@ const LabelSystem = {
       });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const raw = await resp.json();
-      const clientList = Array.isArray(raw) ? raw : (raw.clients || []);
-      if (clientList.length === 0) {
-        el.innerHTML = '<p class="text-muted mb-0">No print clients registered yet.</p>';
+      const allClients = Array.isArray(raw) ? raw : (raw.clients || []);
+
+      // Only show currently connected clients (heartbeat within last 2 minutes)
+      const cutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const online  = allClients.filter(c => c.lastSeen && c.lastSeen >= cutoff);
+      const staleCount = allClients.length - online.length;
+
+      if (online.length === 0) {
+        el.innerHTML =
+          '<p class="text-muted mb-1"><i class="fas fa-circle me-1" style="color:#6c757d;font-size:9px;"></i>' +
+          'No clients currently connected.' +
+          (staleCount ? ' <span class="text-muted" style="font-size:11px;">(' + staleCount + ' disconnected record' + (staleCount > 1 ? 's' : '') + ' hidden — use Clean Up to remove)</span>' : '') +
+          '</p>';
         return;
       }
-      el.innerHTML = clientList.map(c => {
-        const lastSeen = c.lastSeen ? new Date(c.lastSeen) : null;
-        const ageSec   = lastSeen ? Math.floor((Date.now() - lastSeen) / 1000) : 9999;
-        const isOnline = ageSec < 120;
-        const ageStr   = lastSeen
-          ? (ageSec < 60 ? ageSec + 's ago' : Math.floor(ageSec / 60) + 'm ago')
-          : 'Unknown';
+
+      el.innerHTML = online.map(c => {
+        const lastSeen = new Date(c.lastSeen);
+        const ageSec   = Math.floor((Date.now() - lastSeen) / 1000);
+        const ageStr   = ageSec < 60 ? ageSec + 's ago' : Math.floor(ageSec / 60) + 'm ago';
 
         const sseKnown = (c.rtdbConnected === true || c.rtdbConnected === false);
-        const sseOk    = isOnline && c.rtdbConnected === true;
-        const sseColor = !isOnline  ? '#6c757d'
-                       : sseOk      ? '#198754'
-                       :              '#dc3545';
-        const sseIcon  = !isOnline  ? 'fa-minus-circle'
-                       : sseOk      ? 'fa-bolt'
-                       :              'fa-exclamation-triangle';
-        const sseLabel = !isOnline  ? 'Client offline — last mode unknown'
-                       : sseOk      ? 'Instant delivery (SSE connected)'
-                       : sseKnown   ? 'Polling fallback (~60 s) — SSE disconnected'
-                       :              'SSE status not yet reported (update the print client)';
+        const sseOk    = c.rtdbConnected === true;
+        const sseColor = sseOk ? '#198754' : '#dc3545';
+        const sseIcon  = sseOk ? 'fa-bolt'  : 'fa-exclamation-triangle';
+        const sseLabel = sseOk    ? 'Instant delivery (SSE connected)'
+                       : sseKnown ? 'Polling fallback (~60 s) — SSE disconnected'
+                       :            'SSE status pending (restart print client to report)';
 
         return '<div class="rounded p-2 mb-1" style="background:#f8f9fa;">' +
           '<div class="d-flex justify-content-between align-items-start mb-1">' +
             '<strong>' + this.escHtml(c.name || c.clientId || 'Unknown') + '</strong>' +
-            '<span class="badge ' + (isOnline ? 'bg-success' : 'bg-secondary') + '">' +
-              (isOnline ? 'Online' : 'Offline') +
-            '</span>' +
+            '<span class="badge bg-success">Connected</span>' +
           '</div>' +
           '<div style="line-height:1.7;">' +
             '<div><i class="fas ' + sseIcon + ' me-1" style="color:' + sseColor + ';width:14px;"></i>' +
               '<span style="color:' + sseColor + ';">' + sseLabel + '</span></div>' +
             '<div class="text-muted"><i class="fas fa-clock me-1" style="width:14px;"></i>Last heartbeat: ' + ageStr + '</div>' +
-            (c.printerCount ? '<div class="text-muted"><i class="fas fa-print me-1" style="width:14px;"></i>' + c.printerCount + ' printer(s)</div>' : '') +
+            (c.printerCount ? '<div class="text-muted"><i class="fas fa-print me-1" style="width:14px;"></i>' + c.printerCount + ' printer(s) active</div>' : '') +
           '</div>' +
-        '</div>';
+        '</div>' +
+        (staleCount ? '<p class="text-muted mb-0 mt-1" style="font-size:11px;">' + staleCount + ' disconnected record' + (staleCount > 1 ? 's' : '') + ' hidden — use Clean Up to remove.</p>' : '');
       }).join('');
     } catch (err) {
       el.innerHTML = '<p class="text-danger mb-0"><i class="fas fa-exclamation-circle me-1"></i>Cannot reach server: ' +
         this.escHtml(err.message || String(err)) + '</p>';
+    }
+  },
+
+  async cleanupStaleConnections() {
+    const btn = document.getElementById('ps-cleanup-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cleaning…'; }
+    const printClientUrl = this.getPrintClientUrl();
+    const hdrs = this.getPrintClientHeaders(false);
+    try {
+      const [clientsResp, printersResp, unstickResp] = await Promise.all([
+        fetch(printClientUrl + '/api/print/clients/stale', { method: 'DELETE', mode: 'cors', headers: hdrs }),
+        fetch(printClientUrl + '/api/print/printers/stale', { method: 'DELETE', mode: 'cors', headers: hdrs }),
+        fetch(printClientUrl + '/api/print/jobs/unstick', { method: 'POST', mode: 'cors', headers: hdrs }),
+      ]);
+      const [cr, pr, ur] = await Promise.all([clientsResp.json(), printersResp.json(), unstickResp.json()]);
+      const msg = [cr.message, pr.message, ur.message].join('\n');
+      alert('Clean Up complete:\n\n' + msg);
+      // Refresh the status panel and printer list
+      this.refreshPrintClientStatus();
+      this.testPrintClientConnection();
+    } catch (err) {
+      alert('Clean Up failed: ' + (err.message || err));
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-broom"></i> Clean Up'; }
     }
   },
 

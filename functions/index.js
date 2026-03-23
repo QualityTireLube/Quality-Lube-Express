@@ -422,6 +422,60 @@ app.put('/api/print/client/printer-status', authMiddleware, async (req, res) => 
   app.handle(req, res);
 });
 
+// DELETE /api/print/printers/stale — remove printers not seen in > staleDays (default 2)
+app.delete('/api/print/printers/stale', authMiddleware, async (req, res) => {
+  try {
+    const staleDays = parseFloat(req.query.days || '2');
+    const cutoff = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000).toISOString();
+    const snap = await db.collection(PRINTERS_COL).get();
+    const batch = db.batch();
+    let removed = 0;
+    snap.docs.forEach(d => {
+      const lastSeen = d.data().lastSeen || '';
+      if (!lastSeen || lastSeen < cutoff) { batch.delete(d.ref); removed++; }
+    });
+    await batch.commit();
+    res.json({ message: `Removed ${removed} stale printer(s) (not seen since ${cutoff})` });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE /api/print/clients/stale — remove clients not seen in > staleDays (default 2)
+app.delete('/api/print/clients/stale', authMiddleware, async (req, res) => {
+  try {
+    const staleDays = parseFloat(req.query.days || '2');
+    const cutoff = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000).toISOString();
+    const snap = await db.collection(CLIENTS_COL).get();
+    const batch = db.batch();
+    let removed = 0;
+    snap.docs.forEach(d => {
+      const lastSeen = d.data().lastSeen || '';
+      if (!lastSeen || lastSeen < cutoff) { batch.delete(d.ref); removed++; }
+    });
+    await batch.commit();
+    res.json({ message: `Removed ${removed} stale client(s) (not seen since ${cutoff})` });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/print/jobs/unstick — reset jobs stuck in 'printing' for > N minutes back to pending
+app.post('/api/print/jobs/unstick', authMiddleware, async (req, res) => {
+  try {
+    const minutes = parseInt(req.query.minutes || '10', 10);
+    const cutoff = new Date(Date.now() - minutes * 60 * 1000).toISOString();
+    const snap = await db.collection(JOBS_COL).where('status', '==', 'printing').get();
+    const batch = db.batch();
+    let reset = 0;
+    snap.docs.forEach(d => {
+      const claimedAt = d.data().claimedAt || '';
+      if (!claimedAt || claimedAt < cutoff) {
+        batch.update(d.ref, { status: 'pending', claimedBy: null, claimedAt: null });
+        reset++;
+      }
+    });
+    await batch.commit();
+    res.json({ message: `Reset ${reset} stuck job(s) back to pending` });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // DELETE /api/print/printers
 app.delete('/api/print/printers', authMiddleware, async (_req, res) => {
   try {
