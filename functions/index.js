@@ -424,11 +424,11 @@ app.put('/api/print/client/printer-status', authMiddleware, async (req, res) => 
   app.handle(req, res);
 });
 
-// DELETE /api/print/printers/stale — remove disconnected printers not seen in > staleDays (default 2)
+// DELETE /api/print/printers/stale — remove disconnected printers not seen in > staleDays (default 0.125 = 3 hours)
 // NEVER removes a printer that is currently connected (lastSeen within last 5 minutes).
 app.delete('/api/print/printers/stale', authMiddleware, async (req, res) => {
   try {
-    const staleDays = parseFloat(req.query.days || '2');
+    const staleDays = parseFloat(req.query.days || '0.125'); // default: 3 hours
     const cutoff          = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000).toISOString();
     const connectedCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5-min safety window
     const snap = await db.collection(PRINTERS_COL).get();
@@ -444,11 +444,11 @@ app.delete('/api/print/printers/stale', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// DELETE /api/print/clients/stale — remove disconnected clients not seen in > staleDays (default 2)
+// DELETE /api/print/clients/stale — remove disconnected clients not seen in > staleDays (default 0.125 = 3 hours)
 // NEVER removes a client that is currently connected (lastSeen within last 5 minutes).
 app.delete('/api/print/clients/stale', authMiddleware, async (req, res) => {
   try {
-    const staleDays = parseFloat(req.query.days || '2');
+    const staleDays = parseFloat(req.query.days || '0.125'); // default: 3 hours
     const cutoff          = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000).toISOString();
     const connectedCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5-min safety window
     const snap = await db.collection(CLIENTS_COL).get();
