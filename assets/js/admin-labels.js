@@ -2119,14 +2119,18 @@ const LabelSystem = {
     const fb     = client.fallbackWakes;
     const sseW   = client.sseWakes;
 
+    const tunnelActive = !!client.tunnelUrl;
     if (sseOk) {
-      const detail = (typeof sseW === 'number' && typeof fb === 'number')
+      // When tunnel is live, fallback ticks are just background health checks — don't warn
+      const detail = (typeof sseW === 'number' && typeof fb === 'number' && !tunnelActive)
         ? ' · ' + sseW + ' SSE' + (fb > 0 ? ' / ⚠' + fb + ' fallback' : '')
         : '';
       chip.textContent = '● SSE LIVE' + detail;
       chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#d1e7dd;color:#0f5132;';
     } else {
-      chip.textContent = '⚠ SSE RECONNECTING — using fallback poll';
+      chip.textContent = tunnelActive
+        ? '● SSE RECONNECTING (tunnel active — delivery unaffected)'
+        : '⚠ SSE RECONNECTING — using fallback poll';
       chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#fff3cd;color:#856404;';
     }
 
