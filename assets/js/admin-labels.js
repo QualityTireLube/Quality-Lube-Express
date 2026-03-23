@@ -2101,13 +2101,17 @@ const LabelSystem = {
   },
 
   _updateSseChip(onlineClients) {
-    const chip = document.getElementById('pj-sse-chip');
+    const chip       = document.getElementById('pj-sse-chip');
+    const tunnelChip = document.getElementById('pj-tunnel-chip');
     if (!chip) return;
+
     if (!onlineClients || onlineClients.length === 0) {
       chip.textContent = '● NO CLIENT';
       chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#e9ecef;color:#6c757d;';
+      if (tunnelChip) { tunnelChip.textContent = ''; tunnelChip.style.display = 'none'; }
       return;
     }
+
     // Use the most recently seen client
     const client = onlineClients.sort((a, b) => (b.lastSeen || '').localeCompare(a.lastSeen || ''))[0];
     const sseOk  = client.rtdbConnected === true;
@@ -2123,6 +2127,22 @@ const LabelSystem = {
     } else {
       chip.textContent = '⚠ SSE RECONNECTING — using fallback poll';
       chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#fff3cd;color:#856404;';
+    }
+
+    // Cloudflare Tunnel chip
+    if (tunnelChip) {
+      const tunnelUrl = client.tunnelUrl;
+      if (tunnelUrl) {
+        // Show just the subdomain so it's compact but identifiable
+        const short = tunnelUrl.replace('https://', '').replace('.trycloudflare.com', '');
+        tunnelChip.textContent = '☁ TUNNEL LIVE · ' + short;
+        tunnelChip.title = tunnelUrl;
+        tunnelChip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#cfe2ff;color:#084298;display:inline;cursor:default;';
+      } else {
+        tunnelChip.textContent = '☁ NO TUNNEL';
+        tunnelChip.title = 'Install cloudflared on the print client Mac (run setup_cloudflared.command)';
+        tunnelChip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:10px;font-weight:700;background:#e9ecef;color:#6c757d;display:inline;cursor:default;';
+      }
     }
   },
 
