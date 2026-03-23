@@ -59,6 +59,8 @@ function authMiddleware(req, res, next) {
     const h = req.headers['authorization'];
     if (h && h.startsWith('Bearer ')) provided = h.slice(7);
   }
+  // Also accept ?token= query param so browser links (which can't send headers) work
+  if (!provided) provided = req.query.token;
   if (!provided) return res.status(401).json({ error: 'Missing X-API-Key or Authorization header' });
 
   const valid = [API_KEY];

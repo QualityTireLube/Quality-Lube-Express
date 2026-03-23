@@ -3746,9 +3746,9 @@
               <button class="btn btn-sm btn-outline-success" onclick="LabelSystem.testPrintClientConnection()">
                 <i class="fas fa-sync-alt me-1"></i>Test Connection
               </button>
-              <a href="https://us-central1-qualityexpress-c19f2.cloudfunctions.net/printApi/api/print/printers" target="_blank" class="btn btn-sm btn-outline-primary ms-1">
+              <button type="button" class="btn btn-sm btn-outline-primary ms-1" onclick="(function(){const s=localStorage.getItem('labelSettings');const t=(s?JSON.parse(s).printClientToken:null)||'ql-print-2024';const base=(s?JSON.parse(s).printServerUrl:null)||'https://us-central1-qualityexpress-c19f2.cloudfunctions.net/printApi';window.open(base+'/api/print/printers?token='+encodeURIComponent(t),'_blank');})()">
                 <i class="fas fa-external-link-alt me-1"></i>View Print Server
-              </a>
+              </button>
             </div>
           </div>
 
