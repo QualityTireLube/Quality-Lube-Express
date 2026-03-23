@@ -157,7 +157,7 @@ app.get('/api/print/jobs', authMiddleware, async (req, res) => {
         ? await db.collection(JOBS_COL).where('status', '==', status).get()
         : await db.collection(JOBS_COL).get();
     }
-    let jobs = snap.docs.map(d => d.data());
+    let jobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     // Sort in memory as fallback
     jobs.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
     if (limit) jobs = jobs.slice(0, parseInt(limit, 10));
