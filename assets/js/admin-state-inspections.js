@@ -146,7 +146,7 @@ const StateInspections = (() => {
     });
   }
 
-  // ── Firestore real-time listener ───────────────────────────
+  // ── Firestore: one-time load + lightweight change watcher ──
   function _startListener() {
     if (unsubscribe) { unsubscribe(); unsubscribe = null; }
     if (typeof db === 'undefined') {
@@ -154,18 +154,87 @@ const StateInspections = (() => {
       return;
     }
     _showLoading(true);
-    unsubscribe = db.collection('state_inspections')
+
+    // One-time load of all records (counted once, not re-read on every change)
+    db.collection('state_inspections')
       .orderBy('createdDate', 'desc')
-      .onSnapshot(snap => {
+      .get()
+      .then(snap => {
         records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         _buildFleetFromRecords();
         _applyFilters();
         _showLoading(false);
-      }, err => {
+
+        // Watch only the newest 1 doc for changes — when anything is
+        // added or modified, do an incremental refresh instead of
+        // re-downloading all 11 000+ docs.
+        _startChangeWatcher();
+      })
+      .catch(err => {
         console.error('[StateInspections] Firestore error:', err);
         _showLoading(false);
         _renderError('Error loading records: ' + err.message);
       });
+  }
+
+  // Lightweight listener: watches only the single most-recent doc.
+  // When it fires (skip the initial snapshot), fetch docs changed
+  // since our last known timestamp and merge them into the local array.
+  function _startChangeWatcher() {
+    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+
+    let isFirst = true;
+    unsubscribe = db.collection('state_inspections')
+      .orderBy('createdDate', 'desc')
+      .limit(1)
+      .onSnapshot(snap => {
+        // Skip the initial snapshot — we already loaded via get()
+        if (isFirst) { isFirst = false; return; }
+
+        // Something changed — fetch only docs modified after our newest
+        // local record's createdDate (or reload all if we can't tell).
+        _incrementalRefresh();
+      }, err => {
+        console.error('[StateInspections] change-watcher error:', err);
+      });
+  }
+
+  // Fetch only recently-changed docs and merge into local records array
+  function _incrementalRefresh() {
+    // Find the newest createdDate we already have
+    let newest = '';
+    for (const r of records) {
+      if (r.createdDate && r.createdDate > newest) newest = r.createdDate;
+    }
+
+    // Query docs created/updated on or after that date.
+    // This catches new records and edits to the most-recent batch.
+    let q = db.collection('state_inspections').orderBy('createdDate', 'desc');
+    if (newest) {
+      q = q.where('createdDate', '>=', newest);
+    }
+    q.get().then(snap => {
+      const freshById = {};
+      snap.docs.forEach(d => { freshById[d.id] = { id: d.id, ...d.data() }; });
+
+      // Merge: update existing records in-place, append new ones
+      for (let i = 0; i < records.length; i++) {
+        if (freshById[records[i].id]) {
+          records[i] = freshById[records[i].id];
+          delete freshById[records[i].id];
+        }
+      }
+      // Remaining are brand-new records
+      const newDocs = Object.values(freshById);
+      if (newDocs.length) {
+        records = newDocs.concat(records);
+      }
+
+      _buildFleetFromRecords();
+      _applyFilters();
+    }).catch(err => {
+      console.error('[StateInspections] incremental refresh error:', err);
+    });
   }
 
   function _showLoading(show) {
