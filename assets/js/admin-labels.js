@@ -3633,8 +3633,8 @@ const STICKER_PAPER_SIZES = {
 
 const OIL_TYPES = {
   'conv':    { name: 'Conventional Oil', durationDays: 90,  mileageInterval: 3000 },
-  'super':   { name: 'Super Synthetic',  durationDays: 180, mileageInterval: 7000 },
-  'mobil1':  { name: 'Mobil 1',          durationDays: 365, mileageInterval: 10000 },
+  'super':   { name: 'Super Synthetic',  durationDays: 180, mileageInterval: 5000 },
+  'mobil1':  { name: 'Mobil 1',          durationDays: 180, mileageInterval: 5000 },
   'rotella': { name: 'Rotella',          durationDays: 90,  mileageInterval: 3000 },
   'delvac':  { name: 'Delvac 1',         durationDays: 365, mileageInterval: 10000 }
 };
