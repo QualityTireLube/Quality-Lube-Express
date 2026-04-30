@@ -3135,6 +3135,12 @@ const LabelSystem = {
     });
   },
 
+  // ---- Pagination state ----
+  clStickerPage: 1,
+  clStickerPageSize: 10,
+  clArchivedStickerPage: 1,
+  clArchivedStickerPageSize: 10,
+
   _renderClStickerList() {
     const target = document.getElementById('cl-sticker-list');
     if (!target) return;
@@ -3161,15 +3167,120 @@ const LabelSystem = {
       }
     }
 
+    const paginationEl = document.getElementById('cl-sticker-pagination');
+
     if (filtered.length === 0) {
       const noStickers = allActive.length === 0;
       target.innerHTML = '<div class="text-center py-4 text-muted border rounded">' +
         '<p class="mb-1 fw-semibold">' + (noStickers ? 'No stickers found' : 'No stickers match your filters') + '</p>' +
         '<p class="small mb-0">' + (noStickers ? 'Click the "Oil Sticker" button above to create your first sticker' : 'Try adjusting or resetting the filters') + '</p>' +
         '</div>';
+      if (paginationEl) { paginationEl.style.display = 'none'; paginationEl.innerHTML = ''; }
       return;
     }
-    target.innerHTML = filtered.map(s => this._stickerCardHtml(s, false)).join('');
+
+    // Pagination
+    const pageSize = this.clStickerPageSize || 10;
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    if (this.clStickerPage > totalPages) this.clStickerPage = totalPages;
+    if (this.clStickerPage < 1) this.clStickerPage = 1;
+    const start = (this.clStickerPage - 1) * pageSize;
+    const pageItems = filtered.slice(start, start + pageSize);
+
+    target.innerHTML = pageItems.map(s => this._stickerCardHtml(s, false)).join('');
+
+    if (paginationEl) {
+      if (filtered.length <= pageSize && pageSize <= 10) {
+        // Hide pagination row if only one short page and default size
+        paginationEl.style.display = 'flex';
+        paginationEl.innerHTML = this._renderPaginationHtml({
+          currentPage: this.clStickerPage,
+          totalPages: totalPages,
+          totalItems: filtered.length,
+          pageSize: pageSize,
+          start: start,
+          shown: pageItems.length,
+          gotoFn: 'LabelSystem._gotoClStickerPage',
+          sizeFn: 'LabelSystem._setClStickerPageSize'
+        });
+      } else {
+        paginationEl.style.display = 'flex';
+        paginationEl.innerHTML = this._renderPaginationHtml({
+          currentPage: this.clStickerPage,
+          totalPages: totalPages,
+          totalItems: filtered.length,
+          pageSize: pageSize,
+          start: start,
+          shown: pageItems.length,
+          gotoFn: 'LabelSystem._gotoClStickerPage',
+          sizeFn: 'LabelSystem._setClStickerPageSize'
+        });
+      }
+    }
+  },
+
+  _renderPaginationHtml(opts) {
+    const { currentPage, totalPages, totalItems, pageSize, start, shown, gotoFn, sizeFn } = opts;
+    const first = start + 1;
+    const last = start + shown;
+    const pageButtons = this._buildPageButtons(currentPage, totalPages, gotoFn);
+    const sizes = [10, 25, 50, 100];
+    return '' +
+      '<div class="cl-pagination-info">' +
+        'Showing <strong>' + first + '–' + last + '</strong> of <strong>' + totalItems + '</strong>' +
+      '</div>' +
+      '<div class="cl-pagination-controls">' +
+        '<button class="cl-page-btn" ' + (currentPage <= 1 ? 'disabled' : '') + ' onclick="' + gotoFn + '(' + (currentPage - 1) + ')" title="Previous"><i class="fas fa-chevron-left"></i></button>' +
+        pageButtons +
+        '<button class="cl-page-btn" ' + (currentPage >= totalPages ? 'disabled' : '') + ' onclick="' + gotoFn + '(' + (currentPage + 1) + ')" title="Next"><i class="fas fa-chevron-right"></i></button>' +
+        '<select class="cl-page-size-select ms-2" onchange="' + sizeFn + '(parseInt(this.value, 10))">' +
+          sizes.map(n => '<option value="' + n + '"' + (n === pageSize ? ' selected' : '') + '>' + n + ' / page</option>').join('') +
+        '</select>' +
+      '</div>';
+  },
+
+  _buildPageButtons(current, total, gotoFn) {
+    const btn = (n, label, isCurrent) =>
+      '<button class="cl-page-btn' + (isCurrent ? ' active' : '') + '" ' +
+        (isCurrent ? 'disabled' : ('onclick="' + gotoFn + '(' + n + ')"')) +
+      '>' + (label != null ? label : n) + '</button>';
+    if (total <= 7) {
+      let html = '';
+      for (let i = 1; i <= total; i++) html += btn(i, i, i === current);
+      return html;
+    }
+    const ell = '<span class="cl-page-ellipsis">…</span>';
+    let html = '';
+    html += btn(1, 1, current === 1);
+    if (current > 4) html += ell;
+    const startN = Math.max(2, current - 1);
+    const endN = Math.min(total - 1, current + 1);
+    for (let i = startN; i <= endN; i++) html += btn(i, i, i === current);
+    if (current < total - 3) html += ell;
+    html += btn(total, total, current === total);
+    return html;
+  },
+
+  _gotoClStickerPage(n) {
+    this.clStickerPage = Math.max(1, n | 0);
+    this._renderClStickerList();
+  },
+
+  _setClStickerPageSize(n) {
+    this.clStickerPageSize = Math.max(1, n | 0) || 10;
+    this.clStickerPage = 1;
+    this._renderClStickerList();
+  },
+
+  _gotoClArchivedStickerPage(n) {
+    this.clArchivedStickerPage = Math.max(1, n | 0);
+    this.renderArchivedStickers(document.getElementById('cl-sticker-archive-search') ? document.getElementById('cl-sticker-archive-search').value : '');
+  },
+
+  _setClArchivedStickerPageSize(n) {
+    this.clArchivedStickerPageSize = Math.max(1, n | 0) || 10;
+    this.clArchivedStickerPage = 1;
+    this.renderArchivedStickers(document.getElementById('cl-sticker-archive-search') ? document.getElementById('cl-sticker-archive-search').value : '');
   },
 
   _readClStickerFilters(scope) {
@@ -3196,13 +3307,23 @@ const LabelSystem = {
   },
 
   applyClStickerFilters() {
+    // Filter changes always start at page 1
+    this.clStickerPage = 1;
     this._renderClStickerList();
+  },
+
+  applyClArchivedStickerFilters(query) {
+    this.clArchivedStickerPage = 1;
+    this.renderArchivedStickers(typeof query === 'string'
+      ? query
+      : (document.getElementById('cl-sticker-archive-search') ? document.getElementById('cl-sticker-archive-search').value : ''));
   },
 
   resetClStickerFilters() {
     ['cl-sticker-search', 'cl-sticker-filter-oil-type', 'cl-sticker-filter-range'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
+    this.clStickerPage = 1;
     this._renderClStickerList();
   },
 
@@ -3210,6 +3331,7 @@ const LabelSystem = {
     ['cl-sticker-archive-search', 'cl-sticker-archived-filter-oil-type', 'cl-sticker-archived-filter-range'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
+    this.clArchivedStickerPage = 1;
     this.renderArchivedStickers('');
   },
 
@@ -3225,9 +3347,16 @@ const LabelSystem = {
   _stickerCardHtml(s, isArchived) {
     const oilNames = { conv: 'Conventional Oil', super: 'Super Synthetic', mobil1: 'Mobil 1', rotella: 'Rotella', delvac: 'Delvac 1', custom: 'Custom' };
     const oilColors = { conv: '#6c757d', super: '#0d6efd', mobil1: '#dc3545', rotella: '#fd7e14', delvac: '#198754', custom: '#6f42c1' };
-    const oilLabel = s.oilTypeName || oilNames[s.oilTypeKey] || s.oilTypeKey || 'Unknown';
+    // Resolve oil name dynamically from current OIL_TYPES so custom oil types show their name
+    const dynamicOilName = (typeof OIL_TYPES !== 'undefined' && OIL_TYPES[s.oilTypeKey]) ? OIL_TYPES[s.oilTypeKey].name : null;
+    const oilLabel = s.oilTypeName || dynamicOilName || oilNames[s.oilTypeKey] || s.oilTypeKey || 'Unknown';
     const oilColor = oilColors[s.oilTypeKey] || '#6c757d';
-    const ts = s.createdAt && s.createdAt.toDate ? s.createdAt.toDate() : new Date(s.createdAt || 0);
+    // Resolve created timestamp from createdAt (Firestore Timestamp or ISO) OR createdDate (ISO string)
+    let ts = null;
+    if (s.createdAt && typeof s.createdAt.toDate === 'function') ts = s.createdAt.toDate();
+    else if (s.createdAt) ts = new Date(s.createdAt);
+    else if (s.createdDate) ts = new Date(s.createdDate);
+    if (ts && isNaN(ts.getTime())) ts = null;
     const dateStr = ts ? ts.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) + ' ' +
       ts.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
     const vehicleLine = s.decodedDetails || s.vehicleInfo || '';
@@ -3250,6 +3379,7 @@ const LabelSystem = {
       '</div>' +
       '<div class="d-flex gap-1 flex-shrink-0 align-self-center">' +
         (s.vin ? '<button class="btn btn-sm btn-outline-secondary" onclick="StickerSystem.copyVin(\'' + s.id + '\')" title="Copy VIN"><i class="fas fa-copy"></i></button>' : '') +
+        '<button class="btn btn-sm btn-outline-secondary" onclick="StickerSystem.showVinDetails(\'' + s.id + '\')" title="Vehicle Details"><i class="fas fa-car"></i></button>' +
         (!isArchived ? '<button class="btn btn-sm btn-outline-secondary" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')" title="Open PDF"><i class="fas fa-file-pdf"></i></button>' : '') +
         (!isArchived ? '<button class="btn btn-sm btn-outline-primary" onclick="LabelSystem.printStickerToClient(\'' + s.id + '\')" title="Send to print client"><i class="fas fa-print"></i></button>' : '') +
         (!isArchived
@@ -3273,6 +3403,23 @@ const LabelSystem = {
     const filtered = allArchived.filter(s => StickerSystem._matchesFilters(s, filters));
     const filtersActive = !!(filters.search || filters.oilType || filters.days > 0);
 
+    const summary = document.getElementById('cl-archived-sticker-filter-summary');
+    if (summary) {
+      if (filtersActive) {
+        const parts = [];
+        if (filters.oilType) parts.push('Oil: ' + (OIL_TYPES[filters.oilType] ? OIL_TYPES[filters.oilType].name : filters.oilType));
+        if (filters.days > 0) parts.push('Last ' + filters.days + ' days');
+        if (filters.search) parts.push('Search: "' + filters.search + '"');
+        summary.style.display = 'block';
+        summary.innerHTML = '<i class="fas fa-filter me-1"></i>Showing <strong>' + filtered.length + '</strong> of <strong>' + allArchived.length + '</strong> archived sticker(s) — ' + this.escHtml(parts.join(' • '));
+      } else {
+        summary.style.display = 'none';
+        summary.innerHTML = '';
+      }
+    }
+
+    const paginationEl = document.getElementById('cl-archived-sticker-pagination');
+
     if (filtered.length === 0) {
       const noArchived = allArchived.length === 0;
       container.innerHTML = '<div class="text-center py-4 text-muted border rounded">' +
@@ -3282,9 +3429,33 @@ const LabelSystem = {
             : (filtersActive ? 'No archived stickers match your filters' : 'No archived stickers')) +
         '</p>' +
       '</div>';
+      if (paginationEl) { paginationEl.style.display = 'none'; paginationEl.innerHTML = ''; }
       return;
     }
-    container.innerHTML = filtered.map(s => this._stickerCardHtml(s, true)).join('');
+
+    // Pagination
+    const pageSize = this.clArchivedStickerPageSize || 10;
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    if (this.clArchivedStickerPage > totalPages) this.clArchivedStickerPage = totalPages;
+    if (this.clArchivedStickerPage < 1) this.clArchivedStickerPage = 1;
+    const start = (this.clArchivedStickerPage - 1) * pageSize;
+    const pageItems = filtered.slice(start, start + pageSize);
+
+    container.innerHTML = pageItems.map(s => this._stickerCardHtml(s, true)).join('');
+
+    if (paginationEl) {
+      paginationEl.style.display = 'flex';
+      paginationEl.innerHTML = this._renderPaginationHtml({
+        currentPage: this.clArchivedStickerPage,
+        totalPages: totalPages,
+        totalItems: filtered.length,
+        pageSize: pageSize,
+        start: start,
+        shown: pageItems.length,
+        gotoFn: 'LabelSystem._gotoClArchivedStickerPage',
+        sizeFn: 'LabelSystem._setClArchivedStickerPageSize'
+      });
+    }
   },
 
   async archiveSticker(stickerId) {
@@ -3800,7 +3971,7 @@ const StickerSystem = {
   async loadStickers() {
     try {
       const snapshot = await this.getDb().collection('static_stickers')
-        .orderBy('createdDate', 'desc').limit(50).get();
+        .orderBy('createdDate', 'desc').limit(1000).get();
       this.stickers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       this.renderStickerList();
     } catch (err) {
@@ -4498,7 +4669,8 @@ const StickerSystem = {
 
   // ---- VIN Details Viewer ----
   showVinDetails(id) {
-    const sticker = this.stickers.find(s => s.id === id);
+    const sticker = (this.stickers || []).find(s => s.id === id) ||
+                    (this.historyStickers || []).find(s => s.id === id);
     if (!sticker) return;
     const modal = document.getElementById('stickerVinModal');
     if (!modal) return;
@@ -4919,7 +5091,20 @@ const StickerSystem = {
   _matchesFilters(s, filters) {
     if (filters.oilType && s.oilTypeKey !== filters.oilType) return false;
     if (filters.days > 0) {
-      const created = s.createdDate ? new Date(s.createdDate).getTime() : 0;
+      // Resolve created timestamp from createdDate (ISO) or createdAt (Firestore Timestamp/ISO/number)
+      let created = 0;
+      if (s.createdDate) {
+        const t = new Date(s.createdDate).getTime();
+        if (!isNaN(t)) created = t;
+      }
+      if (!created && s.createdAt) {
+        if (typeof s.createdAt.toDate === 'function') {
+          created = s.createdAt.toDate().getTime();
+        } else {
+          const t = new Date(s.createdAt).getTime();
+          if (!isNaN(t)) created = t;
+        }
+      }
       const cutoff = Date.now() - (filters.days * 24 * 60 * 60 * 1000);
       if (!created || created < cutoff) return false;
     }

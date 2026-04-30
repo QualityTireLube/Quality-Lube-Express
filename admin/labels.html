@@ -124,6 +124,35 @@
     }
     .cl-filter-summary strong { color: #1565c0; }
 
+    /* Pagination */
+    .cl-pagination-row {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px;
+      padding-top: 10px; margin-top: 6px; border-top: 1px solid #f0f0f0;
+    }
+    .cl-pagination-info { font-size: 12px; color: #6c757d; }
+    .cl-pagination-info strong { color: #333; }
+    .cl-pagination-controls { display: flex; align-items: center; gap: 4px; }
+    .cl-page-btn {
+      min-width: 32px; height: 30px; padding: 0 8px;
+      border: 1px solid #ddd; background: #fff; color: #333;
+      border-radius: 5px; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .cl-page-btn:hover:not(:disabled):not(.active) {
+      background: #e3f2fd; border-color: #1565c0; color: #1565c0;
+    }
+    .cl-page-btn.active {
+      background: #1565c0; border-color: #1565c0; color: #fff; cursor: default;
+    }
+    .cl-page-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .cl-page-ellipsis { padding: 0 6px; color: #999; font-size: 12px; }
+    .cl-page-size-select {
+      height: 30px; padding: 0 8px;
+      border: 1px solid #ddd; border-radius: 5px;
+      font-size: 12px; background: #fff; cursor: pointer;
+    }
+
     /* Sticker toast (cross-page) */
     .cl-toast-region {
       position: fixed; bottom: 18px; right: 18px; z-index: 1080;
@@ -314,21 +343,22 @@
             <span class="fas fa-spinner fa-spin d-block mb-2"></span>Loading stickersâ€¦
           </div>
         </div>
+        <div id="cl-sticker-pagination" class="cl-pagination-row" style="display:none;"></div>
       </div>
       <div class="cl-subpanel" id="cl-sticker-subpanel-archived" style="display:none;">
         <input type="text" id="cl-sticker-archive-search" class="archive-search"
                placeholder="Search archived stickersâ€¦"
-               oninput="LabelSystem.renderArchivedStickers(this.value)">
+               oninput="LabelSystem.applyClArchivedStickerFilters(this.value)">
         <div class="cl-sticker-filter-row">
           <div class="cl-filter-group">
             <label class="cl-filter-label"><i class="fas fa-oil-can me-1"></i>Oil Type</label>
-            <select id="cl-sticker-archived-filter-oil-type" class="cl-filter-select" onchange="LabelSystem.renderArchivedStickers(document.getElementById('cl-sticker-archive-search').value)">
+            <select id="cl-sticker-archived-filter-oil-type" class="cl-filter-select" onchange="LabelSystem.applyClArchivedStickerFilters()">
               <option value="">All oil types</option>
             </select>
           </div>
           <div class="cl-filter-group">
             <label class="cl-filter-label"><i class="fas fa-calendar-alt me-1"></i>Created Within</label>
-            <select id="cl-sticker-archived-filter-range" class="cl-filter-select" onchange="LabelSystem.renderArchivedStickers(document.getElementById('cl-sticker-archive-search').value)">
+            <select id="cl-sticker-archived-filter-range" class="cl-filter-select" onchange="LabelSystem.applyClArchivedStickerFilters()">
               <option value="">All time</option>
             </select>
           </div>
@@ -336,7 +366,9 @@
             <i class="fas fa-times me-1"></i>Reset
           </button>
         </div>
+        <div id="cl-archived-sticker-filter-summary" class="cl-filter-summary" style="display:none;"></div>
         <div id="cl-archived-sticker-list"></div>
+        <div id="cl-archived-sticker-pagination" class="cl-pagination-row" style="display:none;"></div>
       </div>
     </div>
   </div>

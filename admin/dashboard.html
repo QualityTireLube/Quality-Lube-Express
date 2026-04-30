@@ -2229,6 +2229,123 @@
         border-bottom-color: transparent !important;
       }
 
+      /* CL Static Stickers filter bar + pagination (Create Labels tab) */
+      .cl-sticker-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 10px;
+      }
+      .cl-filter-group { flex: 1 1 160px; min-width: 0; }
+      .cl-filter-label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        color: #6c757d;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+      }
+      .cl-filter-select {
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 12px;
+        background: #fff;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .cl-filter-select:focus { border-color: #1565c0; }
+      .cl-filter-reset {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        background: #fff;
+        color: #6c757d;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+      .cl-filter-reset:hover {
+        background: #fff5f5;
+        color: #c00d4b;
+        border-color: #c00d4b;
+      }
+      .cl-filter-summary {
+        font-size: 11px;
+        color: #6c757d;
+        padding: 4px 2px 8px;
+      }
+      .cl-filter-summary strong { color: #1565c0; }
+      .cl-pagination-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding-top: 10px;
+        margin-top: 6px;
+        border-top: 1px solid #f0f0f0;
+      }
+      .cl-pagination-info {
+        font-size: 12px;
+        color: #6c757d;
+      }
+      .cl-pagination-info strong { color: #333; }
+      .cl-pagination-controls {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .cl-page-btn {
+        min-width: 32px;
+        height: 30px;
+        padding: 0 8px;
+        border: 1px solid #ddd;
+        background: #fff;
+        color: #333;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .cl-page-btn:hover:not(:disabled):not(.active) {
+        background: #e3f2fd;
+        border-color: #1565c0;
+        color: #1565c0;
+      }
+      .cl-page-btn.active {
+        background: #1565c0;
+        border-color: #1565c0;
+        color: #fff;
+        cursor: default;
+      }
+      .cl-page-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .cl-page-ellipsis {
+        padding: 0 6px;
+        color: #999;
+        font-size: 12px;
+      }
+      .cl-page-size-select {
+        height: 30px;
+        padding: 0 8px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 12px;
+        background: #fff;
+        cursor: pointer;
+      }
+
       /* Tire size format chips */
       .tire-format-chips {
         display: flex;
@@ -4330,20 +4447,66 @@
 
             <!-- Active Stickers Panel -->
             <div id="cl-sticker-subpanel-active">
+              <div class="mb-2">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                  <input type="text" id="cl-sticker-search" class="form-control border-start-0"
+                    placeholder="Search stickers by VIN, oil type, or vehicle…"
+                    oninput="LabelSystem.applyClStickerFilters()">
+                </div>
+              </div>
+              <div class="cl-sticker-filter-row">
+                <div class="cl-filter-group">
+                  <label class="cl-filter-label"><i class="fas fa-oil-can me-1"></i>Oil Type</label>
+                  <select id="cl-sticker-filter-oil-type" class="cl-filter-select" onchange="LabelSystem.applyClStickerFilters()">
+                    <option value="">All oil types</option>
+                  </select>
+                </div>
+                <div class="cl-filter-group">
+                  <label class="cl-filter-label"><i class="fas fa-calendar-alt me-1"></i>Created Within</label>
+                  <select id="cl-sticker-filter-range" class="cl-filter-select" onchange="LabelSystem.applyClStickerFilters()">
+                    <option value="">All time</option>
+                  </select>
+                </div>
+                <button class="cl-filter-reset" onclick="LabelSystem.resetClStickerFilters()" title="Clear filters">
+                  <i class="fas fa-times me-1"></i>Reset
+                </button>
+              </div>
+              <div id="cl-sticker-filter-summary" class="cl-filter-summary" style="display:none;"></div>
               <div id="cl-sticker-list"><!-- Rendered by JS --></div>
+              <div id="cl-sticker-pagination" class="cl-pagination-row" style="display:none;"></div>
             </div>
 
             <!-- Archived Stickers Panel -->
             <div id="cl-sticker-subpanel-archived" style="display:none;">
-              <div class="mb-3">
+              <div class="mb-2">
                 <div class="input-group input-group-sm">
                   <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
                   <input type="text" id="cl-sticker-archive-search" class="form-control border-start-0"
                     placeholder="Search archived stickers by VIN, vehicle, oil type…"
-                    oninput="LabelSystem.renderArchivedStickers(this.value)">
+                    oninput="LabelSystem.applyClArchivedStickerFilters(this.value)">
                 </div>
               </div>
+              <div class="cl-sticker-filter-row">
+                <div class="cl-filter-group">
+                  <label class="cl-filter-label"><i class="fas fa-oil-can me-1"></i>Oil Type</label>
+                  <select id="cl-sticker-archived-filter-oil-type" class="cl-filter-select" onchange="LabelSystem.applyClArchivedStickerFilters()">
+                    <option value="">All oil types</option>
+                  </select>
+                </div>
+                <div class="cl-filter-group">
+                  <label class="cl-filter-label"><i class="fas fa-calendar-alt me-1"></i>Created Within</label>
+                  <select id="cl-sticker-archived-filter-range" class="cl-filter-select" onchange="LabelSystem.applyClArchivedStickerFilters()">
+                    <option value="">All time</option>
+                  </select>
+                </div>
+                <button class="cl-filter-reset" onclick="LabelSystem.resetClArchivedStickerFilters()" title="Clear filters">
+                  <i class="fas fa-times me-1"></i>Reset
+                </button>
+              </div>
+              <div id="cl-archived-sticker-filter-summary" class="cl-filter-summary" style="display:none;"></div>
               <div id="cl-archived-sticker-list"><!-- Rendered by JS --></div>
+              <div id="cl-archived-sticker-pagination" class="cl-pagination-row" style="display:none;"></div>
             </div>
 
             <hr class="my-4">
