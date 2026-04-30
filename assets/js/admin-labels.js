@@ -569,7 +569,7 @@ const LabelSystem = {
     }
 
     // For new tab views - delegate to showLsTab
-    if (['stickers', 'restocking', 'archived', 'templates', 'create-labels', 'print-jobs'].includes(viewName)) {
+    if (['stickers', 'history', 'restocking', 'archived', 'templates', 'create-labels', 'print-jobs'].includes(viewName)) {
       this.showLsTab(viewName);
       return;
     }
@@ -594,6 +594,14 @@ const LabelSystem = {
     // Init StickerSystem when stickers tab is shown
     if (tabName === 'stickers') {
       StickerSystem.init();
+      // Make sure the advanced filter dropdowns are populated with current presets/oil types
+      StickerSystem._populateStickerFilterUi && StickerSystem._populateStickerFilterUi();
+    }
+    // Load sticker history when its tab opens
+    if (tabName === 'history') {
+      StickerSystem.init();
+      StickerSystem._populateStickerFilterUi && StickerSystem._populateStickerFilterUi();
+      StickerSystem.loadStickerHistory && StickerSystem.loadStickerHistory();
     }
     // Render Create Labels view when that tab is shown
     if (tabName === 'create-labels') {
@@ -3678,8 +3686,13 @@ const StickerSystem = {
     if (!this.initialized) {
       this.initialized = true;
       this.loadStickerSettings();
+      this._populateStickerFilterUi();
+      this._rebuildOilTypeSelect();
       const dateEl = document.getElementById('sticker-date');
       if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+    } else {
+      // Always re-sync filter dropdowns in case settings changed
+      this._populateStickerFilterUi();
     }
     // Always refresh printers — they may have loaded after initial init
     this.populatePrinters();
@@ -4294,15 +4307,27 @@ const StickerSystem = {
     const activeStickers = this.stickers.filter(s => !s.archived);
     const archivedStickers = this.stickers.filter(s => s.archived);
 
-    if (activeStickers.length === 0) {
+    // Apply advanced filters (oil type / day range / search) to the active list
+    const filters = this._readStickerFilters('sticker');
+    const visibleActive = activeStickers.filter(s => this._matchesFilters(s, filters));
+    const filtersActive = !!(filters.search || filters.oilType || filters.days > 0);
+
+    if (visibleActive.length === 0) {
       tbody.innerHTML = '';
       if (table) table.style.display = 'none';
-      if (empty) empty.style.display = 'block';
+      if (empty) {
+        empty.style.display = 'block';
+        const h6 = empty.querySelector('h6');
+        const p = empty.querySelector('p');
+        if (h6) h6.textContent = activeStickers.length === 0 ? 'No stickers yet' : 'No stickers match your filters';
+        if (p) p.textContent = activeStickers.length === 0 ? 'Use a template above or create a custom sticker' : 'Try adjusting or resetting the filters';
+      }
     } else {
       if (table) table.style.display = 'table';
       if (empty) empty.style.display = 'none';
-      tbody.innerHTML = activeStickers.map(s => this._renderStickerRow(s, false)).join('');
+      tbody.innerHTML = visibleActive.map(s => this._renderStickerRow(s, false)).join('');
     }
+    void filtersActive; // reserved for future use
 
     // Also render archived stickers in the archived tab
     const archivedTbody = document.getElementById('archived-stickers-table-body');
@@ -4336,6 +4361,9 @@ const StickerSystem = {
 
     const qrBtn = '<button class="ls-action-btn" title="QR Code" onclick="StickerSystem.showQrCode(\'' + s.id + '\')"><i class="fas fa-qrcode"></i></button>';
     const vinBtn = '<button class="ls-action-btn" title="Vehicle Details" onclick="StickerSystem.showVinDetails(\'' + s.id + '\')"><i class="fas fa-car"></i></button>';
+    const copyBtn = s.vin
+      ? '<button class="ls-action-btn" title="Copy VIN" onclick="StickerSystem.copyVin(\'' + s.id + '\')"><i class="fas fa-copy"></i></button>'
+      : '';
     const printBtn = '<button class="ls-action-btn" title="Print" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')"><i class="fas fa-print"></i></button>';
     const archiveBtn = !isArchived
       ? '<button class="ls-action-btn" title="Archive" onclick="StickerSystem.archiveSticker(\'' + s.id + '\')"><i class="fas fa-archive"></i></button>'
@@ -4351,7 +4379,7 @@ const StickerSystem = {
       '<td>' + (s.mileage || 0).toLocaleString() + '</td>' +
       '<td>' + statusBadge + archivedBadge + '</td>' +
       '<td>' + created + '</td>' +
-      '<td>' + qrBtn + vinBtn + printBtn + archiveBtn + deleteBtn + '</td>' +
+      '<td>' + copyBtn + qrBtn + vinBtn + printBtn + archiveBtn + deleteBtn + '</td>' +
     '</tr>';
   },
 
@@ -4458,16 +4486,37 @@ const StickerSystem = {
         const parsed = JSON.parse(saved);
         if (parsed.layout) Object.assign(STICKER_LAYOUT, parsed.layout);
         if (parsed.oilTypes) {
-          // Merge custom oil types
+          // Merge custom oil types (and overrides for the built-in ones)
           Object.keys(parsed.oilTypes).forEach(k => { OIL_TYPES[k] = parsed.oilTypes[k]; });
+        }
+        if (Array.isArray(parsed.filterPresets) && parsed.filterPresets.length) {
+          this.filterPresets = parsed.filterPresets.map(p => ({
+            id: String(p.id || ('p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6))),
+            label: String(p.label || 'Preset'),
+            days: Math.max(1, parseInt(p.days, 10) || 0)
+          })).filter(p => p.days > 0);
         }
       }
     } catch (e) {
       console.warn('Failed to load sticker settings:', e);
     }
+    if (!Array.isArray(this.filterPresets) || !this.filterPresets.length) {
+      this.filterPresets = this._defaultFilterPresets();
+    }
   },
 
-  saveStickerSettings() {
+  _defaultFilterPresets() {
+    return [
+      { id: 'p_today',  label: 'Today',        days: 1   },
+      { id: 'p_7d',     label: 'Last 7 Days',  days: 7   },
+      { id: 'p_30d',    label: 'Last 30 Days', days: 30  },
+      { id: 'p_90d',    label: 'Last 90 Days', days: 90  },
+      { id: 'p_180d',   label: 'Last 6 Months', days: 180 },
+      { id: 'p_365d',   label: 'Last Year',    days: 365 }
+    ];
+  },
+
+  _persistStickerSettings() {
     try {
       const settings = {
         layout: {
@@ -4478,17 +4527,27 @@ const StickerSystem = {
           qrCodePosition: { ...STICKER_LAYOUT.qrCodePosition },
           elements: STICKER_LAYOUT.elements.map(el => ({ ...el }))
         },
-        oilTypes: { ...OIL_TYPES }
+        oilTypes: { ...OIL_TYPES },
+        filterPresets: (this.filterPresets || []).map(p => ({ ...p }))
       };
       localStorage.setItem('stickerSettings', JSON.stringify(settings));
-      alert('Sticker settings saved!');
+      return true;
     } catch (e) {
+      console.warn('Failed to persist sticker settings:', e);
+      return false;
+    }
+  },
+
+  saveStickerSettings() {
+    if (this._persistStickerSettings()) {
+      this._showToast('Sticker settings saved');
+    } else {
       alert('Failed to save sticker settings');
     }
   },
 
   resetStickerSettings() {
-    if (!confirm('Reset all sticker settings to defaults? This will remove any custom oil types.')) return;
+    if (!confirm('Reset all sticker settings to defaults? This will remove any custom oil types and filter presets.')) return;
     localStorage.removeItem('stickerSettings');
     location.reload();
   },
@@ -4509,6 +4568,26 @@ const StickerSystem = {
         '</tr>'
       ).join('');
     }
+
+    // Filter Presets Table
+    const presetTbody = document.getElementById('sticker-filter-presets-tbody');
+    if (presetTbody) {
+      const presets = this.filterPresets || [];
+      presetTbody.innerHTML = presets.length === 0
+        ? '<tr><td colspan="3" class="text-muted small text-center py-2">No presets configured</td></tr>'
+        : presets.map(p =>
+          '<tr>' +
+            '<td>' + this.esc(p.label) + '</td>' +
+            '<td>' + p.days + ' days</td>' +
+            '<td>' +
+              '<button class="ls-action-btn" title="Edit" onclick="StickerSystem.editFilterPreset(\'' + this.esc(p.id) + '\')"><i class="fas fa-edit"></i></button>' +
+              '<button class="ls-action-btn danger" title="Delete" onclick="StickerSystem.deleteFilterPreset(\'' + this.esc(p.id) + '\')"><i class="fas fa-trash"></i></button>' +
+            '</td>' +
+          '</tr>'
+        ).join('');
+    }
+    // Refresh sticker filter UI dropdowns whenever settings re-render
+    this._populateStickerFilterUi();
 
     // Layout Settings
     const fsEl = document.getElementById('sticker-set-fontsize');
@@ -4548,53 +4627,407 @@ const StickerSystem = {
     ).join('');
   },
 
-  // Oil Type CRUD
-  addOilType() {
-    const name = prompt('Oil Type Name (e.g. "Euro Synthetic"):');
-    if (!name || !name.trim()) return;
-    const days = parseInt(prompt('Service interval in days (e.g. 180):'));
-    if (isNaN(days) || days < 1) return;
-    const miles = parseInt(prompt('Mileage interval (e.g. 7000):'));
-    if (isNaN(miles) || miles < 1) return;
-    const key = 'custom_' + name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
-    OIL_TYPES[key] = { name: name.trim(), durationDays: days, mileageInterval: miles };
-    this.renderStickerSettings();
-    this._rebuildOilTypeSelect();
+  // ===== Oil Type CRUD (modal-based) =====
+  addOilType() { this._openOilTypeEditor(null); },
+  editOilType(key) { this._openOilTypeEditor(key); },
+
+  _openOilTypeEditor(key) {
+    const modalEl = document.getElementById('oilTypeEditorModal');
+    if (!modalEl) return;
+    const isEdit = !!(key && OIL_TYPES[key]);
+    const ot = isEdit ? OIL_TYPES[key] : { name: '', durationDays: 180, mileageInterval: 5000 };
+
+    document.getElementById('oil-type-modal-title').textContent = isEdit ? 'Edit Oil Type' : 'Add Oil Type';
+    document.getElementById('oil-type-edit-key').value = isEdit ? key : '';
+    document.getElementById('oil-type-edit-name').value = ot.name || '';
+    document.getElementById('oil-type-edit-days').value = ot.durationDays || '';
+    document.getElementById('oil-type-edit-miles').value = ot.mileageInterval || '';
+    const errEl = document.getElementById('oil-type-edit-error');
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+    const delBtn = document.getElementById('oil-type-edit-delete');
+    if (delBtn) {
+      // Allow delete only when editing AND at least one other oil type would remain
+      delBtn.style.display = (isEdit && Object.keys(OIL_TYPES).length > 1) ? 'inline-block' : 'none';
+    }
+    new bootstrap.Modal(modalEl).show();
+    setTimeout(() => { const n = document.getElementById('oil-type-edit-name'); if (n) n.focus(); }, 200);
   },
 
-  editOilType(key) {
-    const ot = OIL_TYPES[key];
-    if (!ot) return;
-    const name = prompt('Oil Type Name:', ot.name);
-    if (!name || !name.trim()) return;
-    const days = parseInt(prompt('Service interval in days:', ot.durationDays));
-    if (isNaN(days) || days < 1) return;
-    const miles = parseInt(prompt('Mileage interval:', ot.mileageInterval));
-    if (isNaN(miles) || miles < 1) return;
-    OIL_TYPES[key] = { name: name.trim(), durationDays: days, mileageInterval: miles };
+  saveOilTypeFromModal() {
+    const errEl = document.getElementById('oil-type-edit-error');
+    const showError = (msg) => { if (errEl) { errEl.style.display = 'block'; errEl.textContent = msg; } };
+    const editKey = (document.getElementById('oil-type-edit-key').value || '').trim();
+    const name = (document.getElementById('oil-type-edit-name').value || '').trim();
+    const days = parseInt(document.getElementById('oil-type-edit-days').value, 10);
+    const miles = parseInt(document.getElementById('oil-type-edit-miles').value, 10);
+
+    if (!name) return showError('Name is required.');
+    if (isNaN(days) || days < 1) return showError('Service interval (days) must be a positive number.');
+    if (isNaN(miles) || miles < 1) return showError('Mileage interval must be a positive number.');
+
+    let key = editKey;
+    if (!key) {
+      const base = 'custom_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+      key = base || ('custom_' + Date.now());
+      let suffix = 2;
+      while (OIL_TYPES[key]) { key = base + '_' + suffix++; }
+    }
+
+    OIL_TYPES[key] = { name: name, durationDays: days, mileageInterval: miles };
+    this._persistStickerSettings();
     this.renderStickerSettings();
     this._rebuildOilTypeSelect();
+    // Re-render lists so any displayed oil-type name updates
+    this.renderStickerList && this.renderStickerList();
+    if (this.historyStickers) this.renderStickerHistory && this.renderStickerHistory();
+
+    const modalEl = document.getElementById('oilTypeEditorModal');
+    const inst = modalEl && bootstrap.Modal.getInstance(modalEl);
+    if (inst) inst.hide();
+    this._showToast(editKey ? 'Oil type updated' : 'Oil type added');
   },
 
-  deleteOilType(key) {
+  deleteOilTypeFromModal() {
+    const editKey = (document.getElementById('oil-type-edit-key').value || '').trim();
+    if (!editKey) return;
+    this.deleteOilType(editKey, /*fromModal*/ true);
+  },
+
+  deleteOilType(key, fromModal) {
+    if (!OIL_TYPES[key]) return;
     if (Object.keys(OIL_TYPES).length <= 1) return alert('Must have at least one oil type.');
     if (!confirm('Delete oil type "' + OIL_TYPES[key].name + '"?')) return;
     delete OIL_TYPES[key];
+    this._persistStickerSettings();
     this.renderStickerSettings();
     this._rebuildOilTypeSelect();
+    this.renderStickerList && this.renderStickerList();
+    if (this.historyStickers) this.renderStickerHistory && this.renderStickerHistory();
+    if (fromModal) {
+      const modalEl = document.getElementById('oilTypeEditorModal');
+      const inst = modalEl && bootstrap.Modal.getInstance(modalEl);
+      if (inst) inst.hide();
+    }
+    this._showToast('Oil type deleted');
   },
 
   _rebuildOilTypeSelect() {
+    // Sticker creation form (dashboard.html and labels.html)
     const select = document.getElementById('sticker-oil-type');
-    if (!select) return;
-    const current = select.value;
-    select.innerHTML = '<option value="">Select oil type...</option>' +
-      Object.entries(OIL_TYPES).map(([key, ot]) =>
-        '<option value="' + key + '" data-days="' + ot.durationDays + '" data-miles="' + ot.mileageInterval + '">' +
-          ot.name + ' (' + ot.durationDays + 'd / ' + ot.mileageInterval.toLocaleString() + ' mi)' +
-        '</option>'
+    if (select) {
+      const current = select.value;
+      select.innerHTML = '<option value="">Select oil type...</option>' +
+        Object.entries(OIL_TYPES).map(([key, ot]) =>
+          '<option value="' + key + '" data-days="' + ot.durationDays + '" data-miles="' + ot.mileageInterval + '">' +
+            this.esc(ot.name) + ' (' + ot.durationDays + 'd / ' + ot.mileageInterval.toLocaleString() + ' mi)' +
+          '</option>'
+        ).join('');
+      if (current && OIL_TYPES[current]) select.value = current;
+    }
+    // Filter dropdowns also use OIL_TYPES
+    this._populateStickerFilterUi();
+  },
+
+  // ===== Filter Preset CRUD =====
+  addFilterPreset() { this._openFilterPresetEditor(null); },
+  editFilterPreset(id) { this._openFilterPresetEditor(id); },
+
+  _openFilterPresetEditor(id) {
+    const modalEl = document.getElementById('filterPresetEditorModal');
+    if (!modalEl) return;
+    const presets = this.filterPresets || [];
+    const existing = id ? presets.find(p => p.id === id) : null;
+    document.getElementById('filter-preset-modal-title').textContent = existing ? 'Edit Preset' : 'Add Preset';
+    document.getElementById('filter-preset-edit-id').value = existing ? existing.id : '';
+    document.getElementById('filter-preset-edit-label').value = existing ? existing.label : '';
+    document.getElementById('filter-preset-edit-days').value = existing ? existing.days : '';
+    const errEl = document.getElementById('filter-preset-edit-error');
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+    new bootstrap.Modal(modalEl).show();
+    setTimeout(() => { const l = document.getElementById('filter-preset-edit-label'); if (l) l.focus(); }, 200);
+  },
+
+  saveFilterPresetFromModal() {
+    const errEl = document.getElementById('filter-preset-edit-error');
+    const showError = (msg) => { if (errEl) { errEl.style.display = 'block'; errEl.textContent = msg; } };
+    const id = (document.getElementById('filter-preset-edit-id').value || '').trim();
+    const label = (document.getElementById('filter-preset-edit-label').value || '').trim();
+    const days = parseInt(document.getElementById('filter-preset-edit-days').value, 10);
+    if (!label) return showError('Label is required.');
+    if (isNaN(days) || days < 1) return showError('Days must be a positive number.');
+
+    if (!Array.isArray(this.filterPresets)) this.filterPresets = [];
+    if (id) {
+      const idx = this.filterPresets.findIndex(p => p.id === id);
+      if (idx >= 0) this.filterPresets[idx] = { id: id, label: label, days: days };
+    } else {
+      const newId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      this.filterPresets.push({ id: newId, label: label, days: days });
+    }
+    this._persistStickerSettings();
+    this.renderStickerSettings();
+    const modalEl = document.getElementById('filterPresetEditorModal');
+    const inst = modalEl && bootstrap.Modal.getInstance(modalEl);
+    if (inst) inst.hide();
+    this._showToast(id ? 'Preset updated' : 'Preset added');
+  },
+
+  deleteFilterPreset(id) {
+    if (!Array.isArray(this.filterPresets)) return;
+    const p = this.filterPresets.find(x => x.id === id);
+    if (!p) return;
+    if (!confirm('Delete preset "' + p.label + '"?')) return;
+    this.filterPresets = this.filterPresets.filter(x => x.id !== id);
+    this._persistStickerSettings();
+    this.renderStickerSettings();
+    this._showToast('Preset deleted');
+  },
+
+  resetFilterPresets() {
+    if (!confirm('Reset filter presets to defaults?')) return;
+    this.filterPresets = this._defaultFilterPresets();
+    this._persistStickerSettings();
+    this.renderStickerSettings();
+    this._showToast('Filter presets reset');
+  },
+
+  // ===== Filter UI population & application =====
+  _populateStickerFilterUi() {
+    const oilOptionsHtml = '<option value="">All oil types</option>' +
+      Object.entries(OIL_TYPES).map(([k, ot]) =>
+        '<option value="' + this.esc(k) + '">' + this.esc(ot.name) + '</option>'
       ).join('');
-    if (current && OIL_TYPES[current]) select.value = current;
+    const rangeOptionsHtml = '<option value="">All time</option>' +
+      (this.filterPresets || []).map(p =>
+        '<option value="' + this.esc(p.id) + '" data-days="' + p.days + '">' + this.esc(p.label) + '</option>'
+      ).join('');
+
+    ['sticker-filter-oil-type', 'history-filter-oil-type'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const cur = el.value;
+      el.innerHTML = oilOptionsHtml;
+      if (cur && OIL_TYPES[cur]) el.value = cur;
+    });
+    ['sticker-filter-range', 'history-filter-range'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const cur = el.value;
+      el.innerHTML = rangeOptionsHtml;
+      const stillExists = (this.filterPresets || []).some(p => p.id === cur);
+      if (stillExists) el.value = cur;
+    });
+  },
+
+  _readStickerFilters(prefix) {
+    const search = (document.getElementById(prefix === 'history' ? 'ls-history-search' : 'ls-sticker-search') || {}).value || '';
+    const oilType = (document.getElementById((prefix === 'history' ? 'history' : 'sticker') + '-filter-oil-type') || {}).value || '';
+    const rangeId = (document.getElementById((prefix === 'history' ? 'history' : 'sticker') + '-filter-range') || {}).value || '';
+    const status = prefix === 'history'
+      ? ((document.getElementById('history-filter-status') || {}).value || '')
+      : '';
+    let days = 0;
+    if (rangeId) {
+      const preset = (this.filterPresets || []).find(p => p.id === rangeId);
+      if (preset) days = preset.days;
+    }
+    return { search: search.trim().toLowerCase(), oilType: oilType, days: days, rangeId: rangeId, status: status };
+  },
+
+  _matchesFilters(s, filters) {
+    if (filters.oilType && s.oilTypeKey !== filters.oilType) return false;
+    if (filters.days > 0) {
+      const created = s.createdDate ? new Date(s.createdDate).getTime() : 0;
+      const cutoff = Date.now() - (filters.days * 24 * 60 * 60 * 1000);
+      if (!created || created < cutoff) return false;
+    }
+    if (filters.search) {
+      const oilName = s.oilTypeName || (OIL_TYPES[s.oilTypeKey] ? OIL_TYPES[s.oilTypeKey].name : '');
+      const hay = [s.vin || '', oilName || '', s.vehicleDetails || '', s.oilTypeKey || ''].join(' ').toLowerCase();
+      if (!hay.includes(filters.search)) return false;
+    }
+    if (filters.status) {
+      if (filters.status === 'active' && s.archived) return false;
+      if (filters.status === 'archived' && !s.archived) return false;
+      if (filters.status === 'printed' && !s.printed) return false;
+      if (filters.status === 'not-printed' && s.printed) return false;
+    }
+    return true;
+  },
+
+  applyStickerFilters() {
+    // Re-render the active stickers table based on current filters
+    this.renderStickerList();
+    const filters = this._readStickerFilters('sticker');
+    const summary = document.getElementById('sticker-filter-summary');
+    if (summary) {
+      const active = (this.stickers || []).filter(s => !s.archived).filter(s => this._matchesFilters(s, filters));
+      const parts = [];
+      if (filters.oilType) parts.push('Oil: ' + (OIL_TYPES[filters.oilType] ? OIL_TYPES[filters.oilType].name : filters.oilType));
+      if (filters.days > 0) parts.push('Last ' + filters.days + ' days');
+      if (filters.search) parts.push('Search: "' + filters.search + '"');
+      if (parts.length) {
+        summary.style.display = 'block';
+        summary.innerHTML = '<i class="fas fa-filter me-1"></i>Showing <strong>' + active.length + '</strong> sticker(s) — ' + this.esc(parts.join(' • '));
+      } else {
+        summary.style.display = 'none';
+        summary.innerHTML = '';
+      }
+    }
+  },
+
+  resetStickerFilters() {
+    const ids = ['ls-sticker-search', 'sticker-filter-oil-type', 'sticker-filter-range'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    this.applyStickerFilters();
+  },
+
+  // ===== Sticker History =====
+  historyStickers: null,
+  _historyLoading: false,
+
+  async loadStickerHistory(force) {
+    if (this._historyLoading) return;
+    this._historyLoading = true;
+    const tbody = document.getElementById('history-table-body');
+    const empty = document.getElementById('history-empty');
+    const table = document.getElementById('history-table');
+    if (tbody && (!this.historyStickers || force)) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin me-1"></i>Loading history…</td></tr>';
+      if (table) table.style.display = 'table';
+      if (empty) empty.style.display = 'none';
+    }
+    try {
+      const snapshot = await this.getDb().collection('static_stickers')
+        .orderBy('createdDate', 'desc').limit(1000).get();
+      this.historyStickers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (err) {
+      console.error('Failed to load sticker history:', err);
+      this.historyStickers = [];
+    }
+    this._historyLoading = false;
+    this.renderStickerHistory();
+  },
+
+  renderStickerHistory() {
+    const list = this.historyStickers || [];
+    const tbody = document.getElementById('history-table-body');
+    const table = document.getElementById('history-table');
+    const empty = document.getElementById('history-empty');
+    const countBadge = document.getElementById('ls-history-count');
+
+    if (!tbody) return;
+    const filters = this._readStickerFilters('history');
+    const filtered = list.filter(s => this._matchesFilters(s, filters));
+
+    if (countBadge) countBadge.textContent = list.length > 99 ? '99+' : list.length;
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      if (table) table.style.display = 'none';
+      if (empty) {
+        empty.style.display = 'block';
+        empty.querySelector('h6') && (empty.querySelector('h6').textContent = list.length === 0 ? 'No sticker history' : 'No matches');
+        empty.querySelector('p') && (empty.querySelector('p').textContent = list.length === 0 ? 'Created oil change stickers will appear here' : 'Adjust filters to see more results');
+      }
+    } else {
+      if (table) table.style.display = 'table';
+      if (empty) empty.style.display = 'none';
+      tbody.innerHTML = filtered.map(s => this._renderHistoryRow(s)).join('');
+    }
+
+    const summary = document.getElementById('history-filter-summary');
+    if (summary) {
+      const parts = [];
+      if (filters.oilType) parts.push('Oil: ' + (OIL_TYPES[filters.oilType] ? OIL_TYPES[filters.oilType].name : filters.oilType));
+      if (filters.days > 0) parts.push('Last ' + filters.days + ' days');
+      if (filters.status) parts.push('Status: ' + filters.status);
+      if (filters.search) parts.push('Search: "' + filters.search + '"');
+      summary.innerHTML = '<i class="fas fa-info-circle me-1"></i>Showing <strong>' + filtered.length + '</strong> of <strong>' + list.length + '</strong> stickers' +
+        (parts.length ? ' — ' + this.esc(parts.join(' • ')) : '');
+    }
+  },
+
+  _renderHistoryRow(s) {
+    const oilName = s.oilTypeName || (OIL_TYPES[s.oilTypeKey] ? OIL_TYPES[s.oilTypeKey].name : (s.oilTypeKey || '\u2014'));
+    const created = s.createdDate
+      ? new Date(s.createdDate).toLocaleString('en-US', { year: 'numeric', month: 'short', day: '2-digit', hour: 'numeric', minute: '2-digit' })
+      : '\u2014';
+    const vehicleTxt = s.vehicleDetails || '';
+    const statusBadge = s.printed
+      ? '<span class="ls-status-badge printed">Printed</span>'
+      : '<span class="ls-status-badge not-printed">Not Printed</span>';
+    const archivedBadge = s.archived ? '<span class="ls-status-badge inactive ms-1">Archived</span>' : '';
+
+    const copyBtn = s.vin
+      ? '<button class="ls-action-btn" title="Copy VIN" onclick="StickerSystem.copyVin(\'' + s.id + '\')"><i class="fas fa-copy"></i></button>'
+      : '';
+    const qrBtn = '<button class="ls-action-btn" title="QR Code" onclick="StickerSystem.showQrCode(\'' + s.id + '\')"><i class="fas fa-qrcode"></i></button>';
+    const vinBtn = '<button class="ls-action-btn" title="Vehicle Details" onclick="StickerSystem.showVinDetails(\'' + s.id + '\')"><i class="fas fa-car"></i></button>';
+    const printBtn = '<button class="ls-action-btn" title="Reprint" onclick="StickerSystem.reprintSticker(\'' + s.id + '\')"><i class="fas fa-print"></i></button>';
+
+    return '<tr>' +
+      '<td><span class="text-muted small">' + created + '</span></td>' +
+      '<td><strong style="font-family:monospace;">' + this.esc(s.vin || '\u2014') + '</strong></td>' +
+      '<td>' + this.esc(oilName) + '</td>' +
+      '<td>' + this.esc(vehicleTxt || '\u2014') + '</td>' +
+      '<td>' + (s.mileage || 0).toLocaleString() + '</td>' +
+      '<td>' + statusBadge + archivedBadge + '</td>' +
+      '<td>' + copyBtn + qrBtn + vinBtn + printBtn + '</td>' +
+    '</tr>';
+  },
+
+  applyHistoryFilters() {
+    if (!this.historyStickers) {
+      this.loadStickerHistory();
+      return;
+    }
+    this.renderStickerHistory();
+  },
+
+  resetHistoryFilters() {
+    const ids = ['ls-history-search', 'history-filter-oil-type', 'history-filter-range', 'history-filter-status'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    this.applyHistoryFilters();
+  },
+
+  // ===== Copy VIN =====
+  async copyVin(id) {
+    const sticker = (this.stickers || []).find(s => s.id === id) ||
+                    (this.historyStickers || []).find(s => s.id === id);
+    const vin = sticker && sticker.vin;
+    if (!vin) { this._showToast('No VIN on this sticker', true); return; }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(vin);
+      } else {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = vin;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      this._showToast('VIN copied: ' + vin);
+    } catch (e) {
+      console.error('Copy VIN failed:', e);
+      this._showToast('Failed to copy VIN', true);
+    }
+  },
+
+  _showToast(message, isError) {
+    const toastEl = document.getElementById('stickerToast');
+    const msgEl = document.getElementById('stickerToastMsg');
+    if (toastEl && msgEl && window.bootstrap && bootstrap.Toast) {
+      const icon = isError
+        ? '<i class="fas fa-exclamation-circle me-2 text-danger"></i>'
+        : '<i class="fas fa-check-circle me-2 text-success"></i>';
+      msgEl.innerHTML = icon + this.esc(message);
+      bootstrap.Toast.getOrCreateInstance(toastEl).show();
+    } else if (isError) {
+      alert(message);
+    }
   },
 
   // Layout Element editing

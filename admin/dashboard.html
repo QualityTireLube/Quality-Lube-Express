@@ -3797,6 +3797,10 @@
             <button class="ls-tab" data-ls-view="stickers" onclick="LabelSystem.showLsTab('stickers')">
               <i class="fas fa-sticky-note"></i> STATIC STICKERS
             </button>
+            <button class="ls-tab" data-ls-view="history" onclick="LabelSystem.showLsTab('history')">
+              <i class="fas fa-history"></i> STICKER HISTORY
+              <span class="ls-tab-badge grey" id="ls-history-count">0</span>
+            </button>
             <button class="ls-tab" data-ls-view="restocking" onclick="LabelSystem.showLsTab('restocking')">
               <i class="fas fa-redo-alt"></i> RESTOCKING LABELS
               <span class="ls-tab-badge orange" id="ls-restocking-count">0</span>
@@ -4024,7 +4028,28 @@
               </h6>
               <div class="ls-search-bar">
                 <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search stickers by VIN, oil type, or vehicle..." id="ls-sticker-search" oninput="LabelSystem.filterStickers(this.value)">
+                <input type="text" placeholder="Search stickers by VIN, oil type, or vehicle..." id="ls-sticker-search" oninput="StickerSystem.applyStickerFilters()">
+              </div>
+              <!-- Advanced Filters -->
+              <div class="d-flex flex-wrap align-items-end gap-2 mb-3" style="background:#f8f9fa;border-radius:8px;padding:10px 12px;">
+                <div style="min-width:180px;">
+                  <label class="form-label small mb-1 fw-semibold text-muted"><i class="fas fa-oil-can me-1"></i>Oil Type</label>
+                  <select class="form-select form-select-sm" id="sticker-filter-oil-type" onchange="StickerSystem.applyStickerFilters()">
+                    <option value="">All oil types</option>
+                  </select>
+                </div>
+                <div style="min-width:180px;">
+                  <label class="form-label small mb-1 fw-semibold text-muted"><i class="fas fa-calendar-alt me-1"></i>Created Within</label>
+                  <select class="form-select form-select-sm" id="sticker-filter-range" onchange="StickerSystem.applyStickerFilters()">
+                    <option value="">All time</option>
+                  </select>
+                </div>
+                <div class="ms-auto">
+                  <button class="btn btn-outline-secondary btn-sm" onclick="StickerSystem.resetStickerFilters()" title="Clear all filters">
+                    <i class="fas fa-times me-1"></i>Reset
+                  </button>
+                </div>
+                <div class="w-100 small text-muted" id="sticker-filter-summary" style="display:none;"></div>
               </div>
               <table class="ls-table" id="stickers-table" style="display:none;">
                 <thead>
@@ -4048,6 +4073,74 @@
                   <i class="fas fa-plus me-1"></i>New Sticker
                 </button>
               </div>
+            </div>
+          </div>
+
+          <!-- PANEL: Sticker History -->
+          <div class="ls-content-area label-view" id="ls-view-history">
+            <div class="ls-section-header">
+              <div>
+                <h5><i class="fas fa-history me-2"></i>Oil Label History</h5>
+                <p>Complete history of created oil change stickers</p>
+              </div>
+              <div class="ls-header-actions">
+                <button class="ls-refresh-btn" onclick="StickerSystem.loadStickerHistory(true)">
+                  <i class="fas fa-sync-alt"></i> REFRESH
+                </button>
+              </div>
+            </div>
+            <div class="ls-search-bar">
+              <i class="fas fa-search"></i>
+              <input type="text" placeholder="Search history by VIN, oil type, or vehicle..." id="ls-history-search" oninput="StickerSystem.applyHistoryFilters()">
+            </div>
+            <div class="d-flex flex-wrap align-items-end gap-2 mb-3" style="background:#f8f9fa;border-radius:8px;padding:10px 12px;">
+              <div style="min-width:180px;">
+                <label class="form-label small mb-1 fw-semibold text-muted"><i class="fas fa-oil-can me-1"></i>Oil Type</label>
+                <select class="form-select form-select-sm" id="history-filter-oil-type" onchange="StickerSystem.applyHistoryFilters()">
+                  <option value="">All oil types</option>
+                </select>
+              </div>
+              <div style="min-width:180px;">
+                <label class="form-label small mb-1 fw-semibold text-muted"><i class="fas fa-calendar-alt me-1"></i>Created Within</label>
+                <select class="form-select form-select-sm" id="history-filter-range" onchange="StickerSystem.applyHistoryFilters()">
+                  <option value="">All time</option>
+                </select>
+              </div>
+              <div style="min-width:180px;">
+                <label class="form-label small mb-1 fw-semibold text-muted"><i class="fas fa-archive me-1"></i>Status</label>
+                <select class="form-select form-select-sm" id="history-filter-status" onchange="StickerSystem.applyHistoryFilters()">
+                  <option value="">All</option>
+                  <option value="active">Active only</option>
+                  <option value="archived">Archived only</option>
+                  <option value="printed">Printed</option>
+                  <option value="not-printed">Not printed</option>
+                </select>
+              </div>
+              <div class="ms-auto">
+                <button class="btn btn-outline-secondary btn-sm" onclick="StickerSystem.resetHistoryFilters()" title="Clear all filters">
+                  <i class="fas fa-times me-1"></i>Reset
+                </button>
+              </div>
+              <div class="w-100 small text-muted" id="history-filter-summary"></div>
+            </div>
+            <table class="ls-table" id="history-table" style="display:none;">
+              <thead>
+                <tr>
+                  <th>Created</th>
+                  <th>VIN</th>
+                  <th>Oil Type</th>
+                  <th>Vehicle</th>
+                  <th>Mileage</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body"></tbody>
+            </table>
+            <div class="label-empty-state" id="history-empty">
+              <i class="fas fa-history d-block"></i>
+              <h6>No sticker history</h6>
+              <p>Created oil change stickers will appear here</p>
             </div>
           </div>
 
@@ -4531,6 +4624,28 @@
                 </button>
               </div>
 
+              <!-- Sticker Settings: Filter Presets -->
+              <div class="label-settings-card">
+                <h6><i class="fas fa-filter me-2"></i>Sticker Filter Presets</h6>
+                <p class="text-muted small">Configure preset day-ranges available in the sticker filters</p>
+                <table class="ls-table" style="font-size:0.8rem;">
+                  <thead>
+                    <tr>
+                      <th>Label</th>
+                      <th>Days</th>
+                      <th style="width:90px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sticker-filter-presets-tbody"></tbody>
+                </table>
+                <button class="btn btn-outline-primary btn-sm mt-2" onclick="StickerSystem.addFilterPreset()">
+                  <i class="fas fa-plus me-1"></i>Add Preset
+                </button>
+                <button class="btn btn-outline-secondary btn-sm mt-2" onclick="StickerSystem.resetFilterPresets()">
+                  <i class="fas fa-undo me-1"></i>Reset to Defaults
+                </button>
+              </div>
+
               <!-- Sticker Settings: Layout -->
               <div class="label-settings-card">
                 <h6><i class="fas fa-th me-2"></i>Sticker Layout</h6>
@@ -4824,6 +4939,88 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Oil Type Editor Modal -->
+    <div class="modal fade" id="oilTypeEditorModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-oil-can me-2 text-primary"></i><span id="oil-type-modal-title">Edit Oil Type</span></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="oil-type-edit-key">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Display Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="oil-type-edit-name" placeholder="e.g. Euro Synthetic" maxlength="60">
+              <div class="form-text small">Shown in the oil-type dropdown when creating stickers.</div>
+            </div>
+            <div class="row g-3">
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Service Interval (days) <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="oil-type-edit-days" min="1" max="3650" placeholder="e.g. 180">
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-semibold">Mileage Interval (mi) <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="oil-type-edit-miles" min="1" max="100000" placeholder="e.g. 7000">
+              </div>
+            </div>
+            <div class="alert alert-danger py-2 mt-3 small mb-0" id="oil-type-edit-error" style="display:none;"></div>
+          </div>
+          <div class="modal-footer d-flex justify-content-between">
+            <button type="button" class="btn btn-outline-danger btn-sm" id="oil-type-edit-delete" style="display:none;" onclick="StickerSystem.deleteOilTypeFromModal()">
+              <i class="fas fa-trash me-1"></i>Delete
+            </button>
+            <div class="d-flex gap-2 ms-auto">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="StickerSystem.saveOilTypeFromModal()">
+                <i class="fas fa-save me-1"></i>Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Preset Editor Modal -->
+    <div class="modal fade" id="filterPresetEditorModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h6 class="modal-title"><i class="fas fa-filter me-2 text-primary"></i><span id="filter-preset-modal-title">Edit Preset</span></h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="filter-preset-edit-id">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Label <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="filter-preset-edit-label" placeholder="e.g. Last 30 Days" maxlength="40">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold">Days <span class="text-danger">*</span></label>
+              <input type="number" class="form-control form-control-sm" id="filter-preset-edit-days" min="1" max="3650" placeholder="e.g. 30">
+            </div>
+            <div class="alert alert-danger py-2 mt-2 small mb-0" id="filter-preset-edit-error" style="display:none;"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="StickerSystem.saveFilterPresetFromModal()">
+              <i class="fas fa-save me-1"></i>Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticker toast region -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1080;">
+      <div id="stickerToast" class="toast align-items-center text-bg-dark border-0" role="alert" aria-live="polite" aria-atomic="true" data-bs-delay="2000">
+        <div class="d-flex">
+          <div class="toast-body" id="stickerToastMsg"><i class="fas fa-check me-2 text-success"></i>Done</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
       </div>
     </div>
