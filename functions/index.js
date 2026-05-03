@@ -6,6 +6,7 @@
 
 const functions = require('firebase-functions');
 const admin     = require('firebase-admin');
+const { FieldPath } = require('firebase-admin/firestore');
 const express   = require('express');
 const cors      = require('cors');
 const { v4: uuidv4 } = require('uuid');
@@ -19,6 +20,8 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const app = express();
+// Behind Firebase/Google load balancers so req.ip / X-Forwarded-For are meaningful
+app.set('trust proxy', true);
 
 // ─── Config (from .env file — Firebase auto-loads functions/.env) ───
 const API_KEY            = process.env.API_KEY            || '';
@@ -70,6 +73,32 @@ function authMiddleware(req, res, next) {
   next();
 }
 
+/**
+ * Who is calling GET /api/print/jobs? Enable with LOG_GET_PRINT_JOBS=1 in
+ * functions/.env locally, or set the same env var on the Cloud Function in
+ * Google Cloud Console → Cloud Functions → printApi → Edit → Runtime →
+ * Environment variables. Disable by unsetting or setting to 0.
+ * Logs appear in Cloud Logging (Firebase console → Functions → Logs).
+ */
+function diagnosticLogPrintJobsList(req) {
+  const v = process.env.LOG_GET_PRINT_JOBS;
+  if (v !== '1' && v !== 'true' && v !== 'yes') return;
+  const xffRaw = req.headers['x-forwarded-for'] || req.headers['X-Forwarded-For'] || '';
+  const forwardedFor = Array.isArray(xffRaw) ? xffRaw.join(', ') : String(xffRaw);
+  console.log(JSON.stringify({
+    diag: 'GET /api/print/jobs',
+    ts: new Date().toISOString(),
+    userAgent: req.get('User-Agent') || '',
+    referer: req.get('Referer') || '',
+    origin: req.get('Origin') || '',
+    secFetchSite: req.get('Sec-Fetch-Site') || '',
+    forwardedFor,
+    remoteAddress: req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : '',
+    expressIp: req.ip || '',
+    query: req.query || {},
+  }));
+}
+
 // ═══════════════════════════════════════════════════════════════════
 //  Firestore helpers  — collections: printJobs, printers, clients
 // ═══════════════════════════════════════════════════════════════════
@@ -77,6 +106,39 @@ function authMiddleware(req, res, next) {
 const JOBS_COL     = 'printJobs';
 const PRINTERS_COL = 'printers';
 const CLIENTS_COL  = 'printClients';
+
+/** Hard caps so no HTTP handler can scan an unbounded collection in one request. */
+const MAX_JOBS_PAGE     = 100;
+const DEFAULT_JOBS_PAGE = 30;
+const MAX_CLIENTS_PAGE  = 80;
+const DEFAULT_CLIENTS_PAGE = 40;
+const MAX_PRINTERS_SCAN = 200;
+const MAX_LOGS_PAGE     = 40;
+const DEFAULT_LOGS_PAGE = 20;
+const CLEAR_JOBS_BATCH  = 450;
+const STALE_SCAN_BATCH  = 300;
+const UNSTICK_QUERY_LIMIT = 150;
+const PRINTER_STATUS_QUERY_LIMIT = 80;
+
+function clampInt(val, min, max, fallback) {
+  const n = parseInt(val, 10);
+  if (Number.isNaN(n)) return fallback;
+  return Math.min(Math.max(n, min), max);
+}
+
+/** Stable key-order pagination (every doc has an id). */
+async function readCollectionPage(collectionName, pageSize, cursorDocId) {
+  const col = db.collection(collectionName);
+  let q = col.orderBy(FieldPath.documentId()).limit(pageSize);
+  if (cursorDocId) {
+    const cur = await col.doc(cursorDocId).get();
+    if (cur.exists) q = q.startAfter(cur);
+  }
+  const snap = await q.get();
+  const rows = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+  const nextCursor = snap.size === pageSize ? snap.docs[snap.docs.length - 1].id : null;
+  return { rows, nextCursor };
+}
 
 // ─── Cloudflare Tunnel direct-push helper ──────────────────────────
 // Looks up the client's registered tunnel URL from Firestore and POSTs
@@ -107,11 +169,6 @@ async function tryTunnelPush(clientId, jobPayload) {
     console.warn(`Tunnel push to ${clientId} failed (will use RTDB fallback):`, e.message);
     return false;
   }
-}
-
-async function readAll(collection) {
-  const snap = await db.collection(collection).get();
-  return snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
 }
 
 // ─── Health ────────────────────────────────────────────────────────
@@ -188,30 +245,43 @@ app.post('/api/print/jobs', authMiddleware, async (req, res) => {
 });
 
 // GET /api/print/jobs — list (no pdfData)
+// Always apply a Firestore .limit() so billed reads cannot scale with total history size.
 app.get('/api/print/jobs', authMiddleware, async (req, res) => {
+  diagnosticLogPrintJobsList(req);
   try {
-    const { status, limit } = req.query;
+    const { status, cursor } = req.query;
+    const listLimit = clampInt(req.query.limit, 1, MAX_JOBS_PAGE, DEFAULT_JOBS_PAGE);
+    const cursorId = cursor ? String(cursor) : null;
+
     let snap;
     try {
+      let q;
       if (status) {
-        snap = await db.collection(JOBS_COL).where('status', '==', status).orderBy('createdAt', 'desc').get();
+        q = db.collection(JOBS_COL).where('status', '==', status).orderBy('createdAt', 'desc').limit(listLimit);
       } else {
-        snap = await db.collection(JOBS_COL).orderBy('createdAt', 'desc').get();
+        q = db.collection(JOBS_COL).orderBy('createdAt', 'desc').limit(listLimit);
       }
+      if (cursorId) {
+        const cur = await db.collection(JOBS_COL).doc(cursorId).get();
+        if (cur.exists) q = q.startAfter(cur);
+      }
+      snap = await q.get();
     } catch (indexErr) {
-      // Fallback if composite index not ready
       console.warn('Index not ready, using fallback query:', indexErr.message);
-      snap = status
-        ? await db.collection(JOBS_COL).where('status', '==', status).get()
-        : await db.collection(JOBS_COL).get();
+      let q = status
+        ? db.collection(JOBS_COL).where('status', '==', status).orderBy(FieldPath.documentId()).limit(listLimit)
+        : db.collection(JOBS_COL).orderBy(FieldPath.documentId()).limit(listLimit);
+      if (cursorId) {
+        const cur = await db.collection(JOBS_COL).doc(cursorId).get();
+        if (cur.exists) q = q.startAfter(cur);
+      }
+      snap = await q.get();
     }
     let jobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // Sort in memory as fallback
     jobs.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-    if (limit) jobs = jobs.slice(0, parseInt(limit, 10));
-    // Strip pdfData from list
     const summary = jobs.map(({ pdfData, ...rest }) => rest);
-    res.json(summary);
+    const nextCursor = snap.size === listLimit ? snap.docs[snap.docs.length - 1].id : null;
+    res.json({ jobs: summary, nextCursor });
   } catch (err) {
     console.error('List jobs error:', err);
     res.status(500).json({ error: err.message });
@@ -223,20 +293,21 @@ app.get('/api/print/jobs', authMiddleware, async (req, res) => {
 async function pendingJobsHandler(req, res) {
   try {
     const { limit, locationId, clientId, clientName } = { ...req.query, ...req.body };
+    // Cap how many pending docs Firestore may bill per request (client may pass ?limit=5).
+    const max = clampInt(limit, 1, 25, 8);
     let snap;
     try {
-      snap = await db.collection(JOBS_COL).where('status', '==', 'pending').orderBy('createdAt', 'asc').get();
+      snap = await db.collection(JOBS_COL).where('status', '==', 'pending').orderBy('createdAt', 'asc').limit(max).get();
     } catch (indexErr) {
       // Fallback if composite index not ready
       console.warn('Index not ready, using fallback query:', indexErr.message);
-      snap = await db.collection(JOBS_COL).where('status', '==', 'pending').get();
+      snap = await db.collection(JOBS_COL).where('status', '==', 'pending').limit(max).get();
     }
     let jobs = snap.docs.map(d => d.data());
     // Sort in memory as fallback
     jobs.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
 
     if (locationId) jobs = jobs.filter(j => !j.locationId || j.locationId === locationId);
-    const max = parseInt(limit, 10) || 10;
     jobs = jobs.slice(0, max);
     // Ensure formName alias and add printer field as systemName
     jobs = jobs.map(j => ({
@@ -488,11 +559,20 @@ app.delete('/api/print/jobs/:id', authMiddleware, async (req, res) => {
 // DELETE /api/print/jobs/clear
 app.delete('/api/print/jobs/clear', authMiddleware, async (_req, res) => {
   try {
-    const snap = await db.collection(JOBS_COL).where('status', 'in', ['completed', 'failed']).get();
-    const batch = db.batch();
-    snap.docs.forEach(d => batch.delete(d.ref));
-    await batch.commit();
-    res.json({ message: `Cleared ${snap.size} jobs` });
+    let cleared = 0;
+    for (;;) {
+      const snap = await db.collection(JOBS_COL)
+        .where('status', 'in', ['completed', 'failed'])
+        .limit(CLEAR_JOBS_BATCH)
+        .get();
+      if (snap.empty) break;
+      const batch = db.batch();
+      snap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      cleared += snap.size;
+      if (snap.size < CLEAR_JOBS_BATCH) break;
+    }
+    res.json({ message: `Cleared ${cleared} jobs` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -504,13 +584,24 @@ app.delete('/api/print/jobs/clear', authMiddleware, async (_req, res) => {
 
 async function statsHandler(_req, res) {
   try {
-    const snap = await db.collection(JOBS_COL).get();
-    const jobs = snap.docs.map(d => d.data());
-    const pending   = jobs.filter(j => j.status === 'pending').length;
-    const printing  = jobs.filter(j => j.status === 'printing').length;
-    const completed = jobs.filter(j => j.status === 'completed').length;
-    const failed    = jobs.filter(j => j.status === 'failed').length;
-    res.json({ status: 'ok', queue: { pending, printing, completed, failed, total: jobs.length }, timestamp: new Date().toISOString() });
+    const coll = db.collection(JOBS_COL);
+    const [totalSnap, penSnap, prtSnap, cmpSnap, failSnap] = await Promise.all([
+      coll.count().get(),
+      coll.where('status', '==', 'pending').count().get(),
+      coll.where('status', '==', 'printing').count().get(),
+      coll.where('status', '==', 'completed').count().get(),
+      coll.where('status', '==', 'failed').count().get(),
+    ]);
+    const pending = penSnap.data().count;
+    const printing = prtSnap.data().count;
+    const completed = cmpSnap.data().count;
+    const failed = failSnap.data().count;
+    const total = totalSnap.data().count;
+    res.json({
+      status: 'ok',
+      queue: { pending, printing, completed, failed, total },
+      timestamp: new Date().toISOString(),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -522,11 +613,12 @@ app.get('/api/print/stats/polling', authMiddleware, statsHandler);
 //  PRINTERS
 // ═══════════════════════════════════════════════════════════════════
 
-// GET /api/print/printers
+// GET /api/print/printers — bounded page; dedupe within page only
 app.get('/api/print/printers', authMiddleware, async (req, res) => {
   try {
-    const all = await readAll(PRINTERS_COL);
-    // Deduplicate by systemName — keep the most recently seen entry
+    const pageSize = clampInt(req.query.limit, 1, MAX_PRINTERS_SCAN, MAX_PRINTERS_SCAN);
+    const cursor = req.query.cursor ? String(req.query.cursor) : null;
+    const { rows: all, nextCursor } = await readCollectionPage(PRINTERS_COL, pageSize, cursor);
     const seen = {};
     for (const p of all) {
       const key = (p.systemName || p.name || '').toLowerCase();
@@ -536,7 +628,7 @@ app.get('/api/print/printers', authMiddleware, async (req, res) => {
         seen[key] = p;
       }
     }
-    res.json(Object.values(seen));
+    res.json({ printers: Object.values(seen), nextCursor });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -583,7 +675,7 @@ app.put('/api/print/printers/status', authMiddleware, async (req, res) => {
     const statusList = statuses || printerStatuses;
     if (!clientId || !Array.isArray(statusList)) return res.status(400).json({ error: 'clientId and statuses[] required' });
 
-    const snap = await db.collection(PRINTERS_COL).where('clientId', '==', clientId).get();
+    const snap = await db.collection(PRINTERS_COL).where('clientId', '==', clientId).limit(PRINTER_STATUS_QUERY_LIMIT).get();
     const printerDocs = snap.docs.map(d => ({ ref: d.ref, ...d.data() }));
     const batch = db.batch();
     let updated = 0;
@@ -616,15 +708,24 @@ app.delete('/api/print/printers/stale', authMiddleware, async (req, res) => {
     const staleDays = parseFloat(req.query.days || '0.125'); // default: 3 hours
     const cutoff          = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000).toISOString();
     const connectedCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5-min safety window
-    const snap = await db.collection(PRINTERS_COL).get();
-    const batch = db.batch();
-    let removed = 0, skipped = 0;
-    snap.docs.forEach(d => {
-      const lastSeen = d.data().lastSeen || '';
-      if (lastSeen >= connectedCutoff) { skipped++; return; } // currently connected — never touch it
-      if (!lastSeen || lastSeen < cutoff) { batch.delete(d.ref); removed++; }
-    });
-    await batch.commit();
+    let removed = 0;
+    let skipped = 0;
+    let cursor = null;
+    for (;;) {
+      const { rows, nextCursor } = await readCollectionPage(PRINTERS_COL, STALE_SCAN_BATCH, cursor);
+      if (rows.length === 0) break;
+      const batch = db.batch();
+      let ops = 0;
+      for (const d of rows) {
+        const ref = db.collection(PRINTERS_COL).doc(d._docId);
+        const lastSeen = d.lastSeen || '';
+        if (lastSeen >= connectedCutoff) { skipped++; continue; }
+        if (!lastSeen || lastSeen < cutoff) { batch.delete(ref); removed++; ops++; }
+      }
+      if (ops) await batch.commit();
+      cursor = nextCursor;
+      if (!nextCursor) break;
+    }
     res.json({ message: `Removed ${removed} disconnected printer(s). Skipped ${skipped} connected printer(s).` });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -636,15 +737,24 @@ app.delete('/api/print/clients/stale', authMiddleware, async (req, res) => {
     const staleDays = parseFloat(req.query.days || '0.125'); // default: 3 hours
     const cutoff          = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000).toISOString();
     const connectedCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5-min safety window
-    const snap = await db.collection(CLIENTS_COL).get();
-    const batch = db.batch();
-    let removed = 0, skipped = 0;
-    snap.docs.forEach(d => {
-      const lastSeen = d.data().lastSeen || '';
-      if (lastSeen >= connectedCutoff) { skipped++; return; } // currently connected — never touch it
-      if (!lastSeen || lastSeen < cutoff) { batch.delete(d.ref); removed++; }
-    });
-    await batch.commit();
+    let removed = 0;
+    let skipped = 0;
+    let cursor = null;
+    for (;;) {
+      const { rows, nextCursor } = await readCollectionPage(CLIENTS_COL, STALE_SCAN_BATCH, cursor);
+      if (rows.length === 0) break;
+      const batch = db.batch();
+      let ops = 0;
+      for (const d of rows) {
+        const ref = db.collection(CLIENTS_COL).doc(d._docId);
+        const lastSeen = d.lastSeen || '';
+        if (lastSeen >= connectedCutoff) { skipped++; continue; }
+        if (!lastSeen || lastSeen < cutoff) { batch.delete(ref); removed++; ops++; }
+      }
+      if (ops) await batch.commit();
+      cursor = nextCursor;
+      if (!nextCursor) break;
+    }
     res.json({ message: `Removed ${removed} disconnected client(s). Skipped ${skipped} connected client(s).` });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -654,7 +764,7 @@ app.post('/api/print/jobs/unstick', authMiddleware, async (req, res) => {
   try {
     const minutes = parseInt(req.query.minutes || '10', 10);
     const cutoff = new Date(Date.now() - minutes * 60 * 1000).toISOString();
-    const snap = await db.collection(JOBS_COL).where('status', '==', 'printing').get();
+    const snap = await db.collection(JOBS_COL).where('status', '==', 'printing').limit(UNSTICK_QUERY_LIMIT).get();
     const batch = db.batch();
     let reset = 0;
     snap.docs.forEach(d => {
@@ -672,11 +782,21 @@ app.post('/api/print/jobs/unstick', authMiddleware, async (req, res) => {
 // DELETE /api/print/printers
 app.delete('/api/print/printers', authMiddleware, async (_req, res) => {
   try {
-    const snap = await db.collection(PRINTERS_COL).get();
-    const batch = db.batch();
-    snap.docs.forEach(d => batch.delete(d.ref));
-    await batch.commit();
-    res.json({ message: `Cleared ${snap.size} printers` });
+    let cleared = 0;
+    let cursor = null;
+    for (;;) {
+      const { rows, nextCursor } = await readCollectionPage(PRINTERS_COL, STALE_SCAN_BATCH, cursor);
+      if (rows.length === 0) break;
+      const batch = db.batch();
+      for (const d of rows) {
+        batch.delete(db.collection(PRINTERS_COL).doc(d._docId));
+      }
+      await batch.commit();
+      cleared += rows.length;
+      cursor = nextCursor;
+      if (!nextCursor) break;
+    }
+    res.json({ message: `Cleared ${cleared} printers` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -716,9 +836,13 @@ app.post('/api/print/clients/register', authMiddleware, async (req, res) => {
 });
 
 // GET /api/print/clients
-app.get('/api/print/clients', authMiddleware, async (_req, res) => {
-  try { res.json(await readAll(CLIENTS_COL)); }
-  catch (err) { res.status(500).json({ error: err.message }); }
+app.get('/api/print/clients', authMiddleware, async (req, res) => {
+  try {
+    const pageSize = clampInt(req.query.limit, 1, MAX_CLIENTS_PAGE, DEFAULT_CLIENTS_PAGE);
+    const cursor = req.query.cursor ? String(req.query.cursor) : null;
+    const { rows, nextCursor } = await readCollectionPage(CLIENTS_COL, pageSize, cursor);
+    res.json({ clients: rows, nextCursor });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ═══════════════════════════════════════════════════════════════════
@@ -779,16 +903,20 @@ app.post('/api/print/logs', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /api/print/logs — Dashboard reads recent logs
+// GET /api/print/logs — Dashboard reads recent logs (strict cap per request)
 app.get('/api/print/logs', authMiddleware, async (req, res) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
-    const snap = await db.collection(LOGS_COL)
-      .orderBy('timestamp', 'desc')
-      .limit(limit)
-      .get();
+    const pageSize = clampInt(req.query.limit, 1, MAX_LOGS_PAGE, DEFAULT_LOGS_PAGE);
+    const cursorId = req.query.cursor ? String(req.query.cursor) : null;
+    let q = db.collection(LOGS_COL).orderBy('timestamp', 'desc').limit(pageSize);
+    if (cursorId) {
+      const cur = await db.collection(LOGS_COL).doc(cursorId).get();
+      if (cur.exists) q = q.startAfter(cur);
+    }
+    const snap = await q.get();
     const logs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    res.json({ logs });
+    const nextCursor = snap.size === pageSize ? snap.docs[snap.docs.length - 1].id : null;
+    res.json({ logs, nextCursor });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -797,11 +925,21 @@ app.get('/api/print/logs', authMiddleware, async (req, res) => {
 // DELETE /api/print/logs — Clear old logs
 app.delete('/api/print/logs', authMiddleware, async (_req, res) => {
   try {
-    const snap = await db.collection(LOGS_COL).get();
-    const batch = db.batch();
-    snap.docs.forEach(d => batch.delete(d.ref));
-    await batch.commit();
-    res.json({ message: `Cleared ${snap.size} logs` });
+    let cleared = 0;
+    let cursor = null;
+    for (;;) {
+      const { rows, nextCursor } = await readCollectionPage(LOGS_COL, STALE_SCAN_BATCH, cursor);
+      if (rows.length === 0) break;
+      const batch = db.batch();
+      for (const d of rows) {
+        batch.delete(db.collection(LOGS_COL).doc(d._docId));
+      }
+      await batch.commit();
+      cleared += rows.length;
+      cursor = nextCursor;
+      if (!nextCursor) break;
+    }
+    res.json({ message: `Cleared ${cleared} logs` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

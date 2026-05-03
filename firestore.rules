@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Public-facing: CTA banner config (read-only for visitors)
+    match /siteSettings/{doc} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Public-facing: form submissions (visitors can create, admins manage)
+    match /form_submissions/{doc} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+
+    // Admin: state inspections
+    match /state_inspections/{doc} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Admin: settings (SI employees, etc.)
+    match /settings/{doc} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Admin: label templates & saved labels & static stickers
+    match /label_templates/{doc} {
+      allow read, write: if request.auth != null;
+    }
+    match /saved_labels/{doc} {
+      allow read, write: if request.auth != null;
+    }
+    match /static_stickers/{doc} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Admin: user management
+    match /admin_users/{doc} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Admin: fleet accounts
+    match /fleet_accounts/{doc} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Print system
+    match /printJobs/{doc} {
+      allow read, write: if request.auth != null;
+    }
+    match /printers/{doc} {
+      allow read, write: if request.auth != null;
+    }
+    match /printClients/{doc} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Pricing (public read, admin write)
+    match /pricing_services/{doc} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /pricing_page/{doc} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Analytics / tracking (public write for visitor tracking, admin read)
+    match /page_stats/{doc} {
+      allow read, write: if true;
+    }
+    match /visitor_sessions/{doc} {
+      allow read, write: if true;
+    }
+    match /analytics_events/{doc} {
+      allow read, write: if true;
+    }
+
+    // Car wash
+    match /washStats/{doc} {
+      allow read, write: if request.auth != null;
+    }
+    match /washLogs/{doc} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

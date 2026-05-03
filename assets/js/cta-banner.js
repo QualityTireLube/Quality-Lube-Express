@@ -18,6 +18,11 @@
   const DISMISS_KEY = 'ql_cta_banner_dismissed';
   if (sessionStorage.getItem(DISMISS_KEY) === '1') return;
 
+  // ─── Session cache: avoid 1 Firestore read on every page navigation ───────────
+  const CACHE_KEY = 'ql_cta_banner_cfg_cache_v1';
+  /** @type {number} */
+  var CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes — banner updates are rare at a tire shop
+
   // ─── Firebase config (same project as dashboard) ────────────────────────────
   const FIREBASE_CONFIG = {
     apiKey: 'AIzaSyA2DI7LRK4kR7DZtGRridtmCZYl8F32cLg',
@@ -220,9 +225,37 @@
     shiftCanvas(banner.offsetHeight);
   }
 
-  // ─── Fetch config from Firestore ─────────────────────────────────────────────
+  function readCache() {
+    try {
+      var raw = sessionStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      if (!o || typeof o.t !== 'number') return null;
+      if (Date.now() - o.t > CACHE_TTL_MS) return null;
+      return o;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeCache(docExists, data) {
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), exists: !!docExists, data: data || null }));
+    } catch (e) { /* quota / private mode */ }
+  }
+
+  // ─── Fetch config from Firestore (or session cache) ─────────────────────────
   function fetchAndRender() {
     try {
+      var cached = readCache();
+      if (cached && cached.exists && cached.data) {
+        renderBanner(cached.data);
+        return;
+      }
+      if (cached && cached.exists === false) {
+        return;
+      }
+
       let app;
       try {
         app = firebase.app('cta-banner');
@@ -236,6 +269,7 @@
       const db = firebase.firestore(app);
       db.collection('siteSettings').doc('ctaBanner').get()
         .then(function (doc) {
+          writeCache(doc.exists, doc.exists ? doc.data() : null);
           if (doc.exists) renderBanner(doc.data());
         })
         .catch(function (err) {

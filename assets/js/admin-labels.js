@@ -1679,7 +1679,7 @@ const LabelSystem = {
       }
 
       // Fetch registered printers from the print server
-      const printersResp = await fetch(printClientUrl + '/api/print/printers', {
+      const printersResp = await fetch(printClientUrl + '/api/print/printers?limit=120', {
         method: 'GET',
         mode: 'cors',
         headers: this.getPrintClientHeaders(false)
@@ -1924,14 +1924,18 @@ const LabelSystem = {
     if (!listEl) return;
     const printClientUrl = this.getPrintClientUrl();
     try {
-      const resp = await fetch(printClientUrl + '/api/print/clients', {
+      const resp = await fetch(printClientUrl + '/api/print/clients?limit=40', {
         method: 'GET',
         mode: 'cors',
         headers: this.getPrintClientHeaders(false)
       });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const clients = await resp.json();
-      const clientList = Array.isArray(clients) ? clients : (clients.clients || []);
+      const raw = Array.isArray(clients) ? clients : (clients.clients || []);
+      const clientList = raw.map(c => ({
+        ...c,
+        clientId: c.clientId || c._docId || '',
+      }));
       if (clientList.length === 0) {
         listEl.innerHTML = '<p class="text-muted">No print clients registered.</p>';
         return;
@@ -1965,13 +1969,17 @@ const LabelSystem = {
     el.innerHTML = '<p class="text-muted mb-0"><i class="fas fa-spinner fa-spin me-1"></i>Checking…</p>';
     const printClientUrl = this.getPrintClientUrl();
     try {
-      const resp = await fetch(printClientUrl + '/api/print/clients', {
+      const resp = await fetch(printClientUrl + '/api/print/clients?limit=40', {
         method: 'GET', mode: 'cors',
         headers: this.getPrintClientHeaders(false)
       });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const raw = await resp.json();
-      const allClients = Array.isArray(raw) ? raw : (raw.clients || []);
+      const list = Array.isArray(raw) ? raw : (raw.clients || []);
+      const allClients = list.map(c => ({
+        ...c,
+        clientId: c.clientId || c._docId || '',
+      }));
 
       // Only show currently connected clients (heartbeat within last 2 minutes)
       const cutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
@@ -2049,14 +2057,14 @@ const LabelSystem = {
     if (!logsEl) return;
     const printClientUrl = this.getPrintClientUrl();
     try {
-      const resp = await fetch(printClientUrl + '/api/print/logs?limit=100', {
+      const resp = await fetch(printClientUrl + '/api/print/logs?limit=20', {
         method: 'GET',
         mode: 'cors',
         headers: this.getPrintClientHeaders(false)
       });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const data = await resp.json();
-      const logs = data.logs || [];
+      const logs = data.logs || (Array.isArray(data) ? data : []);
       if (logs.length === 0) {
         logsEl.innerHTML = '<p class="text-muted">No logs yet. Start the Print Client and print a label.</p>';
         return;
@@ -2102,7 +2110,7 @@ const LabelSystem = {
         this.refreshLiveLogs();
         this.refreshClients();
       }
-    }, 10000); // Refresh every 10 seconds
+    }, 30000); // Refresh every 30s — each poll is capped server-side (logs/clients pages)
   },
 
   stopLiveLogAutoRefresh() {
